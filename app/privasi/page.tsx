@@ -7,15 +7,15 @@ export default function PrivacyPage() {
   return (
     <main className="mx-auto max-w-2xl px-4 py-10">
       <Link href="/">
-        <Wordmark />
+        <Wordmark full />
       </Link>
       <h1 className="mt-8 font-display text-4xl tracking-tight">Privasi dan data keluarga</h1>
-      <p className="mt-2 text-sm text-muted-foreground">Ringkasan cara Wargi menangani data. Kebijakan lengkap tersedia di situs Caang Labs.</p>
+      <p className="mt-2 text-sm text-muted-foreground">Ringkasan cara Sararia Family Tree menangani data keluarga Anda.</p>
       <div className="mt-8 space-y-6 text-[15px] leading-relaxed">
         <section>
           <h2 className="font-semibold">Data diisi oleh anggota keluarga</h2>
           <p className="mt-1 text-muted-foreground">
-            Nama, tanggal, foto, dan catatan di setiap pohon diisi oleh anggota pohon tersebut, bukan oleh Wargi. Pemilik pohon bertanggung jawab atas
+            Nama, tanggal, foto, dan catatan di setiap pohon diisi oleh anggota pohon tersebut, bukan oleh Sararia. Pemilik pohon bertanggung jawab atas
             siapa saja yang diundang.
           </p>
         </section>

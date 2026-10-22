@@ -20,9 +20,9 @@ export default async function LoginPage({ searchParams }: PageProps<"/masuk">) {
       <div aria-hidden className="kawung absolute inset-0 opacity-60 [mask-image:radial-gradient(ellipse_at_center,black,transparent_65%)]" />
       <div className="rise relative w-full max-w-sm rounded-2xl border bg-card p-6 shadow-sm sm:p-8">
         <Link href="/" className="inline-block">
-          <Wordmark />
+          <Wordmark full />
         </Link>
-        <h1 className="mt-6 font-display text-3xl">{fromInvite ? "Masuk untuk bergabung" : "Masuk ke Wargi"}</h1>
+        <h1 className="mt-6 font-display text-3xl">{fromInvite ? "Masuk untuk bergabung" : "Masuk ke Sararia Family Tree"}</h1>
         <p className="mt-2 text-sm text-muted-foreground">
           {fromInvite
             ? "Anda diundang ke sebuah pohon keluarga. Masuk dulu agar data keluarga tetap terlindungi."

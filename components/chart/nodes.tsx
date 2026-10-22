@@ -61,9 +61,9 @@ export const PersonNode = memo(function PersonNode({ data }: NodeProps<PersonFlo
         )}
       </span>
       <span className="min-w-0 flex-1">
-        <span className="block truncate text-[13px] leading-tight font-semibold">{person.fullName}</span>
-        {person.nickname ? <span className="block truncate text-[11.5px] leading-tight text-muted-foreground">“{person.nickname}”</span> : null}
-        <span className="mt-0.5 block truncate text-[11.5px] leading-tight text-muted-foreground">{subtitle(person) || " "}</span>
+        <span className="block truncate text-[14px] leading-tight font-semibold">{person.fullName}</span>
+        {person.nickname ? <span className="block truncate text-[12.5px] leading-tight text-muted-foreground">“{person.nickname}”</span> : null}
+        <span className="mt-0.5 block truncate text-[12.5px] leading-tight text-muted-foreground">{subtitle(person) || " "}</span>
       </span>
       {isMe ? (
         <span className="absolute -top-2.5 right-2 rounded-full bg-soga px-2 py-px text-[10px] font-semibold text-primary-foreground dark:text-background">Saya</span>

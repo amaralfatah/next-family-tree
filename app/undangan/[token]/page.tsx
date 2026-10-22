@@ -21,7 +21,7 @@ export default async function InvitePage({ params }: PageProps<"/undangan/[token
     <main className="relative grid min-h-dvh place-items-center px-4 py-10">
       <div aria-hidden className="kawung absolute inset-0 opacity-60 [mask-image:radial-gradient(ellipse_at_center,black,transparent_65%)]" />
       <div className="rise relative w-full max-w-md rounded-2xl border bg-card p-6 text-center shadow-sm sm:p-8">
-        <Wordmark className="justify-center" />
+        <Wordmark full className="justify-center" />
         {state.status === "valid" ? (
           <>
             <p className="mt-6 text-sm text-muted-foreground">Anda diundang bergabung ke</p>

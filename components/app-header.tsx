@@ -11,7 +11,7 @@ export function AppHeader({ user, children, compactBrand = false }: { user: Curr
   return (
     <header className="no-print sticky top-0 z-30 border-b bg-background/85 pt-[env(safe-area-inset-top)] backdrop-blur supports-backdrop-filter:bg-background/70">
       <div className="mx-auto flex h-14 max-w-6xl items-center gap-3 px-4">
-        <Link href="/pohon" aria-label="Wargi, ke pohon saya" className="shrink-0 rounded-md outline-none focus-visible:ring-3 focus-visible:ring-ring/50">
+        <Link href="/pohon" aria-label="Sararia Family Tree, ke pohon saya" className="shrink-0 rounded-md outline-none focus-visible:ring-3 focus-visible:ring-ring/50">
           {compactBrand ? (
             <>
               <Mark className="sm:hidden" />

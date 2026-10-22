@@ -19,18 +19,23 @@ function rng(seed: number) {
 export async function createDemoTree(db: DB, userId: string): Promise<string> {
   const rand = rng(42);
   const pick = <T,>(list: T[]) => list[Math.floor(rand() * list.length)];
-  const person = (name: string, gender: Gender, birthYear: number, deathYear?: number): PersonInput => ({
-    fullName: name,
-    nickname: null,
-    gender,
-    birthDate: `${birthYear}-${String(1 + Math.floor(rand() * 12)).padStart(2, "0")}-${String(1 + Math.floor(rand() * 28)).padStart(2, "0")}`,
-    birthPrecision: rand() < 0.3 ? "year" : "day",
-    birthPlace: pick(PLACES),
-    isLiving: !deathYear,
-    deathDate: deathYear ? `${deathYear}-01-01` : null,
-    deathPrecision: deathYear ? "year" : "unknown",
-    notes: null,
-  });
+  const thisYear = new Date().getFullYear();
+  const person = (name: string, gender: Gender, birthYear: number, deathYear?: number): PersonInput => {
+    // A death year that is still in the future means the person is alive.
+    if (deathYear && deathYear > thisYear) deathYear = undefined;
+    return {
+      fullName: name,
+      nickname: null,
+      gender,
+      birthDate: `${birthYear}-${String(1 + Math.floor(rand() * 12)).padStart(2, "0")}-${String(1 + Math.floor(rand() * 28)).padStart(2, "0")}`,
+      birthPrecision: rand() < 0.3 ? "year" : "day",
+      birthPlace: pick(PLACES),
+      isLiving: !deathYear,
+      deathDate: deathYear ? `${deathYear}-01-01` : null,
+      deathPrecision: deathYear ? "year" : "unknown",
+      notes: null,
+    };
+  };
 
   const treeId = await createTree(db, userId, {
     name: "Bani H. Abdullah (contoh)",

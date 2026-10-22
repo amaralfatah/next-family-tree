@@ -14,11 +14,21 @@ export function Mark({ className }: { className?: string }) {
   );
 }
 
-export function Wordmark({ className }: { className?: string }) {
+/**
+ * Family Tree lockup (sararia-logo/FAMILY.md 3.1): the glyph, then the product name in Inter SemiBold
+ * with −0.045em tracking, ink on light and white on dark. `full` adds "Sararia" for public pages,
+ * where visitors may not know the family yet.
+ */
+export function Wordmark({ className, full = false }: { className?: string; full?: boolean }) {
   return (
-    <span className={cn("inline-flex items-center gap-2", className)}>
-      <Mark />
-      <span className="font-display text-2xl leading-none tracking-tight">Wargi</span>
+    <span
+      className={cn(
+        "inline-flex items-center gap-[0.4em] font-[family-name:var(--font-brand-face)] text-[17px] leading-none font-semibold tracking-[-0.045em] text-[#1d1d1f] dark:text-white",
+        className,
+      )}
+    >
+      <Mark className="size-[1.6em]" />
+      <span>{full ? "Sararia Family Tree" : "Family Tree"}</span>
     </span>
   );
 }

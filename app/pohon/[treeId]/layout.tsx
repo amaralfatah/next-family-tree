@@ -5,7 +5,7 @@ import { loadTreeContext } from "@/lib/tree/context";
 export async function generateMetadata({ params }: LayoutProps<"/pohon/[treeId]">) {
   const { treeId } = await params;
   const { tree } = await loadTreeContext(treeId);
-  return { title: { default: tree.name, template: `%s · ${tree.name} · Wargi` } };
+  return { title: { default: tree.name, template: `%s · ${tree.name} · Sararia Family Tree` } };
 }
 
 export default async function TreeLayout({ children, params }: LayoutProps<"/pohon/[treeId]">) {

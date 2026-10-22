@@ -6,9 +6,9 @@ import { fontVariables } from "@/lib/fonts";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: { default: "Wargi · Silsilah keluarga", template: "%s · Wargi" },
+  title: { default: "Sararia Family Tree · Silsilah keluarga", template: "%s · Sararia Family Tree" },
   description: "Catat silsilah keluarga bersama-sama, lihat bagan bani, dan temukan hubungan Anda dengan kerabat.",
-  applicationName: "Wargi",
+  applicationName: "Sararia Family Tree",
   robots: { index: false, follow: false },
 };
 

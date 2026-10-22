@@ -41,7 +41,7 @@ const FAQ = [
     q: "Siapa yang bisa melihat pohon kami?",
     a: "Hanya anggota yang diundang dan sudah masuk dengan akunnya. Tidak ada halaman publik, dan foto pun hanya terbuka untuk anggota.",
   },
-  { q: "Harus memasang aplikasi?", a: "Tidak. Wargi dibuka di browser, di ponsel maupun laptop." },
+  { q: "Harus memasang aplikasi?", a: "Tidak. Sararia Family Tree dibuka di browser, di ponsel maupun laptop." },
   {
     q: "Kalau ada yang salah mengisi?",
     a: "Lihat riwayatnya untuk tahu siapa yang mengubah apa. Pemilik juga bisa menjadikan anggota sebagai pembaca saja.",
@@ -54,7 +54,7 @@ export default async function Home() {
   return (
     <div className="flex min-h-dvh flex-col">
       <header className="mx-auto flex h-16 w-full max-w-6xl items-center justify-between px-4 pt-[env(safe-area-inset-top)]">
-        <Wordmark />
+        <Wordmark full />
         <div className="flex items-center gap-1">
           <ThemeToggle label="Ganti tema terang/gelap" />
           <Link href="/masuk" className={buttonVariants({ variant: "ghost" })}>
@@ -66,24 +66,27 @@ export default async function Home() {
       <main className="flex-1">
         <section className="relative overflow-hidden">
           <div aria-hidden className="kawung absolute inset-0 opacity-40 [mask-image:radial-gradient(ellipse_at_80%_35%,black,transparent_55%)] md:opacity-80" />
-          <div className="relative mx-auto grid max-w-6xl items-center gap-10 px-4 pt-8 pb-16 md:grid-cols-[1.1fr_1fr] md:gap-14 md:pt-16 md:pb-24">
-            <div className="rise">
-              <p className="text-sm text-soga-ink">Silsilah keluarga yang dikerjakan bersama</p>
-              <h1 className="mt-4 font-display text-[2.75rem] leading-[1.02] tracking-[-0.015em] text-balance sm:text-6xl md:text-7xl">
-                &ldquo;Dia itu siapa kita?&rdquo; <em className="text-soga-ink">Kini ada jawabannya.</em>
-              </h1>
-              <p className="mt-6 max-w-xl text-lg leading-relaxed text-pretty text-muted-foreground">
-                Tulis nama leluhur yang masih diingat, lalu ajak saudara melengkapi cabangnya masing-masing. Setelah Anda menandai diri sendiri di pohon,
-                Wargi menyebut hubungan Anda dengan setiap orang di dalamnya.
+          {/* On phones the chart sits right under the headline, so the first screen shows the product, not just copy. */}
+          <div className="relative mx-auto grid max-w-6xl gap-8 px-4 pt-6 pb-16 md:grid-cols-[1.1fr_1fr] md:grid-rows-[auto_auto] md:gap-x-14 md:gap-y-0 md:pt-16 md:pb-24">
+            <h1 className="rise font-display text-[2.6rem] leading-[1.02] tracking-[-0.015em] text-balance sm:text-6xl md:self-end md:text-7xl">
+              &ldquo;Dia itu siapa kita?&rdquo; <em className="text-soga-ink">Kini ada jawabannya.</em>
+            </h1>
+            <HeroChart />
+            <div className="rise md:col-start-1 md:row-start-2">
+              <p className="max-w-xl text-base leading-relaxed text-pretty text-muted-foreground sm:text-lg md:mt-6">
+                Silsilah keluarga yang dikerjakan bersama. Tulis nama leluhur yang masih diingat, lalu ajak saudara melengkapi cabangnya masing-masing.
+                Setelah Anda menandai diri sendiri di pohon, Sararia Family Tree menyebut hubungan Anda dengan setiap orang di dalamnya.
               </p>
-              <div className="mt-8 flex flex-wrap items-center gap-x-5 gap-y-3">
+              <div className="mt-8 flex flex-wrap items-center gap-3">
                 <Link href="/masuk" className={buttonVariants({ size: "lg", className: "h-12 px-6 text-base active:scale-[0.98]" })}>
                   Mulai catat silsilah <ArrowRightIcon data-icon="inline-end" />
                 </Link>
-                <span className="text-sm text-muted-foreground">Masuk dengan akun Google. Gratis, tanpa iklan.</span>
+                <Link href="/contoh" className={buttonVariants({ variant: "outline", size: "lg", className: "h-12 px-6 text-base active:scale-[0.98]" })}>
+                  Lihat contoh pohon
+                </Link>
               </div>
+              <p className="mt-3 text-sm text-muted-foreground">Contoh bisa dibuka tanpa masuk. Gratis, tanpa iklan.</p>
             </div>
-            <HeroChart />
           </div>
         </section>
 
@@ -99,20 +102,21 @@ export default async function Home() {
             <table className="w-full self-start text-left">
               <caption className="sr-only">Contoh istilah kekerabatan</caption>
               <thead>
-                <tr className="border-b text-xs text-muted-foreground">
+                <tr className="hidden border-b text-xs text-muted-foreground sm:table-row">
                   <th scope="col" className="pb-3 font-normal">
                     Jalur dari Anda
                   </th>
                   <th scope="col" className="pb-3 text-right font-normal">
-                    Wargi menyebutnya
+                    Sebutannya
                   </th>
                 </tr>
               </thead>
               <tbody>
                 {TERMS.map((t) => (
-                  <tr key={t.term} className="border-b last:border-0">
-                    <td className="py-3.5 pr-4 text-[15px]">{t.path}</td>
-                    <td className="py-3.5 text-right font-display text-2xl leading-none text-soga-ink">{t.term}</td>
+                  // Phones stack the term under its path so long terms never wrap mid-phrase.
+                  <tr key={t.term} className="flex flex-col gap-1 border-b py-3 last:border-0 sm:table-row sm:py-0">
+                    <td className="text-[15px] text-muted-foreground sm:py-3.5 sm:pr-4 sm:text-foreground">{t.path}</td>
+                    <td className="font-display text-2xl leading-none text-soga-ink sm:py-3.5 sm:text-right">{t.term}</td>
                   </tr>
                 ))}
               </tbody>
@@ -153,16 +157,21 @@ export default async function Home() {
               <h2 className="font-display text-4xl leading-tight tracking-[-0.01em] text-balance md:text-5xl">Mumpung para sesepuh masih bisa ditanya.</h2>
               <p className="mt-3 max-w-xl text-muted-foreground">Nama dan tahun lahir buyut biasanya hanya diingat satu atau dua orang di keluarga.</p>
             </div>
-            <Link href="/masuk" className={buttonVariants({ size: "lg", className: "h-12 shrink-0 px-6 text-base active:scale-[0.98]" })}>
-              Buat pohon keluarga <ArrowRightIcon data-icon="inline-end" />
-            </Link>
+            <div className="flex shrink-0 flex-wrap gap-3">
+              <Link href="/contoh" className={buttonVariants({ variant: "outline", size: "lg", className: "h-12 px-6 text-base active:scale-[0.98]" })}>
+                Lihat contoh
+              </Link>
+              <Link href="/masuk" className={buttonVariants({ size: "lg", className: "h-12 px-6 text-base active:scale-[0.98]" })}>
+                Buat pohon keluarga <ArrowRightIcon data-icon="inline-end" />
+              </Link>
+            </div>
           </div>
         </section>
       </main>
 
       <footer className="border-t pb-[env(safe-area-inset-bottom)]">
         <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-2 px-4 py-6 text-sm text-muted-foreground">
-          <span>Wargi adalah bagian dari Caang Labs.</span>
+          <span>Sararia Family Tree adalah bagian dari keluarga aplikasi Sararia.</span>
           <Link href="/privasi" className="underline-offset-4 hover:underline">
             Privasi dan data keluarga
           </Link>
@@ -204,7 +213,7 @@ function HeroChart() {
     </g>
   );
   return (
-    <div className="rise relative mx-auto w-full max-w-md md:max-w-none" style={{ animationDelay: "140ms" }}>
+    <div className="rise relative mx-auto w-full max-w-sm md:col-start-2 md:row-span-2 md:row-start-1 md:max-w-none md:self-center" style={{ animationDelay: "140ms" }}>
       <div className="rounded-3xl border bg-card/60 p-3 shadow-[0_20px_60px_-30px_rgb(0_0_0/0.35)] backdrop-blur sm:p-5">
         <svg viewBox="0 0 420 330" className="w-full" role="img" aria-label="Contoh bagan keluarga tiga generasi dengan jalur hubungan yang disorot">
           <g className="stroke-nila/50" fill="none" strokeWidth="1.4">

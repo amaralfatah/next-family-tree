@@ -134,7 +134,7 @@ export function chartToSvg(opts: {
   const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}">
 <rect width="100%" height="100%" fill="${C.paper}"/>
 <text x="${PAD}" y="${PAD + 18}" font-family="${SERIF}" font-size="34" fill="${C.ink}">${esc(title)}</text>
-<text x="${PAD}" y="${PAD + 42}" font-family="${SANS}" font-size="12" fill="${C.muted}">Silsilah keluarga · dicetak dari Wargi · ${esc(date)}</text>
+<text x="${PAD}" y="${PAD + 42}" font-family="${SANS}" font-size="12" fill="${C.muted}">Silsilah keluarga · dicetak dari Sararia Family Tree · ${esc(date)}</text>
 ${edges}${nodes}
 </svg>`;
   return { svg, width, height };

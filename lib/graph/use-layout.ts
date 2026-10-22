@@ -73,7 +73,7 @@ export function useElkLayout(graph: ElkNode, key: string) {
       .then((result) => {
         if (!cancelled && latest.current === key) setState({ key, positions: positionsFromElk(result) });
       })
-      .catch((e) => console.error("Wargi layout failed", e));
+      .catch((e) => console.error("Family tree layout failed", e));
     return () => {
       cancelled = true;
     };

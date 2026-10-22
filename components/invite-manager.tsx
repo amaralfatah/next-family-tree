@@ -49,7 +49,7 @@ export function InviteManager({ treeId, invites }: { treeId: string; invites: In
   }
 
   const waText = link
-    ? encodeURIComponent(`Assalamu'alaikum, yuk lengkapi silsilah keluarga kita di Wargi sebagai ${ROLE_LABEL[link.role].toLowerCase()}: ${link.url}`)
+    ? encodeURIComponent(`Assalamu'alaikum, yuk lengkapi silsilah keluarga kita di Sararia Family Tree sebagai ${ROLE_LABEL[link.role].toLowerCase()}: ${link.url}`)
     : "";
 
   return (

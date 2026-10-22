@@ -58,6 +58,10 @@ interface Props {
   rootPersonId: string | null;
   mePersonId: string | null;
   canEdit: boolean;
+  /** Public sample on /contoh: read-only, no profile links, and the sheet invites the visitor to sign up. */
+  demo?: boolean;
+  /** Person whose sheet is open on first render. */
+  initialSelectedId?: string;
 }
 
 export function FamilyChart(props: Props) {
@@ -68,7 +72,7 @@ export function FamilyChart(props: Props) {
   );
 }
 
-function Chart({ treeId, treeName, data, rootPersonId, mePersonId, canEdit }: Props) {
+function Chart({ treeId, treeName, data, rootPersonId, mePersonId, canEdit, demo = false, initialSelectedId }: Props) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -119,7 +123,7 @@ function Chart({ treeId, treeName, data, rootPersonId, mePersonId, canEdit }: Pr
   const elkGraph = useMemo(() => toElk(graph), [graph]);
   const { positions, stale } = useElkLayout(elkGraph, layoutKey);
 
-  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [selectedId, setSelectedId] = useState<string | null>(initialSelectedId ?? null);
 
   const selected = selectedId ? byId.get(selectedId) : undefined;
   const kinship = useMemo(
@@ -204,15 +208,21 @@ function Chart({ treeId, treeName, data, rootPersonId, mePersonId, canEdit }: Pr
     if (!positions || stale || fittedFor.current === viewKey) return;
     fittedFor.current = viewKey;
     requestAnimationFrame(() => {
-      if (graph.nodes.length > 60 && focusId) {
-        const p = positions[`p:${focusId}`];
-        const narrow = window.innerWidth < 640;
-        if (p) setCenter(p.x + 98, p.y + (narrow ? 220 : 180), { zoom: narrow ? 0.62 : 0.85, duration: 0 });
+      // Phones always open on the focus person at a readable zoom (names stay around 13px) instead of
+      // shrinking the whole tree to fit; the rest is a pan away.
+      const narrow = window.innerWidth < 640;
+      const p = focusId ? positions[`p:${focusId}`] : undefined;
+      if (p && (narrow || graph.nodes.length > 60)) {
+        setCenter(p.x + 98, p.y + (narrow ? 200 : 180), { zoom: narrow ? 0.95 : 0.85, duration: 0 });
       } else {
-        fitView({ padding: 0.15, maxZoom: 1.1, duration: 0 });
+        fitView({ padding: 0.15, maxZoom: 1.1, duration: 0 }).then(() => {
+          // A wide branch fitted to the screen is too small to read: show "Saya" (or the focus) at a readable zoom instead.
+          const target = (mePersonId && positions[`p:${mePersonId}`]) || p;
+          if (target && getZoom() < 0.7) setCenter(target.x + 98, target.y + 36, { zoom: 0.85, duration: 0 });
+        });
       }
     });
-  }, [positions, stale, viewKey, fitView, setCenter, graph.nodes.length, focusId]);
+  }, [positions, stale, viewKey, fitView, setCenter, getZoom, graph.nodes.length, focusId, mePersonId]);
 
 
   const [savingRoot, startRoot] = useTransition();
@@ -340,6 +350,7 @@ function Chart({ treeId, treeName, data, rootPersonId, mePersonId, canEdit }: Pr
           isMe={selected.id === mePersonId}
           kinshipLabel={kinship?.label ?? null}
           meLinked={Boolean(mePersonId)}
+          demo={demo}
           isFocus={selected.id === focusId}
           canEdit={canEdit}
           isRoot={selected.id === rootPersonId}
@@ -460,6 +471,7 @@ function PersonSheet(props: {
   isMe: boolean;
   kinshipLabel: string | null;
   meLinked: boolean;
+  demo: boolean;
   isFocus: boolean;
   canEdit: boolean;
   isRoot: boolean;
@@ -468,7 +480,7 @@ function PersonSheet(props: {
   onFocus: () => void;
   onMakeRoot: () => void;
 }) {
-  const { treeId, person, isMe, kinshipLabel, meLinked, isFocus, canEdit, isRoot, savingRoot, onClose, onFocus, onMakeRoot } = props;
+  const { treeId, person, isMe, kinshipLabel, meLinked, demo, isFocus, canEdit, isRoot, savingRoot, onClose, onFocus, onMakeRoot } = props;
   return (
     <aside
       className="sheet-in no-print absolute inset-x-0 bottom-0 z-20 rounded-t-3xl border-t bg-popover px-4 pt-2 pb-[calc(1rem+env(safe-area-inset-bottom))] shadow-[0_-8px_30px_rgb(0_0_0/0.12)] sm:inset-x-auto sm:right-3 sm:bottom-3 sm:w-96 sm:rounded-2xl sm:border sm:pt-4 sm:pb-4 sm:shadow-lg"
@@ -495,9 +507,15 @@ function PersonSheet(props: {
         <p className="mt-3 text-xs text-muted-foreground">Tandai diri Anda di pohon untuk melihat hubungan dengan setiap kerabat.</p>
       ) : null}
       <div className="mt-3 flex flex-wrap gap-2">
-        <Link href={`/pohon/${treeId}/orang/${person.id}`} className={buttonVariants({ size: "lg", className: "h-9" })}>
-          <ExternalLinkIcon data-icon="inline-start" /> Buka profil
-        </Link>
+        {demo ? (
+          <Link href="/masuk" className={buttonVariants({ size: "lg", className: "h-9" })}>
+            Buat pohon keluarga Anda
+          </Link>
+        ) : (
+          <Link href={`/pohon/${treeId}/orang/${person.id}`} className={buttonVariants({ size: "lg", className: "h-9" })}>
+            <ExternalLinkIcon data-icon="inline-start" /> Buka profil
+          </Link>
+        )}
         {!isFocus ? (
           <Button variant="outline" size="lg" className="h-9" onClick={onFocus}>
             <CrosshairIcon data-icon="inline-start" /> Jadikan pusat
