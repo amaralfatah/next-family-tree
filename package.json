@@ -9,7 +9,7 @@
     "lint": "eslint",
     "test": "vitest run",
     "typecheck": "tsc --noEmit",
-    "postinstall": "node -e \"require('fs').copyFileSync('node_modules/elkjs/lib/elk-worker.min.js', 'public/elk-worker.min.js')\"",
+    "postinstall": "node -e \"const fs=require('fs');fs.mkdirSync('public',{recursive:true});fs.copyFileSync('node_modules/elkjs/lib/elk-worker.min.js','public/elk-worker.min.js')\"",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "node --env-file-if-exists=.env.local scripts/migrate.mjs"
   },
