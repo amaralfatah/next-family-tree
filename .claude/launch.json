@@ -1,0 +1,45 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "dev",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": [
+        "run",
+        "dev"
+      ],
+      "port": 3000
+    },
+    {
+      "name": "start-neon",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": [
+        "run",
+        "start",
+        "--",
+        "-p",
+        "3100"
+      ],
+      "env": {
+        "ALLOW_DEV_LOGIN": "1"
+      },
+      "port": 3100
+    },
+    {
+      "name": "dev-pglite",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": [
+        "run",
+        "dev",
+        "--",
+        "-p",
+        "3200"
+      ],
+      "env": {
+        "DATABASE_URL": "",
+        "PGLITE_DIR": ".data/pglite-audit"
+      },
+      "port": 3200
+    }
+  ]
+}
