@@ -20,7 +20,9 @@ import {
   ExternalLinkIcon,
   HeartIcon,
   LoaderIcon,
+  PencilIcon,
   SearchIcon,
+  Trash2Icon,
   UserRoundPlusIcon,
   UsersRoundIcon,
   XIcon,
@@ -50,6 +52,15 @@ import { cn } from "@/lib/utils";
 import { nodeTypes, type PersonNodeData } from "./nodes";
 
 type Mode = "keturunan" | "leluhur";
+type RelationKind = (typeof QUICK_ADD)[number]["rel"];
+
+/** In-browser edits for the /demo sandbox: the sheet opens local dialogs instead of profile pages. */
+export interface SandboxActions {
+  onAdd: (relation: RelationKind, personId: string) => void;
+  onEdit: (personId: string) => void;
+  onDelete: (personId: string) => void;
+  onMakeRoot: (personId: string) => Promise<void>;
+}
 
 interface Props {
   treeId: string;
@@ -62,6 +73,7 @@ interface Props {
   demo?: boolean;
   /** Person whose sheet is open on first render. */
   initialSelectedId?: string;
+  sandbox?: SandboxActions;
 }
 
 export function FamilyChart(props: Props) {
@@ -72,7 +84,7 @@ export function FamilyChart(props: Props) {
   );
 }
 
-function Chart({ treeId, treeName, data, rootPersonId, mePersonId, canEdit, demo = false, initialSelectedId }: Props) {
+function Chart({ treeId, treeName, data, rootPersonId, mePersonId, canEdit, demo = false, initialSelectedId, sandbox }: Props) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -355,10 +367,15 @@ function Chart({ treeId, treeName, data, rootPersonId, mePersonId, canEdit, demo
           canEdit={canEdit}
           isRoot={selected.id === rootPersonId}
           savingRoot={savingRoot}
+          sandbox={sandbox}
           onClose={() => setSelectedId(null)}
           onFocus={() => setView({ focus: selected.id })}
           onMakeRoot={() =>
             startRoot(async () => {
+              if (sandbox) {
+                await sandbox.onMakeRoot(selected.id);
+                return;
+              }
               const r = await setRootAction(treeId, selected.id);
               if (r.ok) toast.success(`${selected.fullName} menjadi pusat bawaan bagan.`);
               else toast.error(r.error);
@@ -366,7 +383,7 @@ function Chart({ treeId, treeName, data, rootPersonId, mePersonId, canEdit, demo
           }
         />
       ) : canEdit && data.persons.length < 4 && focusId ? (
-        <StarterGuide treeId={treeId} person={byId.get(focusId)!} />
+        <StarterGuide treeId={treeId} person={byId.get(focusId)!} onAdd={sandbox?.onAdd} />
       ) : null}
     </div>
   );
@@ -447,19 +464,25 @@ const QUICK_ADD = [
   { rel: "sibling", label: "Saudara", icon: UsersRoundIcon },
 ] as const;
 
-function QuickAdd({ treeId, personId }: { treeId: string; personId: string }) {
+const quickAddClass =
+  "flex flex-col items-center gap-1 rounded-xl border border-dashed px-1 py-2 text-xs font-medium text-muted-foreground transition-[color,border-color,background-color,transform] duration-150 hover:border-soga hover:bg-accent/60 hover:text-foreground active:scale-[0.97]";
+
+function QuickAdd({ treeId, personId, onAdd }: { treeId: string; personId: string; onAdd?: SandboxActions["onAdd"] }) {
   return (
     <div className="grid grid-cols-4 gap-1.5">
-      {QUICK_ADD.map((a) => (
-        <Link
-          key={a.rel}
-          href={`/pohon/${treeId}/orang/baru?rel=${a.rel}&dari=${personId}`}
-          className="flex flex-col items-center gap-1 rounded-xl border border-dashed px-1 py-2 text-xs font-medium text-muted-foreground transition-[color,border-color,background-color,transform] duration-150 hover:border-soga hover:bg-accent/60 hover:text-foreground active:scale-[0.97]"
-        >
-          <a.icon className="size-4 text-soga-ink" />
-          {a.label}
-        </Link>
-      ))}
+      {QUICK_ADD.map((a) =>
+        onAdd ? (
+          <button key={a.rel} type="button" onClick={() => onAdd(a.rel, personId)} className={quickAddClass}>
+            <a.icon className="size-4 text-soga-ink" />
+            {a.label}
+          </button>
+        ) : (
+          <Link key={a.rel} href={`/pohon/${treeId}/orang/baru?rel=${a.rel}&dari=${personId}`} className={quickAddClass}>
+            <a.icon className="size-4 text-soga-ink" />
+            {a.label}
+          </Link>
+        ),
+      )}
     </div>
   );
 }
@@ -476,11 +499,12 @@ function PersonSheet(props: {
   canEdit: boolean;
   isRoot: boolean;
   savingRoot: boolean;
+  sandbox?: SandboxActions;
   onClose: () => void;
   onFocus: () => void;
   onMakeRoot: () => void;
 }) {
-  const { treeId, person, isMe, kinshipLabel, meLinked, demo, isFocus, canEdit, isRoot, savingRoot, onClose, onFocus, onMakeRoot } = props;
+  const { treeId, person, isMe, kinshipLabel, meLinked, demo, isFocus, canEdit, isRoot, savingRoot, sandbox, onClose, onFocus, onMakeRoot } = props;
   return (
     <aside
       className="sheet-in no-print absolute inset-x-0 bottom-0 z-20 rounded-t-3xl border-t bg-popover px-4 pt-2 pb-[calc(1rem+env(safe-area-inset-bottom))] shadow-[0_-8px_30px_rgb(0_0_0/0.12)] sm:inset-x-auto sm:right-3 sm:bottom-3 sm:w-96 sm:rounded-2xl sm:border sm:pt-4 sm:pb-4 sm:shadow-lg"
@@ -507,7 +531,16 @@ function PersonSheet(props: {
         <p className="mt-3 text-xs text-muted-foreground">Tandai diri Anda di pohon untuk melihat hubungan dengan setiap kerabat.</p>
       ) : null}
       <div className="mt-3 flex flex-wrap gap-2">
-        {demo ? (
+        {sandbox ? (
+          <>
+            <Button size="lg" className="h-9" onClick={() => sandbox.onEdit(person.id)}>
+              <PencilIcon data-icon="inline-start" /> Ubah
+            </Button>
+            <Button variant="ghost" size="lg" className="h-9 text-destructive hover:text-destructive" onClick={() => sandbox.onDelete(person.id)}>
+              <Trash2Icon data-icon="inline-start" /> Hapus
+            </Button>
+          </>
+        ) : demo ? (
           <Link href="/masuk" className={buttonVariants({ size: "lg", className: "h-9" })}>
             Buat pohon keluarga Anda
           </Link>
@@ -530,7 +563,7 @@ function PersonSheet(props: {
       {canEdit ? (
         <div className="mt-4 border-t pt-3">
           <p className="mb-2 text-xs font-medium text-muted-foreground">Tambah kerabat {person.nickname || person.fullName.split(" ")[0]}</p>
-          <QuickAdd treeId={treeId} personId={person.id} />
+          <QuickAdd treeId={treeId} personId={person.id} onAdd={sandbox?.onAdd} />
         </div>
       ) : null}
     </aside>
@@ -538,13 +571,13 @@ function PersonSheet(props: {
 }
 
 /** Shown on a near-empty tree: the next step is always one tap away. */
-function StarterGuide({ treeId, person }: { treeId: string; person: Person }) {
+function StarterGuide({ treeId, person, onAdd }: { treeId: string; person: Person; onAdd?: SandboxActions["onAdd"] }) {
   return (
     <aside className="sheet-in no-print absolute inset-x-3 bottom-3 z-10 mx-auto max-w-md rounded-2xl border bg-popover p-4 shadow-lg sm:right-3 sm:left-auto sm:w-96">
       <p className="font-display text-xl leading-tight">Lanjutkan dari {person.nickname || person.fullName}</p>
       <p className="mt-1 text-sm text-muted-foreground">Tambahkan kerabat terdekatnya. Setiap orang baru langsung tersambung di bagan.</p>
       <div className="mt-3">
-        <QuickAdd treeId={treeId} personId={person.id} />
+        <QuickAdd treeId={treeId} personId={person.id} onAdd={onAdd} />
       </div>
     </aside>
   );

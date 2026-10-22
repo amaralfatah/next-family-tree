@@ -4,7 +4,7 @@ import { drizzle } from "drizzle-orm/pglite";
 import { migrate } from "drizzle-orm/pglite/migrator";
 import type { DB } from "@/lib/db";
 import * as schema from "@/lib/db/schema";
-import { createDemoTree } from "@/lib/demo";
+import { createDemoTree, demoView } from "@/lib/demo";
 import { getTree, loadTreeData } from "@/lib/tree/service";
 import type { TreeData } from "@/lib/types";
 
@@ -41,23 +41,5 @@ async function buildPublicDemo(): Promise<PublicDemo> {
   const treeId = await createDemoTree(db, user.id);
   const [{ tree }, data] = await Promise.all([getTree(db, user.id, treeId), loadTreeData(db, user.id, treeId)]);
 
-  const parentsOf = (id: string) => {
-    const unionIds = data.children.filter((c) => c.childId === id).map((c) => c.unionId);
-    return data.unions.filter((u) => unionIds.includes(u.id)).flatMap((u) => [u.partnerAId, u.partnerBId].filter((p): p is string => Boolean(p)));
-  };
-  const siblingsOf = (id: string) => {
-    const unionIds = data.children.filter((c) => c.childId === id).map((c) => c.unionId);
-    return data.children.filter((c) => unionIds.includes(c.unionId) && c.childId !== id).map((c) => c.childId);
-  };
-
-  // The youngest person whose parent (by blood) has both parents and siblings in the tree.
-  const youngestFirst = [...data.persons].sort((a, b) => (b.birthDate ?? "").localeCompare(a.birthDate ?? ""));
-  for (const me of youngestFirst) {
-    for (const parent of parentsOf(me.id)) {
-      const grandparent = parentsOf(parent)[0];
-      const relative = siblingsOf(parent)[0];
-      if (grandparent && relative) return { name: tree.name, data, focusId: grandparent, meId: me.id, relativeId: relative };
-    }
-  }
-  throw new Error("Demo tree has no three-generation line");
+  return { name: tree.name, data, ...demoView(data) };
 }

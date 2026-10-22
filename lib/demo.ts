@@ -1,5 +1,5 @@
 import type { DB } from "@/lib/db";
-import type { Gender } from "@/lib/types";
+import type { Gender, TreeData } from "@/lib/types";
 import { createPerson, createTree, loadTreeData, type PersonInput } from "@/lib/tree/service";
 
 // A fictional four-generation Sundanese family (~100 people) for trying the app and
@@ -84,4 +84,30 @@ export async function createDemoTree(db: DB, userId: string): Promise<string> {
     year += 3;
   }
   return treeId;
+}
+
+/**
+ * Where a visitor lands in the demo family: "me" is the youngest person whose parent (by blood) has both
+ * parents and siblings in the tree, the chart is centred on my grandparent so the first view shows three
+ * generations, and an aunt or uncle is pre-selected so a kinship label shows without a tap.
+ */
+export function demoView(data: TreeData): { focusId: string; meId: string; relativeId: string } {
+  const parentsOf = (id: string) => {
+    const unionIds = data.children.filter((c) => c.childId === id).map((c) => c.unionId);
+    return data.unions.filter((u) => unionIds.includes(u.id)).flatMap((u) => [u.partnerAId, u.partnerBId].filter((p): p is string => Boolean(p)));
+  };
+  const siblingsOf = (id: string) => {
+    const unionIds = data.children.filter((c) => c.childId === id).map((c) => c.unionId);
+    return data.children.filter((c) => unionIds.includes(c.unionId) && c.childId !== id).map((c) => c.childId);
+  };
+
+  const youngestFirst = [...data.persons].sort((a, b) => (b.birthDate ?? "").localeCompare(a.birthDate ?? ""));
+  for (const me of youngestFirst) {
+    for (const parent of parentsOf(me.id)) {
+      const grandparent = parentsOf(parent)[0];
+      const relative = siblingsOf(parent)[0];
+      if (grandparent && relative) return { focusId: grandparent, meId: me.id, relativeId: relative };
+    }
+  }
+  throw new Error("Demo tree has no three-generation line");
 }

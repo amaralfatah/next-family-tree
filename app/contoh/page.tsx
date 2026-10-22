@@ -35,10 +35,15 @@ export default async function DemoPage() {
       <main className="flex flex-1 flex-col">
         <h1 className="sr-only">Contoh bagan {demo.name}</h1>
         <div className="no-print border-b bg-accent/60">
-          <p className="mx-auto max-w-6xl px-4 py-2 text-[13px] sm:py-2.5 sm:text-sm">
-            Keluarga fiktif. Anda ditandai sebagai <strong className="font-semibold">{me.fullName}</strong>. Ketuk siapa pun untuk melihat sebutan
-            hubungannya dengan Anda.
-          </p>
+          <div className="mx-auto flex max-w-6xl items-center gap-3 px-4 py-2 text-[13px] sm:py-2.5 sm:text-sm">
+            <p className="min-w-0 flex-1">
+              Keluarga fiktif. Anda ditandai sebagai <strong className="font-semibold">{me.fullName}</strong>. Ketuk siapa pun untuk melihat sebutan
+              hubungannya dengan Anda.
+            </p>
+            <Link href="/demo" className={buttonVariants({ variant: "outline", size: "sm", className: "h-8 shrink-0" })}>
+              Coba ubah
+            </Link>
+          </div>
         </div>
         <Suspense>
           <FamilyChart

@@ -15,7 +15,7 @@ Collaborative family-tree web app (UI in Indonesian), part of the Caang Labs cat
 
 ## Stack
 
-Next.js 16 (App Router, Server Actions) · React 19 · Tailwind v4 · shadcn/ui (Base UI) · Drizzle ORM · Postgres (Neon / local) or embedded PGlite · `@xyflow/react` + `elkjs` · Cloudflare R2 · Google sign-in via `arctic` with database sessions.
+Next.js 16 (App Router, Server Actions) · React 19 · Tailwind v4 · shadcn/ui (Base UI) · Drizzle ORM · Postgres (Neon / local) or embedded PGlite · `@xyflow/react` + `elkjs` · Cloudflare R2 · Google sign-in via Neon Auth (Managed Better Auth).
 
 ## Running locally
 
@@ -27,7 +27,8 @@ npm run dev
 Open http://localhost:3000. With no configuration:
 
 - **Database**: embedded PGlite in `.data/pglite`, migrated automatically. Set `DATABASE_URL` to use Postgres instead (a local server is migrated on first request; Neon is migrated with `npm run db:migrate`).
-- **Sign-in**: a development-only "Masuk tanpa Google" form appears on `/masuk`. Configure `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` for Google.
+- **Sign-in**: a development-only "Masuk tanpa Google" form appears on `/masuk`. Google sign-in needs Neon Auth: `neon deploy` writes `NEON_AUTH_BASE_URL`; add `NEON_AUTH_COOKIE_SECRET` (`openssl rand -base64 32`).
+- **Demo**: `/contoh` is a read-only sample family; `/demo` lets visitors edit one in an in-browser PGlite database, so nothing reaches the server.
 - **Photos**: stored in `.data/uploads`. Configure `R2_*` for Cloudflare R2.
 - **Demo data**: on an empty "Pohon saya" page (development only), "Buat pohon contoh" creates a fictional four-generation family of about 100 people.
 
@@ -50,12 +51,12 @@ See [`.env.example`](.env.example) for every variable.
 - `lib/tree/`, `lib/members/` — services (take `db` + `userId`, testable without HTTP); `lib/actions/` wraps them as Server Actions.
 - `lib/graph/` — tree → chart graph, auto-collapse, generations, ELK input, SVG export. Pure functions.
 - `lib/kinship/` — shortest relation path → Indonesian kinship label. Pure function.
-- `lib/auth/` — sessions (hashed tokens in the database) and Google OAuth.
+- `lib/auth/` — Neon Auth (Google) mapped to app users, plus development test-login sessions.
 - `lib/storage/` — R2 or local disk.
 
 ## Deploying (Vercel + Neon + R2)
 
-1. Create a Neon database and set `DATABASE_URL`; run `npm run db:migrate`.
-2. Create a Google OAuth client with redirect URI `https://<domain>/api/auth/google/callback`; set `APP_URL`, `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`.
+1. `neon deploy` provisions Postgres and Neon Auth (`neon.ts`) and pulls `DATABASE_URL`, `DATABASE_URL_UNPOOLED` and `NEON_AUTH_BASE_URL`; set them on Vercel with `NEON_AUTH_COOKIE_SECRET`, then run `npm run db:migrate`.
+2. Google sign-in: replace Neon's shared development Google keys with your own OAuth client (`neon neon-auth oauth-provider`, redirect URI `<NEON_AUTH_BASE_URL>/callback/google`) and add the production origin with `neon neon-auth domain add https://<domain>`.
 3. Create an R2 bucket and an API token; set the `R2_*` variables.
 4. Do **not** set `ALLOW_DEV_LOGIN` in production.

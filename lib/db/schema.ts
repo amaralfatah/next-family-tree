@@ -29,10 +29,11 @@ export const users = pgTable(
     email: text("email").notNull(),
     name: text("name").notNull(),
     image: text("image"),
-    googleSub: text("google_sub"),
+    /** Neon Auth (Better Auth) user id. Null for development-only test logins. */
+    authId: text("auth_id"),
     createdAt: createdAt(),
   },
-  (t) => [uniqueIndex("users_email_idx").on(t.email), uniqueIndex("users_google_sub_idx").on(t.googleSub)],
+  (t) => [uniqueIndex("users_email_idx").on(t.email), uniqueIndex("users_auth_id_idx").on(t.authId)],
 );
 
 /** Session id is the SHA-256 of the cookie token, so a leaked table can't be replayed. */
