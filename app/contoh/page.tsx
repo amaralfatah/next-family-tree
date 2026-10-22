@@ -38,8 +38,8 @@ export default async function DemoPage() {
         <div className="no-print border-b bg-paper-2">
           <div className="mx-auto flex max-w-6xl items-center gap-3 px-4 py-2 text-[13px] sm:py-2.5 sm:text-sm">
             <p className="min-w-0 flex-1">
-              Keluarga fiktif. Anda ditandai sebagai <strong className="font-semibold">{me.fullName}</strong>. Ketuk siapa pun untuk melihat sebutan
-              hubungannya dengan Anda.
+              Keluarga fiktif. Anda ditandai sebagai <strong className="font-semibold">{me.fullName}</strong>.
+              <span className="max-sm:hidden"> Ketuk siapa pun untuk melihat sebutan hubungannya dengan Anda.</span>
             </p>
             <Link href="/demo" className={buttonVariants({ variant: "outline", size: "sm", className: "shrink-0" })}>
               Coba ubah

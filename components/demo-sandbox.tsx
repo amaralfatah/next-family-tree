@@ -141,8 +141,9 @@ export function DemoSandbox({ migrations }: { migrations: string[] }) {
         <div className="no-print border-b bg-paper-2">
           <div className="mx-auto flex max-w-6xl items-center gap-3 px-4 py-2 text-[13px] sm:py-2.5 sm:text-sm">
             <p className="min-w-0 flex-1">
-              <strong className="font-semibold">Mode coba.</strong> Ketuk siapa pun untuk menambah kerabat, mengubah, atau menghapusnya. Perubahan hanya ada di
-              browser ini dan hilang saat halaman ditutup.
+              <strong className="font-semibold">Mode coba.</strong>
+              <span className="max-sm:hidden"> Ketuk siapa pun untuk menambah kerabat, mengubah, atau menghapusnya.</span> Perubahan hilang saat halaman
+              ditutup.
             </p>
             <Button variant="outline" size="sm" className="shrink-0" onClick={reset} disabled={!sandbox}>
               Mulai ulang

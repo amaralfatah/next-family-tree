@@ -248,7 +248,8 @@
 
 /* Reduce Transparency: solid bars and scrims instead of blurred, see-through ones. */
 @media (prefers-reduced-transparency: reduce) {
-  .nav-bar {
+  .nav-bar,
+  .material {
     background-color: var(--background);
     backdrop-filter: none;
   }

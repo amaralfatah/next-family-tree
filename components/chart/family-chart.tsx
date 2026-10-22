@@ -45,7 +45,7 @@ import { InputGroupAddon } from "@/components/ui/input-group";
 import { Spinner } from "@/components/ui/spinner";
 import { setRootAction } from "@/lib/actions";
 import { autoCollapse, buildAncestorGraph, buildDescendantGraph, type FamilyGraph } from "@/lib/graph/build";
-import { toElk } from "@/lib/graph/layout";
+import { PERSON_H, PERSON_W, toElk } from "@/lib/graph/layout";
 import { useElkLayout } from "@/lib/graph/use-layout";
 import { createKinshipResolver } from "@/lib/kinship";
 import { photoUrl, subtitle } from "@/lib/person";
@@ -230,10 +230,16 @@ function Chart({ treeId, treeName, data, rootPersonId, mePersonId, canEdit, demo
   function openNode(node: Node) {
     if (node.type !== "person") return;
     setSelectedId((node.data as PersonNodeData).person.id);
-    // On phones the sheet covers the lower half: bring the tapped card into the top half.
-    if (window.innerWidth < 640) {
+    // On phones the toolbar covers the top and the sheet the lower part: centre the tapped card in the
+    // strip still visible between them.
+    const chart = flowRef.current;
+    if (window.innerWidth < 640 && chart) {
       const zoom = getZoom();
-      setCenter(node.position.x + 98, node.position.y + 36 + (window.innerHeight * 0.22) / zoom, { zoom, duration: 280 });
+      const height = chart.clientHeight;
+      const top = toolbarRef.current?.offsetHeight ?? 0;
+      const sheet = Math.min(360, height * 0.5);
+      const target = (top + (height - sheet)) / 2;
+      setCenter(node.position.x + PERSON_W / 2, node.position.y + PERSON_H / 2 + (height / 2 - target) / zoom, { zoom, duration: 280 });
     }
   }
   const fittedFor = useRef<string | null>(null);
@@ -272,6 +278,7 @@ function Chart({ treeId, treeName, data, rootPersonId, mePersonId, canEdit, demo
   const [savingRoot, startRoot] = useTransition();
   const [exporting, setExporting] = useState(false);
   const flowRef = useRef<HTMLDivElement>(null);
+  const toolbarRef = useRef<HTMLDivElement>(null);
 
   async function doExport(kind: "png" | "pdf" | "svg", paper?: "a4" | "a3" | "a2" | "a1") {
     if (!positions) return;
@@ -294,8 +301,10 @@ function Chart({ treeId, treeName, data, rootPersonId, mePersonId, canEdit, demo
 
   return (
     <div className="relative flex flex-1 flex-col">
-      <div className="no-print absolute inset-x-0 top-0 z-10 flex flex-wrap items-center gap-2 p-3">
-        <div className="flex rounded-lg border bg-card p-0.5 shadow-sm" role="group" aria-label="Arah bagan">
+      {/* A toolbar in the HIG sense: one material bar the chart scrolls under, so cards never collide with
+          its controls. Phones get two rows: direction and actions, then search at full width. */}
+      <div ref={toolbarRef} className="material no-print absolute inset-x-0 top-0 z-10 flex flex-wrap items-center gap-2 border-b bg-background/80 px-3 py-2 backdrop-blur-xl backdrop-saturate-150">
+        <div className="flex rounded-lg border bg-card p-0.5" role="group" aria-label="Arah bagan">
           {(
             [
               ["keturunan", "Keturunan", ArrowDownFromLineIcon],
@@ -308,7 +317,7 @@ function Chart({ treeId, treeName, data, rootPersonId, mePersonId, canEdit, demo
               aria-pressed={mode === value}
               onClick={() => setView({ mode: value })}
               className={cn(
-                "flex h-7 items-center gap-1.5 rounded-md px-2.5 text-sm transition-colors",
+                "flex h-8 items-center gap-1.5 rounded-md px-2.5 text-sm transition-colors",
                 mode === value ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground",
               )}
             >
@@ -318,14 +327,14 @@ function Chart({ treeId, treeName, data, rootPersonId, mePersonId, canEdit, demo
         </div>
         <FocusSearch data={data} onPick={(id) => setView({ focus: id })} />
         {mePersonId && mePersonId !== focusId ? (
-          <Button variant="outline" size="sm" className="bg-card" onClick={() => setView({ focus: mePersonId })}>
-            <CrosshairIcon data-icon="inline-start" /> Saya
+          <Button variant="outline" size="sm" className="bg-card max-sm:px-2.5" onClick={() => setView({ focus: mePersonId })}>
+            <CrosshairIcon data-icon="inline-start" /> <span className="max-sm:sr-only">Saya</span>
           </Button>
         ) : null}
         <div className="ml-auto">
           <DropdownMenu>
-            <DropdownMenuTrigger render={<Button variant="outline" size="sm" className="bg-card" disabled={exporting} />}>
-              {exporting ? <Spinner data-icon="inline-start" /> : <DownloadIcon data-icon="inline-start" />} Ekspor
+            <DropdownMenuTrigger render={<Button variant="outline" size="sm" className="bg-card max-sm:px-2.5" disabled={exporting} />}>
+              {exporting ? <Spinner data-icon="inline-start" /> : <DownloadIcon data-icon="inline-start" />} <span className="max-sm:sr-only">Ekspor</span>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-52">
               <DropdownMenuGroup>
@@ -453,7 +462,7 @@ function FocusSearch({ data, onPick }: { data: TreeData; onPick: (id: string) =>
         autoComplete="off"
         placeholder="Cari & pusatkan…"
         aria-label="Cari orang untuk dijadikan pusat bagan"
-        className="order-last w-full bg-card shadow-sm sm:order-none sm:w-56"
+        className="order-last w-full bg-card sm:order-none sm:w-56"
       >
         <InputGroupAddon align="inline-start">
           <SearchIcon />
