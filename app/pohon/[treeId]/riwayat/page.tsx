@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { buttonVariants } from "@/components/ui/button";
 import { loadTreeContext } from "@/lib/tree/context";
-import { listChanges } from "@/lib/tree/service";
+import { listChangesWith } from "@/lib/tree/service";
 
 export const metadata = { title: "Riwayat" };
 
@@ -24,19 +24,19 @@ const dayFmt = new Intl.DateTimeFormat("id-ID", { dateStyle: "full", timeZone: "
 export default async function HistoryPage({ params, searchParams }: PageProps<"/pohon/[treeId]/riwayat">) {
   const { treeId } = await params;
   const sp = await searchParams;
-  const { db, user, data } = await loadTreeContext(treeId);
+  const { db, access, data } = await loadTreeContext(treeId);
   const before = typeof sp.sebelum === "string" && !Number.isNaN(Date.parse(sp.sebelum)) ? new Date(sp.sebelum) : undefined;
-  const { rows, hasMore } = await listChanges(db, user.id, treeId, { before, limit: 50 });
+  const { rows, hasMore } = await listChangesWith(db, access, { before, limit: 50 });
   const existing = new Set(data.persons.map((p) => p.id));
 
   return (
-    <main className="mx-auto w-full max-w-3xl px-4 py-8">
-      <h1 className="font-display text-4xl tracking-tight">Riwayat perubahan</h1>
+    <main id="konten" className="mx-auto w-full max-w-3xl px-4 py-8">
+      <h1 className="font-display text-[2.125rem] leading-tight tracking-[-0.02em]">Riwayat perubahan</h1>
       <p className="mt-1 text-sm text-muted-foreground">Siapa mengubah apa, dan kapan. Waktu dalam WIB.</p>
       {rows.length === 0 ? (
         <p className="mt-10 text-muted-foreground">Belum ada perubahan.</p>
       ) : (
-        <ol className="mt-6 space-y-1">
+        <ol className="mt-6 flex flex-col gap-1">
           {rows.map((r, i) => {
             const day = dayFmt.format(r.createdAt);
             const header = i === 0 || dayFmt.format(rows[i - 1].createdAt) !== day;
@@ -46,7 +46,7 @@ export default async function HistoryPage({ params, searchParams }: PageProps<"/
                 : [];
             return (
               <li key={r.id}>
-                {header ? <h2 className="pt-5 pb-2 text-xs font-semibold tracking-wide text-soga-ink uppercase">{day}</h2> : null}
+                {header ? <h2 className="pt-6 pb-2 text-sm font-semibold text-muted-foreground">{day}</h2> : null}
                 <div className="flex gap-3 rounded-lg px-3 py-2 hover:bg-muted/60">
                   <span className="mt-2 size-1.5 shrink-0 rounded-full bg-nila" aria-hidden />
                   <div className="min-w-0 flex-1 text-sm">
@@ -62,7 +62,7 @@ export default async function HistoryPage({ params, searchParams }: PageProps<"/
                     </p>
                     {fields.length ? <p className="text-xs text-muted-foreground">Bagian: {fields.join(", ")}</p> : null}
                   </div>
-                  <time className="shrink-0 text-xs text-muted-foreground" dateTime={r.createdAt.toISOString()}>
+                  <time className="shrink-0 text-xs text-muted-foreground tabular-nums" dateTime={r.createdAt.toISOString()}>
                     {timeFmt.format(r.createdAt).split(", ").pop()}
                   </time>
                 </div>

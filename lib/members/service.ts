@@ -1,6 +1,6 @@
 import { createHash, randomBytes } from "node:crypto";
 import { and, asc, desc, eq, ne } from "drizzle-orm";
-import { getMembership, requireRole } from "@/lib/access";
+import { getMembership, requireRole, assertRole, type TreeAccess } from "@/lib/access";
 import type { DB } from "@/lib/db";
 import { changeLog, invites, persons, treeMembers, trees, users } from "@/lib/db/schema";
 import { UserError } from "@/lib/errors";
@@ -17,7 +17,10 @@ async function log(db: DB, treeId: string, userId: string, action: string, summa
 }
 
 export async function listMembers(db: DB, userId: string, treeId: string) {
-  await requireRole(db, treeId, userId, "viewer");
+  return listMembersWith(db, await requireRole(db, treeId, userId, "viewer"));
+}
+
+export async function listMembersWith(db: DB, { treeId }: TreeAccess) {
   return db
     .select({
       userId: treeMembers.userId,
@@ -51,7 +54,12 @@ export async function createInvite(db: DB, userId: string, treeId: string, role:
 }
 
 export async function listInvites(db: DB, userId: string, treeId: string) {
-  await requireRole(db, treeId, userId, "owner");
+  return listInvitesWith(db, await requireRole(db, treeId, userId, "owner"));
+}
+
+export async function listInvitesWith(db: DB, access: TreeAccess) {
+  assertRole(access, "owner");
+  const { treeId } = access;
   const rows = await db
     .select({ id: invites.id, role: invites.role, expiresAt: invites.expiresAt, revokedAt: invites.revokedAt, createdAt: invites.createdAt })
     .from(invites)

@@ -29,7 +29,7 @@ export function TreeTabs({ treeId }: { treeId: string }) {
             href={t.href}
             aria-current={t.active ? "page" : undefined}
             className={cn(
-              "relative flex shrink-0 items-center gap-1.5 px-3 py-3 text-sm text-muted-foreground transition-colors outline-none hover:text-foreground focus-visible:text-foreground",
+              "relative flex shrink-0 items-center gap-1.5 px-3 py-3 text-sm text-muted-foreground rounded-md transition-colors outline-none hover:text-foreground focus-visible:text-foreground focus-visible:ring-3 focus-visible:ring-ring/50",
               t.active && "font-medium text-foreground after:absolute after:inset-x-2 after:bottom-0 after:h-0.5 after:rounded-full after:bg-soga",
             )}
           >
@@ -48,7 +48,7 @@ export function TreeBottomBar({ treeId }: { treeId: string }) {
   return (
     <nav
       aria-label="Navigasi pohon"
-      className="no-print fixed inset-x-0 bottom-0 z-40 border-t bg-background/92 pb-[env(safe-area-inset-bottom)] backdrop-blur-md sm:hidden"
+      className="no-print fixed inset-x-0 bottom-0 z-40 border-t bg-background pb-[env(safe-area-inset-bottom)] sm:hidden"
     >
       <div className="grid grid-cols-5">
         {tabs.map((t) => (
@@ -57,8 +57,8 @@ export function TreeBottomBar({ treeId }: { treeId: string }) {
             href={t.href}
             aria-current={t.active ? "page" : undefined}
             className={cn(
-              "flex h-14 flex-col items-center justify-center gap-0.5 text-[11px] font-medium text-muted-foreground transition-[color,transform] duration-150 active:scale-95",
-              t.active && "text-soga-ink",
+              "flex h-14 flex-col items-center justify-center gap-0.5 text-[11px] font-medium text-muted-foreground outline-none transition-[color,transform] duration-150 active:duration-0 hover:text-foreground focus-visible:text-foreground focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:ring-inset active:scale-95",
+              t.active && "text-foreground",
             )}
           >
             <span className={cn("grid h-7 w-12 place-items-center rounded-full transition-colors", t.active && "bg-accent")}>

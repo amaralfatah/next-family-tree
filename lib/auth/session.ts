@@ -51,6 +51,9 @@ async function neonAuthUser(): Promise<CurrentUser | null> {
   const authUser = data?.user;
   if (!authUser?.email) return null;
   const db = await getDb();
+  // Returning visitors: one lookup by Neon Auth id. Only first sign-ins go through the upsert.
+  const [known] = await db.select().from(users).where(eq(users.authId, authUser.id));
+  if (known) return { id: known.id, name: known.name, email: known.email, image: known.image };
   const id = await findOrCreateUser({ email: authUser.email, name: authUser.name || authUser.email.split("@")[0], image: authUser.image, authId: authUser.id });
   const [user] = await db.select().from(users).where(eq(users.id, id));
   return { id: user.id, name: user.name, email: user.email, image: user.image };

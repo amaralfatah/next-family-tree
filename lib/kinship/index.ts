@@ -487,7 +487,20 @@ export function describeKinship(
   meId: string,
   targetId: string,
 ): KinshipResult | null {
+  return createKinshipResolver(data, meId)(targetId);
+}
+
+/**
+ * describeKinship for many targets: the graph and the ancestry memo (which only depends on the
+ * person, not on the target) are built once. Use it for lists.
+ */
+export function createKinshipResolver(data: TreeData, meId: string): (targetId: string) => KinshipResult | null {
   const g = buildGraph(data);
+  const cache = new Map<string, Ancestry>();
+  return (targetId) => resolve(g, meId, targetId, cache);
+}
+
+function resolve(g: Graph, meId: string, targetId: string, cache: Map<string, Ancestry>): KinshipResult | null {
   if (!g.persons.has(meId) || !g.persons.has(targetId)) return null;
   if (meId === targetId) return { label: "Diri sendiri", path: [meId], blood: true };
 
@@ -500,7 +513,6 @@ export function describeKinship(
     };
   }
 
-  const cache = new Map<string, Ancestry>();
   const rel = bloodRelation(g, meId, targetId, cache);
   if (rel) return { label: bloodLabel(g, meId, targetId, rel), path: rel.path, blood: true };
 

@@ -4,12 +4,16 @@ import Link from "next/link";
 import { Suspense, useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { z } from "zod";
-import { FamilyChart, type SandboxActions } from "@/components/chart/family-chart";
+import dynamic from "next/dynamic";
+import { navBar } from "@/components/nav-bar";
+import type { SandboxActions } from "@/components/chart/family-chart";
 import { PersonFields } from "@/components/person-fields";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Label } from "@/components/ui/label";
+import { Field, FieldLabel } from "@/components/ui/field";
+import { NativeSelect, NativeSelectOption } from "@/components/ui/native-select";
 import { Mark, Wordmark } from "@/components/wordmark";
 import { AccessError } from "@/lib/access";
 import type { DB } from "@/lib/db";
@@ -19,6 +23,10 @@ import { UserError } from "@/lib/errors";
 import { parsePerson } from "@/lib/person-form";
 import { createPerson, deletePerson, getTree, loadTreeData, setRootPerson, updatePerson, type RelationKind, type RelationSpec } from "@/lib/tree/service";
 import type { TreeData, UnionStatus } from "@/lib/types";
+
+// The chart (React Flow, layout, kinship) only shows once PGlite has booted in the browser, so its
+// code loads alongside that instead of in the first paint.
+const FamilyChart = dynamic(() => import("@/components/chart/family-chart").then((m) => m.FamilyChart), { ssr: false });
 
 interface Sandbox {
   db: DB;
@@ -115,28 +123,28 @@ export function DemoSandbox({ migrations }: { migrations: string[] }) {
 
   return (
     <div className="flex min-h-dvh flex-col">
-      <header className="no-print sticky top-0 z-30 border-b bg-background pt-[env(safe-area-inset-top)]">
+      <header className={navBar}>
         <div className="mx-auto flex h-14 max-w-6xl items-center gap-3 px-4">
-          <Link href="/" aria-label="Sararia Family Tree, ke beranda" className="shrink-0 rounded-md outline-none focus-visible:ring-3 focus-visible:ring-ring/50">
+          <Link href="/" aria-label="Sararia Family Tree, ke beranda" className="flex shrink-0 items-center rounded-md outline-none focus-visible:ring-3 focus-visible:ring-ring/40">
             <Mark className="sm:hidden" />
             <Wordmark className="hidden sm:inline-flex" />
           </Link>
-          <span className="min-w-0 flex-1 truncate border-l pl-3 font-display text-lg sm:text-xl">{view?.name ?? "Pohon contoh"}</span>
+          <span className="min-w-0 flex-1 truncate border-l border-border pl-3 font-display text-lg sm:text-xl">{view?.name ?? "Pohon contoh"}</span>
           <ThemeToggle label="Ganti tema terang/gelap" />
-          <Link href="/masuk" className={buttonVariants({ size: "sm", className: "h-8" })}>
+          <Link href="/masuk" className={buttonVariants({ size: "sm" })}>
             Buat pohon
           </Link>
         </div>
       </header>
       <main className="flex flex-1 flex-col">
         <h1 className="sr-only">Coba ubah pohon keluarga contoh</h1>
-        <div className="no-print border-b bg-accent/60">
+        <div className="no-print border-b bg-paper-2">
           <div className="mx-auto flex max-w-6xl items-center gap-3 px-4 py-2 text-[13px] sm:py-2.5 sm:text-sm">
             <p className="min-w-0 flex-1">
               <strong className="font-semibold">Mode coba.</strong> Ketuk siapa pun untuk menambah kerabat, mengubah, atau menghapusnya. Perubahan hanya ada di
               browser ini dan hilang saat halaman ditutup.
             </p>
-            <Button variant="outline" size="sm" className="h-8 shrink-0" onClick={reset} disabled={!sandbox}>
+            <Button variant="outline" size="sm" className="shrink-0" onClick={reset} disabled={!sandbox}>
               Mulai ulang
             </Button>
           </div>
@@ -237,44 +245,44 @@ function PersonDialog({ sandbox, data, editing, onClose, onSaved }: { sandbox: S
       <DialogContent className={editing?.kind === "delete" ? undefined : "max-h-[90dvh] overflow-y-auto sm:max-w-xl"}>
         <form key={`${editing?.kind}-${personId}`} onSubmit={submit} className="grid gap-5">
           <DialogHeader>
-            <DialogTitle className="font-display text-2xl font-normal">{title}</DialogTitle>
+            <DialogTitle>{title}</DialogTitle>
             {editing?.kind === "delete" ? (
               <DialogDescription>Ikatan dan hubungan anak yang hanya melibatkan dia ikut terhapus. Ini hanya di pohon contoh.</DialogDescription>
             ) : null}
           </DialogHeader>
           {editing?.kind === "add" && editing.relation === "child" && unions.length > 0 ? (
-            <div className="space-y-1.5">
-              <Label htmlFor="demo-relUnion">Dari ikatan</Label>
-              <select id="demo-relUnion" name="relUnion" defaultValue={unions[0].id} className="field">
+            <Field>
+              <FieldLabel htmlFor="demo-relUnion">Dari ikatan</FieldLabel>
+              <NativeSelect id="demo-relUnion" name="relUnion" defaultValue={unions[0].id} className="w-full">
                 {unions.map((u) => {
                   const partner = nameOf(u.partnerAId === person?.id ? u.partnerBId : u.partnerAId);
                   return (
-                    <option key={u.id} value={u.id}>
+                    <NativeSelectOption key={u.id} value={u.id}>
                       {partner ? `Dengan ${partner}` : "Pasangan tidak diketahui"}
-                    </option>
+                    </NativeSelectOption>
                   );
                 })}
-                {unions.every((u) => u.partnerBId) ? <option value="">Pasangan tidak diketahui</option> : null}
-              </select>
-            </div>
+                {unions.every((u) => u.partnerBId) ? <NativeSelectOption value="">Pasangan tidak diketahui</NativeSelectOption> : null}
+              </NativeSelect>
+            </Field>
           ) : null}
           {editing?.kind === "add" && editing.relation === "partner" ? (
-            <div className="space-y-1.5">
-              <Label htmlFor="demo-unionStatus">Status ikatan</Label>
-              <select id="demo-unionStatus" name="unionStatus" defaultValue="married" className="field">
-                <option value="married">Menikah</option>
-                <option value="divorced">Bercerai</option>
-                <option value="widowed">Salah satu wafat</option>
-                <option value="unknown">Tidak diketahui</option>
-              </select>
-            </div>
+            <Field>
+              <FieldLabel htmlFor="demo-unionStatus">Status ikatan</FieldLabel>
+              <NativeSelect id="demo-unionStatus" name="unionStatus" defaultValue="married" className="w-full">
+                <NativeSelectOption value="married">Menikah</NativeSelectOption>
+                <NativeSelectOption value="divorced">Bercerai</NativeSelectOption>
+                <NativeSelectOption value="widowed">Salah satu wafat</NativeSelectOption>
+                <NativeSelectOption value="unknown">Tidak diketahui</NativeSelectOption>
+              </NativeSelect>
+            </Field>
           ) : null}
           {editing?.kind === "edit" && person ? <PersonFields idPrefix="demo-edit" defaults={person} /> : null}
           {editing?.kind === "add" ? <PersonFields idPrefix="demo-new" /> : null}
           {error ? (
-            <p role="alert" className="rounded-lg bg-destructive/10 px-3 py-2 text-sm text-destructive">
-              {error}
-            </p>
+            <Alert variant="destructive">
+              <AlertDescription>{error}</AlertDescription>
+            </Alert>
           ) : null}
           <DialogFooter>
             <Button type="button" variant="outline" onClick={onClose}>

@@ -32,7 +32,7 @@ export function Wordmark({ className, full = false }: { className?: string; full
   return (
     <span
       className={cn(
-        "inline-flex items-center gap-[0.4em] font-[family-name:var(--font-brand-face)] text-[17px] leading-none font-semibold tracking-[-0.045em] text-[#1d1d1f] dark:text-white",
+        "inline-flex items-center gap-[0.4em] font-brand text-[17px] leading-none font-semibold tracking-[-0.045em] text-[#1d1d1f] dark:text-white",
         className,
       )}
     >

@@ -7,17 +7,20 @@
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-body);
-  --font-heading: var(--font-display);
-  --font-display: var(--font-display);
+  --font-sans: -apple-system, BlinkMacSystemFont, "SF Pro Text", var(--font-inter), system-ui, sans-serif;
+  --font-heading: var(--font-sans);
+  --font-display: -apple-system, BlinkMacSystemFont, "SF Pro Display", var(--font-inter), system-ui, sans-serif;
+  --font-brand: var(--font-inter);
   --color-soga: var(--soga);
   --color-soga-ink: var(--soga-ink);
   --color-nila: var(--nila);
   --color-paper-2: var(--paper-2);
+  --color-grouped: var(--grouped);
   --color-ring: var(--ring);
   --color-input: var(--input);
   --color-border: var(--border);
   --color-destructive: var(--destructive);
+  --color-warning: var(--warning);
   --color-accent-foreground: var(--accent-foreground);
   --color-accent: var(--accent);
   --color-muted-foreground: var(--muted-foreground);
@@ -38,60 +41,71 @@
 }
 
 /*
- * Sararia Family Tree = a family archive. Light: an old ledger on warm paper, ink in deep brown,
- * soga (the brown of classic batik dye) as the accent and nila (indigo) for lines.
- * Dark: the same ledger read at night.
- * --soga is decorative; --soga-ink is the text-safe variant (WCAG AA on background).
+ * Sararia Family Tree follows Apple's Human Interface Guidelines, as the Sararia family does
+ * (sararia-logo/FAMILY.md): system type, ink #1d1d1f, semantic greys, and one tint colour.
+ * The tint is soga (the brown of batik soga and of the icon's trunk), darkened to #a2552b so
+ * text and filled buttons pass AA. It marks what you can act on and what is about you: buttons,
+ * links, selection, your card and the kinship path. Everything else is ink and grey.
+ * --grouped is the page behind grouped cards and lists (systemGroupedBackground: #f5f5f7, black at
+ * night, so #1c1c1e cards stand out). --paper-2 is a secondary fill on a plain page (lists, info bars).
+ * --nila is the tree's connecting lines.
  */
 :root {
-  --background: oklch(0.975 0.012 80);
-  --paper-2: oklch(0.955 0.016 78);
-  --foreground: oklch(0.24 0.025 50);
-  --card: oklch(0.99 0.007 80);
-  --card-foreground: oklch(0.24 0.025 50);
-  --popover: oklch(0.99 0.007 80);
-  --popover-foreground: oklch(0.24 0.025 50);
-  --primary: oklch(0.3 0.045 45);
-  --primary-foreground: oklch(0.975 0.012 80);
-  --secondary: oklch(0.935 0.02 75);
-  --secondary-foreground: oklch(0.24 0.025 50);
-  --muted: oklch(0.94 0.018 76);
-  --muted-foreground: oklch(0.47 0.03 55);
-  --accent: oklch(0.92 0.035 60);
-  --accent-foreground: oklch(0.24 0.025 50);
-  --destructive: oklch(0.53 0.19 27);
-  --border: oklch(0.87 0.022 70);
-  --input: oklch(0.85 0.024 70);
-  --ring: oklch(0.6 0.12 45);
-  --soga: oklch(0.62 0.13 48);
-  --soga-ink: oklch(0.48 0.12 42);
-  --nila: oklch(0.45 0.09 262);
-  --radius: 0.625rem;
+  --background: #ffffff;
+  --paper-2: #f5f5f7;
+  --grouped: #f5f5f7;
+  --foreground: #1d1d1f;
+  --card: #ffffff;
+  --card-foreground: #1d1d1f;
+  --popover: #ffffff;
+  --popover-foreground: #1d1d1f;
+  --primary: #a2552b;
+  --primary-foreground: #ffffff;
+  --secondary: #e8e8ed;
+  --secondary-foreground: #1d1d1f;
+  --muted: #f5f5f7;
+  --muted-foreground: #6e6e73;
+  --accent: color-mix(in srgb, #a2552b 10%, #ffffff);
+  --accent-foreground: #1d1d1f;
+  --destructive: #d70015;
+  --warning: #b25000;
+  --border: #e5e5ea;
+  --input: #d2d2d7;
+  --ring: #a2552b;
+  --soga: #c46b39;
+  --soga-ink: #a2552b;
+  --nila: #c7c7cc;
+  --radius: 0.75rem;
 }
 
+/* Native controls (selects, checkboxes, scrollbars) follow the app theme, not only the OS. */
 .dark {
-  --background: oklch(0.18 0.014 50);
-  --paper-2: oklch(0.21 0.016 50);
-  --foreground: oklch(0.93 0.015 80);
-  --card: oklch(0.215 0.016 50);
-  --card-foreground: oklch(0.93 0.015 80);
-  --popover: oklch(0.225 0.016 50);
-  --popover-foreground: oklch(0.93 0.015 80);
-  --primary: oklch(0.88 0.04 70);
-  --primary-foreground: oklch(0.2 0.02 50);
-  --secondary: oklch(0.26 0.018 50);
-  --secondary-foreground: oklch(0.93 0.015 80);
-  --muted: oklch(0.26 0.018 50);
-  --muted-foreground: oklch(0.72 0.025 70);
-  --accent: oklch(0.3 0.04 50);
-  --accent-foreground: oklch(0.93 0.015 80);
-  --destructive: oklch(0.7 0.18 25);
-  --border: oklch(1 0 0 / 11%);
-  --input: oklch(1 0 0 / 16%);
-  --ring: oklch(0.72 0.12 55);
-  --soga: oklch(0.7 0.13 55);
-  --soga-ink: oklch(0.8 0.11 60);
-  --nila: oklch(0.72 0.09 262);
+  color-scheme: dark;
+  --background: #000000;
+  --paper-2: #1c1c1e;
+  --grouped: #000000;
+  --foreground: #f5f5f7;
+  --card: #1c1c1e;
+  --card-foreground: #f5f5f7;
+  --popover: #2c2c2e;
+  --popover-foreground: #f5f5f7;
+  --primary: #e39a68;
+  --primary-foreground: #1d1d1f;
+  --secondary: #2c2c2e;
+  --secondary-foreground: #f5f5f7;
+  /* A fill one step up from cards, so avatars and rows show on #1c1c1e (tertiarySystemFill). */
+  --muted: #2c2c2e;
+  --muted-foreground: #a1a1a6;
+  --accent: color-mix(in srgb, #e39a68 16%, #1c1c1e);
+  --accent-foreground: #f5f5f7;
+  --destructive: #ff453a;
+  --warning: #ffb340;
+  --border: #38383a;
+  --input: #48484a;
+  --ring: #e39a68;
+  --soga: #e39a68;
+  --soga-ink: #e39a68;
+  --nila: #48484a;
 }
 
 @layer base {
@@ -129,39 +143,22 @@
   body {
     @apply bg-background text-foreground antialiased;
   }
+  /* Titles in the system face: SF Pro Display on Apple devices, Inter elsewhere. Tracking tightens as
+     size grows (-0.015em here; large titles and the hero set -0.02em / -0.025em); body text stays at 0. */
+  .font-display {
+    font-weight: 700;
+    letter-spacing: -0.015em;
+  }
   ::selection {
     background: color-mix(in oklch, var(--soga) 35%, transparent);
-  }
-  /* Native selects match the shadcn inputs. */
-  select.field {
-    @apply h-9 w-full rounded-lg border border-input bg-transparent px-2.5 text-base outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 md:text-sm dark:bg-input/30;
   }
 }
 
 @layer components {
-  /*
-   * Kawung: the four-petal batik motif, drawn as a faint repeating tile. It is the one
-   * ornament of the app and appears only on the landing hero and empty states.
-   */
-  .kawung {
-    --kawung-color: color-mix(in oklch, var(--soga) 13%, transparent);
-    background-image: radial-gradient(ellipse 34% 20% at 50% 0%, var(--kawung-color) 98%, transparent 100%),
-      radial-gradient(ellipse 34% 20% at 50% 100%, var(--kawung-color) 98%, transparent 100%),
-      radial-gradient(ellipse 20% 34% at 0% 50%, var(--kawung-color) 98%, transparent 100%),
-      radial-gradient(ellipse 20% 34% at 100% 50%, var(--kawung-color) 98%, transparent 100%);
-    background-size: 44px 44px;
-  }
-  .dark .kawung {
-    --kawung-color: color-mix(in oklch, var(--soga) 7%, transparent);
-  }
-
-  /* Ruled ledger lines, used behind headings of the tree pages. */
-  .ledger {
-    background-image: repeating-linear-gradient(
-      to bottom,
-      transparent 0 27px,
-      color-mix(in oklch, var(--nila) 10%, transparent) 27px 28px
-    );
+  /* Initials avatar, as in Apple Contacts: a grey monogram that reads on any surface, in both themes. */
+  .monogram {
+    background: linear-gradient(#a6a6ab, #86868b);
+    color: #ffffff;
   }
 
   .rise {
@@ -215,13 +212,65 @@
 /* React Flow: blend the canvas into the paper. */
 .react-flow {
   --xy-background-color: transparent;
-  --xy-edge-stroke: color-mix(in oklch, var(--nila) 55%, var(--background));
+  --xy-edge-stroke: var(--nila);
   --xy-edge-stroke-width: 1.5;
   --xy-controls-button-background-color: var(--card);
   --xy-controls-button-background-color-hover: var(--muted);
   --xy-controls-button-color: var(--foreground);
   --xy-controls-button-border-color: var(--border);
   --xy-minimap-background-color: var(--card);
+  --xy-attribution-background-color: transparent;
+}
+
+/* Theme switch (components/theme-toggle.tsx): a short cross-fade rather than a jump in brightness. */
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation-duration: 280ms;
+  animation-timing-function: ease;
+}
+
+/*
+ * Navigation bar (components/nav-bar.ts): the hairline under it appears only once content scrolls
+ * beneath, as a scroll edge, not a permanent divider. Browsers without scroll-driven animations keep it.
+ */
+@supports (animation-timeline: scroll()) {
+  .nav-bar {
+    animation: nav-edge linear both;
+    animation-timeline: scroll(root);
+    animation-range: 0 16px;
+  }
+}
+@keyframes nav-edge {
+  from {
+    border-bottom-color: transparent;
+  }
+}
+
+/* Reduce Transparency: solid bars and scrims instead of blurred, see-through ones. */
+@media (prefers-reduced-transparency: reduce) {
+  .nav-bar {
+    background-color: var(--background);
+    backdrop-filter: none;
+  }
+  [data-slot="dialog-overlay"],
+  [data-slot="alert-dialog-overlay"] {
+    backdrop-filter: none;
+    background-color: rgb(0 0 0 / 0.4);
+  }
+}
+
+/* Increase Contrast: stronger separators and secondary text. */
+@media (prefers-contrast: more) {
+  :root {
+    --border: #a1a1a6;
+    --input: #8e8e93;
+    --muted-foreground: #4f4f54;
+  }
+  .dark {
+    --border: #8e8e93;
+    --input: #a1a1a6;
+    --muted-foreground: #c7c7cc;
+  }
 }
 
 @media print {

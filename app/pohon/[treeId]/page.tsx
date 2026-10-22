@@ -7,15 +7,17 @@ export default async function ChartPage({ params, searchParams }: PageProps<"/po
   const { treeId } = await params;
   const sp = await searchParams;
   const { tree, data, mePersonId, canEdit } = await loadTreeContext(treeId);
+  // The chart never shows notes or birthplaces; leave them out of the client payload.
+  const chartData = { ...data, persons: data.persons.map((p) => ({ ...p, notes: null, birthPlace: null })) };
   return (
-    <main className="flex flex-1 flex-col">
+    <main id="konten" className="flex flex-1 flex-col">
       <h1 className="sr-only">Bagan {tree.name}</h1>
       {sp.baru === "1" || !mePersonId ? <WelcomeBanner treeId={treeId} joined={sp.baru === "1"} linked={Boolean(mePersonId)} /> : null}
       <Suspense>
         <FamilyChart
           treeId={treeId}
           treeName={tree.name}
-          data={data}
+          data={chartData}
           rootPersonId={tree.rootPersonId}
           mePersonId={mePersonId}
           canEdit={canEdit}

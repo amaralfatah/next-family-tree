@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { Suspense } from "react";
+import { navBar } from "@/components/nav-bar";
 import { FamilyChart } from "@/components/chart/family-chart";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { buttonVariants } from "@/components/ui/button";
@@ -19,28 +20,28 @@ export default async function DemoPage() {
   const me = demo.data.persons.find((p) => p.id === demo.meId)!;
   return (
     <div className="flex min-h-dvh flex-col">
-      <header className="no-print sticky top-0 z-30 border-b bg-background pt-[env(safe-area-inset-top)]">
+      <header className={navBar}>
         <div className="mx-auto flex h-14 max-w-6xl items-center gap-3 px-4">
-          <Link href="/" aria-label="Sararia Family Tree, ke beranda" className="shrink-0 rounded-md outline-none focus-visible:ring-3 focus-visible:ring-ring/50">
+          <Link href="/" aria-label="Sararia Family Tree, ke beranda" className="flex shrink-0 items-center rounded-md outline-none focus-visible:ring-3 focus-visible:ring-ring/40">
             <Mark className="sm:hidden" />
             <Wordmark className="hidden sm:inline-flex" />
           </Link>
-          <span className="min-w-0 flex-1 truncate border-l pl-3 font-display text-lg sm:text-xl">{demo.name}</span>
+          <span className="min-w-0 flex-1 truncate border-l border-border pl-3 font-display text-lg sm:text-xl">{demo.name}</span>
           <ThemeToggle label="Ganti tema terang/gelap" />
-          <Link href="/masuk" className={buttonVariants({ size: "sm", className: "h-8" })}>
+          <Link href="/masuk" className={buttonVariants({ size: "sm" })}>
             Buat pohon
           </Link>
         </div>
       </header>
-      <main className="flex flex-1 flex-col">
+      <main id="konten" className="flex flex-1 flex-col">
         <h1 className="sr-only">Contoh bagan {demo.name}</h1>
-        <div className="no-print border-b bg-accent/60">
+        <div className="no-print border-b bg-paper-2">
           <div className="mx-auto flex max-w-6xl items-center gap-3 px-4 py-2 text-[13px] sm:py-2.5 sm:text-sm">
             <p className="min-w-0 flex-1">
               Keluarga fiktif. Anda ditandai sebagai <strong className="font-semibold">{me.fullName}</strong>. Ketuk siapa pun untuk melihat sebutan
               hubungannya dengan Anda.
             </p>
-            <Link href="/demo" className={buttonVariants({ variant: "outline", size: "sm", className: "h-8 shrink-0" })}>
+            <Link href="/demo" className={buttonVariants({ variant: "outline", size: "sm", className: "shrink-0" })}>
               Coba ubah
             </Link>
           </div>

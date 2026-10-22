@@ -2,9 +2,13 @@ import { PlusIcon } from "lucide-react";
 import Link from "next/link";
 import { LinkMeButton } from "@/components/link-me-button";
 import { PersonAvatar } from "@/components/person-avatar";
-import { buttonVariants } from "@/components/ui/button";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Button, buttonVariants } from "@/components/ui/button";
+import { Empty, EmptyDescription, EmptyHeader, EmptyTitle } from "@/components/ui/empty";
+import { Input } from "@/components/ui/input";
+import { NativeSelect, NativeSelectOption } from "@/components/ui/native-select";
 import { generations } from "@/lib/graph/build";
-import { describeKinship } from "@/lib/kinship";
+import { createKinshipResolver } from "@/lib/kinship";
 import { subtitle } from "@/lib/person";
 import { loadTreeContext } from "@/lib/tree/context";
 
@@ -41,11 +45,12 @@ export default async function ListPage({ params, searchParams }: PageProps<"/poh
     return `/pohon/${treeId}/daftar${s ? `?${s}` : ""}`;
   };
 
+  const kinOf = mePersonId ? createKinshipResolver(data, mePersonId) : null;
   return (
-    <main className="mx-auto w-full max-w-6xl px-4 py-8">
+    <main id="konten" className="mx-auto w-full max-w-6xl px-4 py-8">
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <h1 className="font-display text-4xl tracking-tight">Daftar keluarga</h1>
+          <h1 className="font-display text-[2.125rem] leading-tight tracking-[-0.02em]">Daftar keluarga</h1>
           <p className="mt-1 text-sm text-muted-foreground">{data.persons.length} orang tercatat · generasi dihitung dari pusat bawaan bagan</p>
         </div>
         {canEdit ? (
@@ -56,45 +61,53 @@ export default async function ListPage({ params, searchParams }: PageProps<"/poh
       </div>
 
       {findMe ? (
-        <div className="mt-6 rounded-xl border border-soga/40 bg-accent/50 p-4 text-sm">
-          <p className="font-medium">Cari nama Anda, lalu pilih &ldquo;Ini saya&rdquo;.</p>
-          <p className="mt-1 text-muted-foreground">Belum tercatat? Minta editor menambahkan Anda, atau tambahkan sendiri bila Anda editor.</p>
-        </div>
+        <Alert className="mt-6">
+          <AlertTitle>Cari nama Anda, lalu pilih &ldquo;Ini saya&rdquo;.</AlertTitle>
+          <AlertDescription>Belum tercatat? Minta editor menambahkan Anda, atau tambahkan sendiri bila Anda editor.</AlertDescription>
+        </Alert>
       ) : null}
 
       <form className="mt-6 flex flex-wrap gap-2" action={`/pohon/${treeId}/daftar`}>
         {findMe ? <input type="hidden" name="cari-saya" value="1" /> : null}
-        <input
+        <Input
+          type="search"
           name="q"
           defaultValue={q}
-          placeholder="Cari nama, panggilan, atau tempat lahir"
+          placeholder="Cari nama, panggilan, atau tempat lahir…"
           aria-label="Cari"
+          autoComplete="off"
+          // Arrives from "Cari saya": the search is the only thing to do on this page.
           autoFocus={findMe}
-          className="h-10 w-full min-w-0 rounded-lg border border-input bg-card px-3 text-base outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 sm:h-9 sm:w-auto sm:max-w-sm sm:flex-1 md:text-sm dark:bg-input/30"
+          className="w-full sm:w-auto sm:max-w-sm sm:flex-1"
         />
-        <select name="gen" defaultValue={gen ?? ""} aria-label="Filter generasi" className="field !h-10 min-w-0 flex-1 sm:!h-9 sm:!w-auto sm:flex-none">
-          <option value="">Semua generasi</option>
+        <NativeSelect name="gen" defaultValue={gen ?? ""} aria-label="Filter generasi" className="min-w-0 flex-1 sm:flex-none">
+          <NativeSelectOption value="">Semua generasi</NativeSelectOption>
           {genValues.map((g) => (
-            <option key={g} value={g}>
+            <NativeSelectOption key={g} value={g}>
               Generasi {g}
-            </option>
+            </NativeSelectOption>
           ))}
-        </select>
-        <button type="submit" className={buttonVariants({ variant: "secondary", className: "h-10 sm:h-9" })}>
+        </NativeSelect>
+        <Button type="submit" variant="secondary">
           Terapkan
-        </button>
+        </Button>
       </form>
 
       {rows.length === 0 ? (
-        <p className="mt-10 text-center text-muted-foreground">Tidak ada yang cocok dengan pencarian.</p>
+        <Empty className="mt-6 border">
+          <EmptyHeader>
+            <EmptyTitle>Tidak ada yang cocok</EmptyTitle>
+            <EmptyDescription>Coba nama lain, atau hapus filter generasi.</EmptyDescription>
+          </EmptyHeader>
+        </Empty>
       ) : (
-        <ul className="mt-6 divide-y overflow-hidden rounded-xl border bg-card">
+        <ul className="mt-6 divide-y overflow-hidden rounded-xl bg-card">
           {rows.map((p) => {
-            const kin = mePersonId && p.id !== mePersonId ? describeKinship(data, mePersonId, p.id) : null;
+            const kin = kinOf && p.id !== mePersonId ? kinOf(p.id) : null;
             return (
               <li key={p.id} className="flex items-center gap-3 px-3 py-2.5 sm:px-4">
                 <PersonAvatar treeId={treeId} person={p} size="sm" />
-                <Link href={`/pohon/${treeId}/orang/${p.id}`} className="min-w-0 flex-1 outline-none focus-visible:underline">
+                <Link href={`/pohon/${treeId}/orang/${p.id}`} className="min-w-0 flex-1 rounded-sm outline-none hover:underline focus-visible:ring-3 focus-visible:ring-ring/50">
                   <span className="block truncate font-medium">
                     {p.fullName}
                     {p.nickname ? <span className="font-normal text-muted-foreground"> “{p.nickname}”</span> : null}
@@ -109,7 +122,7 @@ export default async function ListPage({ params, searchParams }: PageProps<"/poh
                   ) : kin ? (
                     <span className="text-soga-ink">{kin.label}</span>
                   ) : null}
-                  {genOf.has(p.id) ? <span className="block text-xs text-muted-foreground">Generasi {genOf.get(p.id)}</span> : null}
+                  {genOf.has(p.id) ? <span className="block text-xs text-muted-foreground tabular-nums">Generasi {genOf.get(p.id)}</span> : null}
                 </span>
                 {findMe ? <LinkMeButton treeId={treeId} personId={p.id} /> : null}
               </li>

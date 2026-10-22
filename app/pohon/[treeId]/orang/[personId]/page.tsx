@@ -5,8 +5,9 @@ import { DeletePersonButton } from "@/components/delete-person-button";
 import { LinkMeButton } from "@/components/link-me-button";
 import { PersonAvatar } from "@/components/person-avatar";
 import { PhotoUploader } from "@/components/photo-uploader";
-import { ChildLinkMenu, UnionEditor } from "@/components/union-editor";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { buttonVariants } from "@/components/ui/button";
+import { ChildLinkMenu, UnionEditor } from "@/components/union-editor";
 import { formatPartialDate } from "@/lib/dates";
 import { describeKinship } from "@/lib/kinship";
 import { CHILD_RELATION_LABEL, deceasedMark, GENDER_LABEL, subtitle, UNION_STATUS_LABEL } from "@/lib/person";
@@ -38,7 +39,7 @@ export default async function PersonPage({ params }: PageProps<"/pohon/[treeId]/
   const hasBioParents = parentGroups.some((g) => g.relation === "biological");
 
   return (
-    <main className="mx-auto w-full max-w-5xl px-4 py-8">
+    <main id="konten" className="mx-auto w-full max-w-5xl px-4 py-8">
       <nav className="text-sm text-muted-foreground">
         <Link href={`${base}/daftar`} className="hover:text-foreground">
           Daftar
@@ -46,7 +47,7 @@ export default async function PersonPage({ params }: PageProps<"/pohon/[treeId]/
         / <span className="text-foreground">{person.fullName}</span>
       </nav>
 
-      <section className="mt-5 grid gap-6 rounded-2xl border bg-card p-5 sm:grid-cols-[auto_1fr] sm:p-7">
+      <section className="mt-5 grid gap-6 rounded-2xl bg-card p-5 sm:grid-cols-[auto_1fr] sm:p-7">
         <div className="flex flex-col items-center gap-2 sm:items-start">
           <PersonAvatar treeId={treeId} person={person} size="lg" />
           {canEdit ? <PhotoUploader treeId={treeId} personId={personId} hasPhoto={Boolean(person.photoKey)} /> : null}
@@ -55,7 +56,7 @@ export default async function PersonPage({ params }: PageProps<"/pohon/[treeId]/
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div className="min-w-0">
               {deceasedMark(person) ? <p className="text-sm text-muted-foreground">{deceasedMark(person)}</p> : null}
-              <h1 className="font-display text-4xl leading-tight tracking-tight text-balance sm:text-5xl">{person.fullName}</h1>
+              <h1 className="font-display text-4xl leading-tight text-balance sm:text-5xl">{person.fullName}</h1>
               {person.nickname ? <p className="mt-1 text-lg text-muted-foreground">“{person.nickname}”</p> : null}
             </div>
             <div className="flex flex-wrap gap-2">
@@ -104,13 +105,16 @@ export default async function PersonPage({ params }: PageProps<"/pohon/[treeId]/
           {person.notes ? <p className="mt-5 max-w-prose text-sm whitespace-pre-line">{person.notes}</p> : null}
 
           {warnings.length > 0 ? (
-            <ul className="mt-5 space-y-1 rounded-lg border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-sm">
-              {warnings.map((w) => (
-                <li key={w} className="flex items-start gap-2">
-                  <AlertTriangleIcon className="mt-0.5 size-4 shrink-0 text-amber-600 dark:text-amber-400" /> {w}
-                </li>
-              ))}
-            </ul>
+            <Alert variant="warning" className="mt-5">
+              <AlertTriangleIcon />
+              <AlertDescription className="text-foreground">
+                <ul className="flex flex-col gap-1">
+                  {warnings.map((w) => (
+                    <li key={w}>{w}</li>
+                  ))}
+                </ul>
+              </AlertDescription>
+            </Alert>
           ) : null}
         </div>
       </section>
@@ -131,9 +135,9 @@ export default async function PersonPage({ params }: PageProps<"/pohon/[treeId]/
             <Empty>Orang tua belum dicatat.</Empty>
           ) : (
             parentGroups.map((g) => (
-              <div key={g.union.id} className="space-y-3">
+              <div key={g.union.id} className="flex flex-col gap-3">
                 <div>
-                  <p className="mb-1.5 text-xs font-medium tracking-wide text-muted-foreground uppercase">
+                  <p className="mb-1.5 text-[13px] text-muted-foreground">
                     Orang tua {g.relation !== "biological" ? CHILD_RELATION_LABEL[g.relation].toLowerCase() : "kandung"}
                   </p>
                   <div className="grid gap-2 sm:grid-cols-2">
@@ -142,7 +146,7 @@ export default async function PersonPage({ params }: PageProps<"/pohon/[treeId]/
                     ))}
                     {g.parents.length < 2 ? (
                       canEdit ? (
-                        <Link href={addHref("parent", `&rel_anak=${g.relation}`)} className="grid place-items-center rounded-lg border border-dashed px-3 py-3 text-sm text-muted-foreground hover:border-soga hover:text-foreground">
+                        <Link href={addHref("parent", `&rel_anak=${g.relation}`)} className="grid place-items-center rounded-lg border border-dashed px-3 py-3 text-sm text-muted-foreground hover:border-foreground/40 hover:text-foreground">
                           + Tambah orang tua lain
                         </Link>
                       ) : (
@@ -153,7 +157,7 @@ export default async function PersonPage({ params }: PageProps<"/pohon/[treeId]/
                 </div>
                 {g.siblings.length > 0 ? (
                   <div>
-                    <p className="mb-1.5 text-xs font-medium tracking-wide text-muted-foreground uppercase">Saudara</p>
+                    <p className="mb-1.5 text-[13px] text-muted-foreground">Saudara</p>
                     <div className="grid gap-2 sm:grid-cols-2">
                       {g.siblings.map((s) => (
                         <PersonRow key={s.person.id} treeId={treeId} person={s.person} note={s.relation !== "biological" ? CHILD_RELATION_LABEL[s.relation] : undefined} />
@@ -171,9 +175,9 @@ export default async function PersonPage({ params }: PageProps<"/pohon/[treeId]/
             <Empty>Belum ada pasangan atau anak yang dicatat.</Empty>
           ) : (
             own.map((o, i) => (
-              <div key={o.union.id} className="space-y-3 rounded-xl border p-3">
+              <div key={o.union.id} className="flex flex-col gap-3 rounded-xl border p-3">
                 <div className="flex items-start justify-between gap-2">
-                  <p className="text-xs font-medium tracking-wide text-muted-foreground uppercase">
+                  <p className="text-[13px] text-muted-foreground">
                     {own.length > 1 ? `Ikatan ke-${i + 1} · ` : ""}
                     {UNION_STATUS_LABEL[o.union.status]}
                     {o.union.startDate ? ` · ${formatPartialDate(o.union.startDate, "day")}` : ""}
@@ -187,7 +191,7 @@ export default async function PersonPage({ params }: PageProps<"/pohon/[treeId]/
                 )}
                 <div>
                   <div className="mb-1.5 flex items-center justify-between">
-                    <p className="text-xs font-medium tracking-wide text-muted-foreground uppercase">Anak ({o.children.length})</p>
+                    <p className="text-[13px] text-muted-foreground">Anak ({o.children.length})</p>
                     {canEdit ? <AddLink href={addHref("child", `&ikatan=${o.union.id}`)}>Anak</AddLink> : null}
                   </div>
                   {o.children.length === 0 ? (
@@ -240,7 +244,7 @@ function Fact({ label, value, icon }: { label: string; value: string; icon?: Rea
 
 function Section({ title, action, children }: { title: string; action?: React.ReactNode; children: React.ReactNode }) {
   return (
-    <section className="space-y-4 rounded-2xl border bg-card p-5">
+    <section className="flex flex-col gap-4 rounded-2xl bg-card p-5">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <h2 className="font-display text-2xl">{title}</h2>
         {action}
@@ -264,7 +268,7 @@ function Empty({ children }: { children: React.ReactNode }) {
 
 function PersonRow({ treeId, person, note, menu }: { treeId: string; person: Person; note?: string; menu?: React.ReactNode }) {
   return (
-    <div className="flex items-center gap-2.5 rounded-lg border bg-background px-2.5 py-2 transition-colors hover:border-soga/50">
+    <div className="flex items-center gap-2.5 rounded-xl bg-muted px-3 py-2 transition-colors hover:bg-accent">
       <PersonAvatar treeId={treeId} person={person} size="sm" />
       <Link href={`/pohon/${treeId}/orang/${person.id}`} className="min-w-0 flex-1">
         <span className="block truncate text-sm font-medium">{person.fullName}</span>

@@ -5,18 +5,17 @@ import { nodeSize, PERSON_H, PERSON_W, type Positions } from "./layout";
 
 // Print palette: always light, whatever theme the viewer uses on screen.
 const C = {
-  paper: "#fbf7f0",
+  paper: "#ffffff",
   card: "#ffffff",
-  deceased: "#f4eee4",
-  border: "#e2d8c9",
-  ink: "#2f2419",
-  muted: "#7a6a58",
-  line: "#7d86b3",
-  soga: "#b5652d",
-  nila: "#3f4f8f",
+  deceased: "#f5f5f7",
+  border: "#d2d2d7",
+  ink: "#1d1d1f",
+  muted: "#6e6e73",
+  line: "#c7c7cc",
+  soga: "#a2552b",
+  nila: "#8e8e93",
 };
-const SANS = "'Plus Jakarta Sans','Segoe UI',Roboto,Helvetica,Arial,sans-serif";
-const SERIF = "'Instrument Serif',Georgia,'Times New Roman',serif";
+const SANS = "-apple-system,'SF Pro Text','Inter','Segoe UI',Roboto,Helvetica,Arial,sans-serif";
 
 const esc = (s: string) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 
@@ -107,12 +106,12 @@ export function chartToSvg(opts: {
       }
       const p = persons.get(n.personId);
       if (!p) return "";
-      const accent = p.gender === "female" ? C.soga : p.gender === "male" ? C.nila : C.border;
+      // Pedigree convention, as on screen: circle for women, square for men.
+      const avatarR = p.gender === "female" ? 20 : p.gender === "male" ? 5 : 10;
       const isMe = p.id === mePersonId;
       const lines = [
         `<rect x="${b.x}" y="${b.y}" width="${b.w}" height="${b.h}" rx="12" fill="${p.isLiving ? C.card : C.deceased}" stroke="${n.focus || isMe ? C.soga : C.border}" stroke-width="${n.focus || isMe ? 1.8 : 1}"/>`,
-        `<rect x="${b.x}" y="${b.y + 9}" width="3" height="${b.h - 18}" rx="1.5" fill="${accent}"/>`,
-        `<circle cx="${b.x + 32}" cy="${b.y + b.h / 2}" r="20" fill="${C.paper}" stroke="${C.border}"/>`,
+        `<rect x="${b.x + 12}" y="${b.y + b.h / 2 - 20}" width="40" height="40" rx="${avatarR}" fill="${C.paper}" stroke="${C.border}"/>`,
         `<text x="${b.x + 32}" y="${b.y + b.h / 2 + 4}" text-anchor="middle" font-family="${SANS}" font-size="12" font-weight="700" fill="${C.muted}">${esc(initials(p.fullName))}</text>`,
         `<text x="${b.x + 62}" y="${b.y + (p.nickname ? 26 : 32)}" font-family="${SANS}" font-size="13" font-weight="700" fill="${C.ink}">${esc(fit(p.fullName, 18))}</text>`,
       ];
@@ -133,7 +132,7 @@ export function chartToSvg(opts: {
   const date = new Date().toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" });
   const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}">
 <rect width="100%" height="100%" fill="${C.paper}"/>
-<text x="${PAD}" y="${PAD + 18}" font-family="${SERIF}" font-size="34" fill="${C.ink}">${esc(title)}</text>
+<text x="${PAD}" y="${PAD + 18}" font-family="${SANS}" font-size="32" font-weight="600" letter-spacing="-0.7" fill="${C.ink}">${esc(title)}</text>
 <text x="${PAD}" y="${PAD + 42}" font-family="${SANS}" font-size="12" fill="${C.muted}">Silsilah keluarga · dicetak dari Sararia Family Tree · ${esc(date)}</text>
 ${edges}${nodes}
 </svg>`;

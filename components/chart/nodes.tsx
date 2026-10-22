@@ -38,24 +38,24 @@ function initialsOf(name: string) {
 
 export const PersonNode = memo(function PersonNode({ data }: NodeProps<PersonFlowNode>) {
   const { person, photo, focus, isMe, hiddenCount, collapsible, collapsed, direction, onToggle, onPath, isSelected: selected } = data;
-  const accent = person.gender === "female" ? "bg-soga" : person.gender === "male" ? "bg-nila" : "bg-muted-foreground/40";
+  // Pedigree convention instead of a colour code: circle for women, square for men.
+  const avatarShape = person.gender === "male" ? "rounded-[5px]" : person.gender === "female" ? "rounded-full" : "rounded-lg";
   return (
     <div
       style={{ width: PERSON_W, height: PERSON_H }}
       className={cn(
-        "group relative flex cursor-pointer items-center gap-2.5 overflow-visible rounded-xl border bg-card py-2 pr-2.5 pl-3 text-left shadow-[0_1px_2px_rgb(0_0_0/0.05)] transition-[border-color,box-shadow,transform,background-color] duration-150 ease-out hover:border-foreground/25 hover:shadow-md active:scale-[0.98]",
+        "group relative flex cursor-pointer items-center gap-2.5 overflow-visible rounded-xl border bg-card py-2 pr-2.5 pl-2.5 text-left transition-[border-color,transform,background-color] duration-150 ease-out active:duration-0 hover:border-foreground/35 active:scale-[0.98]",
         !person.isLiving && "bg-paper-2",
         focus && "border-soga/70 ring-2 ring-soga/25",
         onPath && "border-soga bg-[color-mix(in_oklch,var(--soga)_12%,var(--card))] ring-2 ring-soga/30",
-        selected && "border-foreground/60 shadow-lg",
+        selected && "border-foreground/70 shadow-md",
       )}
     >
       <Handle type="target" position={Position.Top} className={hidden} isConnectable={false} />
-      <span className={cn("absolute inset-y-2 left-0 w-[3px] rounded-r-full", accent)} aria-hidden />
-      <span className="grid size-10 shrink-0 place-items-center overflow-hidden rounded-full bg-muted text-xs font-semibold text-muted-foreground">
+      <span className={cn("grid size-10 shrink-0 place-items-center overflow-hidden monogram text-xs font-semibold", avatarShape)}>
         {photo ? (
           // eslint-disable-next-line @next/next/no-img-element
-          <img src={photo} alt="" className="size-full object-cover" loading="lazy" />
+          <img src={photo} alt="" width={40} height={40} className="size-full object-cover" loading="lazy" />
         ) : (
           initialsOf(person.fullName)
         )}

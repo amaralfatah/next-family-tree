@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { after } from "next/server";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import { createSession, destroySession, devLoginEnabled, findOrCreateUser, requireUser, safeNext } from "@/lib/auth/session";
@@ -73,7 +74,7 @@ export async function deleteTreeAction(treeId: string, confirmName: string): Pro
     const { tree: t } = await tree.getTree(db, user.id, treeId);
     if (confirmName.trim() !== t.name) throw new UserError("Nama pohon yang diketik tidak cocok.");
     const photos = await tree.deleteTree(db, user.id, treeId);
-    await deletePhotos(photos);
+    after(() => deletePhotos(photos));
   });
   if (!r.ok) return r;
   revalidatePath("/pohon");
@@ -143,7 +144,7 @@ export async function updatePersonAction(
 export async function deletePersonAction(treeId: string, personId: string): Promise<ActionResult> {
   const r = await run(async (db, u) => {
     const photo = await tree.deletePerson(db, u, treeId, personId);
-    if (photo) await deletePhotos([photo]);
+    if (photo) after(() => deletePhotos([photo]));
   });
   if (!r.ok) return r;
   refreshTree(treeId);

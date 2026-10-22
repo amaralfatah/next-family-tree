@@ -1,13 +1,22 @@
 "use client";
 
 import { useState } from "react";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Field, FieldContent, FieldGroup, FieldLabel, FieldLegend, FieldSet, FieldTitle } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import { NativeSelect, NativeSelectOption } from "@/components/ui/native-select";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Textarea } from "@/components/ui/textarea";
 import { MONTH_NAMES, splitDate } from "@/lib/dates";
 import type { Person } from "@/lib/types";
 
 type Defaults = Partial<Pick<Person, "fullName" | "nickname" | "gender" | "birthDate" | "birthPrecision" | "birthPlace" | "isLiving" | "deathDate" | "deathPrecision" | "notes">>;
+
+const GENDERS = [
+  ["male", "Laki-laki"],
+  ["female", "Perempuan"],
+  ["unknown", "Tidak diketahui"],
+] as const;
 
 /** The person fields shared by "new tree", "add relative", and "edit person". */
 export function PersonFields({ defaults = {}, idPrefix = "p" }: { defaults?: Defaults; idPrefix?: string }) {
@@ -17,64 +26,53 @@ export function PersonFields({ defaults = {}, idPrefix = "p" }: { defaults?: Def
   const id = (s: string) => `${idPrefix}-${s}`;
 
   return (
-    <div className="grid gap-5">
-      <div className="grid gap-4 sm:grid-cols-[1fr_12rem]">
-        <div className="space-y-1.5">
-          <Label htmlFor={id("fullName")}>Nama lengkap</Label>
-          <Input id={id("fullName")} name="fullName" required maxLength={160} defaultValue={defaults.fullName ?? ""} placeholder="mis. H. Abdullah bin Umar" />
-        </div>
-        <div className="space-y-1.5">
-          <Label htmlFor={id("nickname")}>Nama panggilan</Label>
-          <Input id={id("nickname")} name="nickname" maxLength={60} defaultValue={defaults.nickname ?? ""} placeholder="mis. Aki Dullah" />
-        </div>
+    <FieldGroup>
+      <div className="grid gap-5 sm:grid-cols-[1fr_12rem]">
+        <Field>
+          <FieldLabel htmlFor={id("fullName")}>Nama lengkap</FieldLabel>
+          <Input id={id("fullName")} name="fullName" required maxLength={160} autoComplete="off" defaultValue={defaults.fullName ?? ""} placeholder="mis. H. Abdullah bin Umar…" />
+        </Field>
+        <Field>
+          <FieldLabel htmlFor={id("nickname")}>Nama panggilan</FieldLabel>
+          <Input id={id("nickname")} name="nickname" maxLength={60} autoComplete="off" defaultValue={defaults.nickname ?? ""} placeholder="mis. Aki Dullah…" />
+        </Field>
       </div>
 
-      <fieldset className="space-y-2">
-        <legend className="text-sm font-medium">Jenis kelamin</legend>
-        <div className="grid grid-cols-3 gap-2">
-          {(
-            [
-              ["male", "Laki-laki"],
-              ["female", "Perempuan"],
-              ["unknown", "Tidak diketahui"],
-            ] as const
-          ).map(([value, label]) => (
-            <label
-              key={value}
-              className="flex min-h-10 cursor-pointer items-center justify-center rounded-lg border px-2 py-2 text-center text-sm leading-tight transition-[color,background-color,border-color,transform] duration-150 active:scale-[0.97] has-checked:border-soga has-checked:bg-accent has-checked:font-medium has-focus-visible:ring-3 has-focus-visible:ring-ring/50"
-            >
-              <input type="radio" name="gender" value={value} defaultChecked={(defaults.gender ?? "unknown") === value} className="sr-only" />
-              {label}
-            </label>
+      <FieldSet>
+        <FieldLegend variant="label">Jenis kelamin</FieldLegend>
+        <RadioGroup name="gender" defaultValue={defaults.gender ?? "unknown"} className="grid-cols-1 sm:grid-cols-3">
+          {GENDERS.map(([value, label]) => (
+            <FieldLabel key={value} htmlFor={id(`gender-${value}`)}>
+              <Field orientation="horizontal">
+                <RadioGroupItem value={value} id={id(`gender-${value}`)} />
+                <FieldContent>
+                  <FieldTitle className="leading-tight">{label}</FieldTitle>
+                </FieldContent>
+              </Field>
+            </FieldLabel>
           ))}
-        </div>
-      </fieldset>
+        </RadioGroup>
+      </FieldSet>
 
       <DateParts legend="Tanggal lahir" prefix="birth" values={birth} idPrefix={idPrefix} />
-      <div className="space-y-1.5">
-        <Label htmlFor={id("birthPlace")}>Tempat lahir</Label>
-        <Input id={id("birthPlace")} name="birthPlace" maxLength={120} defaultValue={defaults.birthPlace ?? ""} placeholder="mis. Tasikmalaya" />
-      </div>
+      <Field>
+        <FieldLabel htmlFor={id("birthPlace")}>Tempat lahir</FieldLabel>
+        <Input id={id("birthPlace")} name="birthPlace" maxLength={120} autoComplete="off" defaultValue={defaults.birthPlace ?? ""} placeholder="mis. Tasikmalaya…" />
+      </Field>
 
-      <div className="space-y-3 rounded-xl border border-dashed p-4">
-        <label className="flex cursor-pointer items-center gap-2.5 text-sm font-medium">
-          <input
-            type="checkbox"
-            name="deceased"
-            checked={deceased}
-            onChange={(e) => setDeceased(e.target.checked)}
-            className="size-4 accent-[var(--soga)]"
-          />
-          Sudah wafat
-        </label>
+      <FieldGroup className="gap-4 rounded-xl border border-dashed p-4">
+        <Field orientation="horizontal">
+          <Checkbox id={id("deceased")} name="deceased" value="on" checked={deceased} onCheckedChange={setDeceased} />
+          <FieldLabel htmlFor={id("deceased")}>Sudah wafat</FieldLabel>
+        </Field>
         {deceased ? <DateParts legend="Tanggal wafat" prefix="death" values={death} idPrefix={idPrefix} /> : null}
-      </div>
+      </FieldGroup>
 
-      <div className="space-y-1.5">
-        <Label htmlFor={id("notes")}>Catatan</Label>
-        <Textarea id={id("notes")} name="notes" rows={3} maxLength={4000} defaultValue={defaults.notes ?? ""} placeholder="Pekerjaan, kisah singkat, tempat dimakamkan, dsb." />
-      </div>
-    </div>
+      <Field>
+        <FieldLabel htmlFor={id("notes")}>Catatan</FieldLabel>
+        <Textarea id={id("notes")} name="notes" rows={3} maxLength={4000} defaultValue={defaults.notes ?? ""} placeholder="Pekerjaan, kisah singkat, tempat dimakamkan…" />
+      </Field>
+    </FieldGroup>
   );
 }
 
@@ -91,22 +89,22 @@ export function DateParts({
 }) {
   const id = (s: string) => `${idPrefix}-${prefix}-${s}`;
   return (
-    <fieldset className="space-y-1.5">
-      <legend className="text-sm font-medium">
+    <FieldSet className="gap-0">
+      <FieldLegend variant="label">
         {legend} <span className="font-normal text-muted-foreground">(boleh hanya tahun, atau kosongkan)</span>
-      </legend>
+      </FieldLegend>
       <div className="grid grid-cols-[5rem_1fr_6rem] gap-2">
-        <Input id={id("day")} name={`${prefix}Day`} inputMode="numeric" pattern="[0-9]*" maxLength={2} placeholder="Tgl" aria-label={`${legend}: tanggal`} defaultValue={values.day} />
-        <select id={id("month")} name={`${prefix}Month`} className="field" aria-label={`${legend}: bulan`} defaultValue={values.month}>
-          <option value="">Bulan</option>
+        <Input id={id("day")} name={`${prefix}Day`} inputMode="numeric" pattern="[0-9]*" maxLength={2} autoComplete="off" placeholder="Tgl" aria-label={`${legend}: tanggal`} defaultValue={values.day} />
+        <NativeSelect id={id("month")} name={`${prefix}Month`} className="w-full" aria-label={`${legend}: bulan`} defaultValue={values.month}>
+          <NativeSelectOption value="">Bulan</NativeSelectOption>
           {MONTH_NAMES.map((m, i) => (
-            <option key={m} value={i + 1}>
+            <NativeSelectOption key={m} value={i + 1}>
               {m}
-            </option>
+            </NativeSelectOption>
           ))}
-        </select>
-        <Input id={id("year")} name={`${prefix}Year`} inputMode="numeric" pattern="[0-9]*" maxLength={4} placeholder="Tahun" aria-label={`${legend}: tahun`} defaultValue={values.year} />
+        </NativeSelect>
+        <Input id={id("year")} name={`${prefix}Year`} inputMode="numeric" pattern="[0-9]*" maxLength={4} autoComplete="off" placeholder="Tahun" aria-label={`${legend}: tahun`} defaultValue={values.year} />
       </div>
-    </fieldset>
+    </FieldSet>
   );
 }

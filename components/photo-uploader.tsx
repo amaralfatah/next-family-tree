@@ -1,10 +1,12 @@
 "use client";
 
-import { CameraIcon, LoaderIcon, Trash2Icon } from "lucide-react";
+import { CameraIcon, Trash2Icon } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useRef, useState } from "react";
 import { toast } from "sonner";
+import { ConfirmButton } from "@/components/confirm-button";
 import { Button } from "@/components/ui/button";
+import { Spinner } from "@/components/ui/spinner";
 
 const MAX_BYTES = 1_048_576;
 const MAX_SIDE = 800;
@@ -52,23 +54,29 @@ export function PhotoUploader({ treeId, personId, hasPhoto }: { treeId: string; 
   }
 
   async function remove() {
-    setBusy(true);
     const res = await fetch(url, { method: "DELETE" });
-    setBusy(false);
-    if (res.ok) router.refresh();
-    else toast.error(await res.text());
+    if (!res.ok) return { ok: false, error: await res.text() };
+    router.refresh();
+    return { ok: true };
   }
 
   return (
     <div className="flex gap-1">
       <input ref={input} type="file" accept="image/*" className="sr-only" tabIndex={-1} onChange={(e) => e.target.files?.[0] && upload(e.target.files[0])} />
       <Button variant="ghost" size="sm" disabled={busy} onClick={() => input.current?.click()}>
-        {busy ? <LoaderIcon className="animate-spin" /> : <CameraIcon />} {hasPhoto ? "Ganti" : "Foto"}
+        {busy ? <Spinner data-icon="inline-start" /> : <CameraIcon data-icon="inline-start" />} {hasPhoto ? "Ganti" : "Foto"}
       </Button>
       {hasPhoto ? (
-        <Button variant="ghost" size="icon-sm" disabled={busy} onClick={remove} aria-label="Hapus foto">
-          <Trash2Icon />
-        </Button>
+        <ConfirmButton
+          label={<Trash2Icon />}
+          ariaLabel="Hapus foto"
+          variant="ghost"
+          size="icon-sm"
+          title="Hapus foto ini?"
+          description="Foto dihapus dari pohon dan tidak bisa dikembalikan."
+          confirmLabel="Hapus foto"
+          onConfirm={remove}
+        />
       ) : null}
     </div>
   );

@@ -1,8 +1,8 @@
 import { beforeAll, describe, expect, it } from "vitest";
-import { AccessError } from "@/lib/access";
+import { AccessError, requireRole } from "@/lib/access";
 import type { DB } from "@/lib/db";
 import { UserError } from "@/lib/errors";
-import { acceptInvite, createInvite, leaveTree, revokeInvite, transferOwnership } from "@/lib/members/service";
+import { acceptInvite, createInvite, leaveTree, listInvitesWith, listMembersWith, revokeInvite, transferOwnership } from "@/lib/members/service";
 import { createTestDb, createUser } from "@/lib/test-db";
 import {
   createPerson,
@@ -57,6 +57,14 @@ beforeAll(async () => {
 describe("authorization", () => {
   it("non-members cannot read", async () => {
     await expect(loadTreeData(db, stranger, treeId)).rejects.toBeInstanceOf(AccessError);
+  });
+
+  it("a checked access reads without a second membership query, but keeps its role", async () => {
+    const asViewer = await requireRole(db, treeId, viewer, "viewer");
+    expect(asViewer).toMatchObject({ treeId, role: "viewer" });
+    await expect(listMembersWith(db, asViewer)).resolves.toHaveLength(3);
+    await expect(listInvitesWith(db, asViewer)).rejects.toMatchObject({ code: "forbidden" });
+    await expect(listInvitesWith(db, await requireRole(db, treeId, owner, "owner"))).resolves.toHaveLength(2);
   });
 
   it("viewers can read but not write", async () => {

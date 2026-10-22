@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { navBar } from "@/components/nav-bar";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { UserMenu } from "@/components/user-menu";
 import { Mark, Wordmark } from "@/components/wordmark";
@@ -9,9 +10,9 @@ import type { CurrentUser } from "@/lib/auth/session";
  */
 export function AppHeader({ user, children, compactBrand = false }: { user: CurrentUser; children?: React.ReactNode; compactBrand?: boolean }) {
   return (
-    <header className="no-print sticky top-0 z-30 border-b bg-background/85 pt-[env(safe-area-inset-top)] backdrop-blur supports-backdrop-filter:bg-background/70">
+    <header className={navBar}>
       <div className="mx-auto flex h-14 max-w-6xl items-center gap-3 px-4">
-        <Link href="/pohon" aria-label="Sararia Family Tree, ke pohon saya" className="shrink-0 rounded-md outline-none focus-visible:ring-3 focus-visible:ring-ring/50">
+        <Link href="/pohon" aria-label="Sararia Family Tree, ke pohon saya" className="flex shrink-0 items-center rounded-md outline-none focus-visible:ring-3 focus-visible:ring-ring/40">
           {compactBrand ? (
             <>
               <Mark className="sm:hidden" />

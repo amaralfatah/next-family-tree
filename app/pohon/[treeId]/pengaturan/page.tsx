@@ -2,17 +2,19 @@ import { DownloadIcon } from "lucide-react";
 import { DangerZone } from "@/components/danger-zone";
 import { TreeInfoForm } from "@/components/tree-info-form";
 import { buttonVariants } from "@/components/ui/button";
-import { loadTreeContext } from "@/lib/tree/context";
+import { loadTreeMeta } from "@/lib/tree/context";
+import { countTreeContents } from "@/lib/tree/service";
 
 export const metadata = { title: "Pengaturan" };
 
 export default async function SettingsPage({ params }: PageProps<"/pohon/[treeId]/pengaturan">) {
   const { treeId } = await params;
-  const { tree, canEdit, isOwner, data } = await loadTreeContext(treeId);
+  const { db, tree, canEdit, isOwner } = await loadTreeMeta(treeId);
+  const counts = await countTreeContents(db, treeId);
   return (
-    <main className="mx-auto w-full max-w-3xl space-y-10 px-4 py-8">
+    <main id="konten" className="mx-auto flex w-full max-w-3xl flex-col gap-10 px-4 py-8">
       <div>
-        <h1 className="font-display text-4xl tracking-tight">Pengaturan</h1>
+        <h1 className="font-display text-[2.125rem] leading-tight tracking-[-0.02em]">Pengaturan</h1>
       </div>
 
       {canEdit ? (
@@ -25,7 +27,7 @@ export default async function SettingsPage({ params }: PageProps<"/pohon/[treeId
       <section>
         <h2 className="font-display text-2xl">Cadangan data</h2>
         <p className="mt-1 text-sm text-muted-foreground">
-          Unduh seluruh isi pohon ({data.persons.length} orang, {data.unions.length} ikatan) sebagai JSON. Simpan di tempat aman: berkas ini berisi data
+          Unduh seluruh isi pohon ({counts.persons} orang, {counts.unions} ikatan) sebagai JSON. Simpan di tempat aman: berkas ini berisi data
           pribadi keluarga.
         </p>
         <a href={`/pohon/${treeId}/ekspor`} className={buttonVariants({ variant: "outline", className: "mt-3" })}>

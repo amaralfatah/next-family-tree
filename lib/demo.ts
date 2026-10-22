@@ -105,7 +105,9 @@ export function demoView(data: TreeData): { focusId: string; meId: string; relat
   for (const me of youngestFirst) {
     for (const parent of parentsOf(me.id)) {
       const grandparent = parentsOf(parent)[0];
-      const relative = siblingsOf(parent)[0];
+      // The parent's closest sibling by age sits next to them on the chart, so the soga route stays short.
+      const born = (id: string) => Number((data.persons.find((p) => p.id === id)?.birthDate ?? "0").slice(0, 4));
+      const relative = siblingsOf(parent).sort((x, y) => Math.abs(born(x) - born(parent)) - Math.abs(born(y) - born(parent)))[0];
       if (grandparent && relative) return { focusId: grandparent, meId: me.id, relativeId: relative };
     }
   }

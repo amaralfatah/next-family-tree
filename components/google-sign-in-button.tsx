@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { authClient } from "@/lib/auth/client";
 
 /** Google sign-in through Neon Auth; returns to `next` on success and to /masuk?error=google on failure. */
@@ -27,15 +28,15 @@ export function GoogleSignInButton({ next }: { next: string }) {
   return (
     <>
       {failed ? (
-        <p role="alert" className="mt-4 rounded-lg bg-destructive/10 px-3 py-2 text-sm text-destructive">
-          Login Google gagal atau dibatalkan. Silakan coba lagi.
-        </p>
+        <Alert variant="destructive" className="mt-4">
+          <AlertDescription>Login Google gagal atau dibatalkan. Silakan coba lagi.</AlertDescription>
+        </Alert>
       ) : null}
       <button
         type="button"
         onClick={signIn}
         disabled={pending}
-        className="mt-6 flex h-11 w-full items-center justify-center gap-3 rounded-lg border bg-background text-sm font-medium transition-colors hover:bg-muted disabled:opacity-60"
+        className="mt-6 flex h-11 w-full items-center justify-center gap-3 rounded-xl border border-input bg-card text-[0.9375rem] font-medium transition-colors outline-none hover:bg-muted focus-visible:ring-3 focus-visible:ring-ring/45 disabled:opacity-60"
       >
         <GoogleIcon /> {pending ? "Menghubungkan…" : "Lanjutkan dengan Google"}
       </button>

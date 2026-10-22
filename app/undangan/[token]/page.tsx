@@ -18,9 +18,8 @@ export default async function InvitePage({ params }: PageProps<"/undangan/[token
   if (state.status === "valid" && state.alreadyMember) redirect(`/pohon/${state.treeId}`);
 
   return (
-    <main className="relative grid min-h-dvh place-items-center px-4 py-10">
-      <div aria-hidden className="kawung absolute inset-0 opacity-60 [mask-image:radial-gradient(ellipse_at_center,black,transparent_65%)]" />
-      <div className="rise relative w-full max-w-md rounded-2xl border bg-card p-6 text-center shadow-sm sm:p-8">
+    <main id="konten" className="grid min-h-dvh place-items-center bg-grouped px-4 py-10">
+      <div className="w-full max-w-md rounded-2xl bg-card p-6 text-center shadow-[0_1px_2px_rgb(0_0_0/0.04),0_8px_24px_-12px_rgb(0_0_0/0.12)] sm:p-8">
         <Wordmark full className="justify-center" />
         {state.status === "valid" ? (
           <>
@@ -41,7 +40,7 @@ export default async function InvitePage({ params }: PageProps<"/undangan/[token
             <p className="mt-3 text-sm text-muted-foreground">
               {state.status === "invalid"
                 ? "Periksa kembali link yang Anda terima; mungkin terpotong saat disalin."
-                : `Minta link baru kepada pemilik pohon "${state.treeName}".`}
+                : `Minta link baru kepada pemilik pohon “${state.treeName}”.`}
             </p>
             <Link href="/pohon" className={buttonVariants({ variant: "outline", className: "mt-6" })}>
               Ke pohon saya

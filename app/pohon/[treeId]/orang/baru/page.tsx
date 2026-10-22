@@ -29,13 +29,13 @@ export default async function NewPersonPage({ params, searchParams }: PageProps<
   const childRel = (["biological", "adopted", "step"] as const).find((r) => r === sp.rel_anak) as ChildRelation | undefined;
 
   return (
-    <main className="mx-auto w-full max-w-2xl px-4 py-8">
+    <main id="konten" className="mx-auto w-full max-w-2xl px-4 py-8">
       {of ? (
         <Link href={`/pohon/${treeId}/orang/${of.id}`} className="text-sm text-muted-foreground hover:text-foreground">
           ← {of.fullName}
         </Link>
       ) : null}
-      <h1 className="mt-2 font-display text-4xl tracking-tight">{relation && of ? TITLES[relation](of.fullName) : "Tambah orang"}</h1>
+      <h1 className="mt-2 font-display text-[2.125rem] leading-tight tracking-[-0.02em]">{relation && of ? TITLES[relation](of.fullName) : "Tambah orang"}</h1>
       {!relation ? (
         <p className="mt-2 text-sm text-muted-foreground">
           Orang ini belum terhubung dengan siapa pun. Sebaiknya tambahkan dari profil kerabatnya agar langsung tersambung di bagan.

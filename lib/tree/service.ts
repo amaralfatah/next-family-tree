@@ -1,5 +1,5 @@
 import { and, asc, count, desc, eq, inArray, lt, or } from "drizzle-orm";
-import { requireRole } from "@/lib/access";
+import { requireRole, type TreeAccess } from "@/lib/access";
 import type { DB } from "@/lib/db";
 import { changeLog, persons, treeMembers, trees, unionChildren, unions, users } from "@/lib/db/schema";
 import { UserError } from "@/lib/errors";
@@ -122,9 +122,9 @@ export async function listTreesForUser(db: DB, userId: string) {
 }
 
 export async function getTree(db: DB, userId: string, treeId: string) {
-  const membership = await requireRole(db, treeId, userId, "viewer");
-  const [tree] = await db.select().from(trees).where(eq(trees.id, treeId));
-  return { tree, ...membership };
+  // The tree row is only returned once the membership check passes, so both can be in flight together.
+  const [access, [tree]] = await Promise.all([requireRole(db, treeId, userId, "viewer"), db.select().from(trees).where(eq(trees.id, treeId))]);
+  return { tree, access, ...access };
 }
 
 export async function updateTree(db: DB, userId: string, treeId: string, input: { name: string; description: string | null }) {
@@ -148,23 +148,37 @@ export async function deleteTree(db: DB, userId: string, treeId: string): Promis
 }
 
 export async function loadTreeData(db: DB, userId: string, treeId: string): Promise<TreeData> {
-  await requireRole(db, treeId, userId, "viewer");
-  return loadTreeDataUnchecked(db, treeId);
+  return loadTreeDataWith(db, await requireRole(db, treeId, userId, "viewer"));
 }
 
-async function loadTreeDataUnchecked(conn: Conn, treeId: string): Promise<TreeData> {
-  const [personRows, unionRows] = await Promise.all([
+export function loadTreeDataWith(db: DB, access: TreeAccess): Promise<TreeData> {
+  return readTreeData(db, access.treeId);
+}
+
+async function readTreeData(conn: Conn, treeId: string): Promise<TreeData> {
+  // One round-trip: the child links are filtered by a subquery instead of waiting for the union ids.
+  const [personRows, unionRows, childRows] = await Promise.all([
     conn.select().from(persons).where(eq(persons.treeId, treeId)).orderBy(asc(persons.createdAt)),
     conn.select().from(unions).where(eq(unions.treeId, treeId)).orderBy(asc(unions.orderIndex)),
+    conn
+      .select()
+      .from(unionChildren)
+      .where(inArray(unionChildren.unionId, conn.select({ id: unions.id }).from(unions).where(eq(unions.treeId, treeId)))),
   ]);
-  const childRows = unionRows.length
-    ? await conn.select().from(unionChildren).where(inArray(unionChildren.unionId, unionRows.map((u) => u.id)))
-    : [];
   return {
     persons: personRows.map(toPerson),
     unions: unionRows.map(toUnion),
     children: childRows.map((c) => ({ unionId: c.unionId, childId: c.childId, relation: c.relation, birthOrder: c.birthOrder })),
   };
+}
+
+/** Person and union counts, for pages that show totals without the whole tree. */
+export async function countTreeContents(conn: Conn, treeId: string) {
+  const [[p], [u]] = await Promise.all([
+    conn.select({ n: count() }).from(persons).where(eq(persons.treeId, treeId)),
+    conn.select({ n: count() }).from(unions).where(eq(unions.treeId, treeId)),
+  ]);
+  return { persons: p.n, unions: u.n };
 }
 
 // ---------------------------------------------------------------- persons
@@ -188,8 +202,11 @@ async function requireUnion(conn: Conn, treeId: string, unionId: string): Promis
 }
 
 export async function getPerson(db: DB, userId: string, treeId: string, personId: string) {
-  await requireRole(db, treeId, userId, "viewer");
-  return toPerson(await requirePerson(db, treeId, personId));
+  return getPersonWith(db, await requireRole(db, treeId, userId, "viewer"), personId);
+}
+
+export async function getPersonWith(db: DB, access: TreeAccess, personId: string) {
+  return toPerson(await requirePerson(db, access.treeId, personId));
 }
 
 /** Creates a person, optionally related to someone already in the tree. */
@@ -247,7 +264,7 @@ const KIND_LABEL: Record<RelationKind, string> = {
 };
 
 async function relate(tx: Tx, userId: string, treeId: string, rel: RelationSpec, otherId: string) {
-  const data = await loadTreeDataUnchecked(tx, treeId);
+  const data = await readTreeData(tx, treeId);
   const childRelation = rel.childRelation ?? "biological";
 
   if (rel.kind === "partner") {
@@ -483,7 +500,11 @@ export async function removeChildLink(db: DB, userId: string, treeId: string, un
 // ---------------------------------------------------------------- history & export
 
 export async function listChanges(db: DB, userId: string, treeId: string, opts: { before?: Date; limit?: number } = {}) {
-  await requireRole(db, treeId, userId, "viewer");
+  return listChangesWith(db, await requireRole(db, treeId, userId, "viewer"), opts);
+}
+
+export async function listChangesWith(db: DB, access: TreeAccess, opts: { before?: Date; limit?: number } = {}) {
+  const { treeId } = access;
   const limit = opts.limit ?? 50;
   const rows = await db
     .select({
@@ -506,7 +527,7 @@ export async function listChanges(db: DB, userId: string, treeId: string, opts: 
 
 export async function exportTree(db: DB, userId: string, treeId: string) {
   const { tree } = await getTree(db, userId, treeId);
-  const data = await loadTreeDataUnchecked(db, treeId);
+  const data = await readTreeData(db, treeId);
   return {
     format: "wargi-backup",
     version: 1,

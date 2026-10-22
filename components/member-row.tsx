@@ -3,8 +3,9 @@
 import { useTransition } from "react";
 import { toast } from "sonner";
 import { ConfirmButton } from "@/components/confirm-button";
-import { initials } from "@/components/user-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { NativeSelect, NativeSelectOption } from "@/components/ui/native-select";
+import { initials } from "@/components/user-menu";
 import { changeRoleAction, removeMemberAction, transferOwnershipAction } from "@/lib/actions";
 import { ROLE_LABEL } from "@/lib/person";
 import type { Role } from "@/lib/types";
@@ -38,9 +39,9 @@ export function MemberRow({ treeId, member, isSelf, canManage }: { treeId: strin
       </div>
       {manageable ? (
         <div className="flex flex-wrap items-center gap-1.5">
-          <select
+          <NativeSelect size="sm"
             aria-label={`Peran ${member.name}`}
-            className="field !h-8 !w-auto"
+            
             value={member.role}
             disabled={pending}
             onChange={(e) =>
@@ -51,9 +52,9 @@ export function MemberRow({ treeId, member, isSelf, canManage }: { treeId: strin
               })
             }
           >
-            <option value="editor">Editor</option>
-            <option value="viewer">Pembaca</option>
-          </select>
+            <NativeSelectOption value="editor">Editor</NativeSelectOption>
+            <NativeSelectOption value="viewer">Pembaca</NativeSelectOption>
+          </NativeSelect>
           <ConfirmButton
             label="Jadikan pemilik"
             variant="ghost"

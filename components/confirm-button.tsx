@@ -14,6 +14,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
+import { Spinner } from "@/components/ui/spinner";
 
 /**
  * A button that asks before running a destructive server action. The action may
@@ -28,6 +29,7 @@ export function ConfirmButton({
   successMessage,
   variant = "destructive",
   size = "default",
+  ariaLabel,
   children,
 }: {
   label: React.ReactNode;
@@ -37,14 +39,16 @@ export function ConfirmButton({
   onConfirm: () => Promise<{ ok: boolean; error?: string } | void>;
   successMessage?: string;
   variant?: "destructive" | "outline" | "ghost" | "secondary";
-  size?: "default" | "sm" | "lg";
+  size?: "default" | "sm" | "lg" | "icon-sm";
+  /** Needed when `label` is only an icon. */
+  ariaLabel?: string;
   children?: React.ReactNode;
 }) {
   const [open, setOpen] = useState(false);
   const [pending, start] = useTransition();
   return (
     <AlertDialog open={open} onOpenChange={setOpen}>
-      <AlertDialogTrigger render={<Button variant={variant} size={size} />}>{label}</AlertDialogTrigger>
+      <AlertDialogTrigger render={<Button variant={variant} size={size} aria-label={ariaLabel} />}>{label}</AlertDialogTrigger>
       <AlertDialogContent>
         <AlertDialogHeader>
           <AlertDialogTitle>{title}</AlertDialogTitle>
@@ -68,7 +72,8 @@ export function ConfirmButton({
               })
             }
           >
-            {pending ? "Memproses…" : confirmLabel}
+            {pending ? <Spinner data-icon="inline-start" /> : null}
+            {confirmLabel}
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>

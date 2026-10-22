@@ -2,8 +2,8 @@
 
 import { useState } from "react";
 import { ConfirmButton } from "@/components/confirm-button";
+import { Field, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { deleteTreeAction, leaveTreeAction } from "@/lib/actions";
 
 export function DangerZone({ treeId, treeName, isOwner }: { treeId: string; treeName: string; isOwner: boolean }) {
@@ -20,7 +20,7 @@ export function DangerZone({ treeId, treeName, isOwner }: { treeId: string; tree
           <div className="mt-4">
             <ConfirmButton
               label="Hapus pohon permanen"
-              title={`Hapus "${treeName}" selamanya?`}
+              title={`Hapus “${treeName}” selamanya?`}
               description="Semua orang, relasi, foto, undangan, dan riwayat dihapus dan tidak bisa dikembalikan. Unduh cadangan JSON dulu bila perlu."
               confirmLabel="Hapus permanen"
               onConfirm={async () => {
@@ -28,12 +28,12 @@ export function DangerZone({ treeId, treeName, isOwner }: { treeId: string; tree
                 return deleteTreeAction(treeId, typed);
               }}
             >
-              <div className="space-y-1.5">
-                <Label htmlFor="confirm-name">
+              <Field>
+                <FieldLabel htmlFor="confirm-name">
                   Ketik <strong>{treeName}</strong> untuk mengonfirmasi
-                </Label>
-                <Input id="confirm-name" value={typed} onChange={(e) => setTyped(e.target.value)} autoComplete="off" />
-              </div>
+                </FieldLabel>
+                <Input id="confirm-name" value={typed} onChange={(e) => setTyped(e.target.value)} autoComplete="off" spellCheck={false} />
+              </Field>
             </ConfirmButton>
           </div>
         </>

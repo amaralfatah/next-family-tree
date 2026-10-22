@@ -28,6 +28,28 @@ export interface Membership {
   personId: string | null;
 }
 
+declare const checked: unique symbol;
+
+/**
+ * Proof that requireRole has already checked this user's membership of `treeId` in this request.
+ * Only requireRole creates one, so the `...With(db, access)` readers can skip a second membership
+ * query without being callable unchecked. Pass it along instead of caching memberships per request:
+ * a cache could hand a render the role from before an action changed it (e.g. a transfer of ownership).
+ */
+export type TreeAccess = Membership & { readonly treeId: string; readonly [checked]: true };
+
+/** For readers that need more than the role the access was checked for. */
+export function assertRole(access: TreeAccess, role: Role) {
+  if (!hasRole(access.role, role)) throw forbidden(role);
+}
+
+function forbidden(role: Role) {
+  return new AccessError(
+    role === "owner" ? "Hanya pemilik pohon yang bisa melakukan ini." : "Anda hanya punya akses membaca di pohon ini.",
+    "forbidden",
+  );
+}
+
 export async function getMembership(db: DB, treeId: string, userId: string): Promise<Membership | null> {
   const [row] = await db
     .select({ role: treeMembers.role, personId: treeMembers.personId })
@@ -37,17 +59,12 @@ export async function getMembership(db: DB, treeId: string, userId: string): Pro
   return row ?? null;
 }
 
-export async function requireRole(db: DB, treeId: string, userId: string, role: Role): Promise<Membership> {
+export async function requireRole(db: DB, treeId: string, userId: string, role: Role): Promise<TreeAccess> {
   if (!isUuid(treeId)) throw new AccessError("Pohon tidak ditemukan.", "not_found");
   const membership = await getMembership(db, treeId, userId);
   if (!membership) throw new AccessError("Pohon tidak ditemukan.", "not_found");
-  if (!hasRole(membership.role, role)) {
-    throw new AccessError(
-      role === "owner" ? "Hanya pemilik pohon yang bisa melakukan ini." : "Anda hanya punya akses membaca di pohon ini.",
-      "forbidden",
-    );
-  }
-  return membership;
+  if (!hasRole(membership.role, role)) throw forbidden(role);
+  return { ...membership, treeId } as TreeAccess;
 }
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;

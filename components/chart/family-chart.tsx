@@ -19,7 +19,6 @@ import {
   DownloadIcon,
   ExternalLinkIcon,
   HeartIcon,
-  LoaderIcon,
   PencilIcon,
   SearchIcon,
   Trash2Icon,
@@ -29,9 +28,10 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { useCallback, useEffect, useMemo, useRef, useState, useTransition } from "react";
+import { useCallback, useEffect, useImperativeHandle, useMemo, useRef, useState, useTransition } from "react";
 import { toast } from "sonner";
 import { Button, buttonVariants } from "@/components/ui/button";
+import { Combobox, ComboboxContent, ComboboxEmpty, ComboboxInput, ComboboxItem, ComboboxList } from "@/components/ui/combobox";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -41,15 +41,18 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { InputGroupAddon } from "@/components/ui/input-group";
+import { Spinner } from "@/components/ui/spinner";
 import { setRootAction } from "@/lib/actions";
 import { autoCollapse, buildAncestorGraph, buildDescendantGraph, type FamilyGraph } from "@/lib/graph/build";
 import { toElk } from "@/lib/graph/layout";
 import { useElkLayout } from "@/lib/graph/use-layout";
-import { describeKinship } from "@/lib/kinship";
+import { createKinshipResolver } from "@/lib/kinship";
 import { photoUrl, subtitle } from "@/lib/person";
 import type { Person, TreeData } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { nodeTypes, type PersonNodeData } from "./nodes";
+import { useSheetMotion } from "./sheet-motion";
 
 type Mode = "keturunan" | "leluhur";
 type RelationKind = (typeof QUICK_ADD)[number]["rel"];
@@ -108,19 +111,22 @@ function Chart({ treeId, treeName, data, rootPersonId, mePersonId, canEdit, demo
   // Collapsed branches, reset whenever the focus or direction changes.
   const viewKey = `${mode}:${focusId}`;
   const [collapsedState, setCollapsedState] = useState<{ key: string; set: Set<string> } | null>(null);
-  const collapsed = useMemo(() => {
-    if (collapsedState?.key === viewKey) return collapsedState.set;
-    return focusId && mode === "keturunan" ? autoCollapse(data, focusId) : new Set<string>();
-  }, [collapsedState, viewKey, data, focusId, mode]);
+  const defaultCollapsed = useMemo(
+    () => (focusId && mode === "keturunan" ? autoCollapse(data, focusId) : new Set<string>()),
+    [data, focusId, mode],
+  );
+  const collapsed = collapsedState?.key === viewKey ? collapsedState.set : defaultCollapsed;
 
+  // Functional update: toggle keeps its identity across collapses, so memoised nodes don't all re-render.
   const toggle = useCallback(
-    (personId: string) => {
-      const next = new Set(collapsed);
-      if (next.has(personId)) next.delete(personId);
-      else next.add(personId);
-      setCollapsedState({ key: viewKey, set: next });
-    },
-    [collapsed, viewKey],
+    (personId: string) =>
+      setCollapsedState((prev) => {
+        const next = new Set(prev?.key === viewKey ? prev.set : defaultCollapsed);
+        if (next.has(personId)) next.delete(personId);
+        else next.add(personId);
+        return { key: viewKey, set: next };
+      }),
+    [viewKey, defaultCollapsed],
   );
 
   const graph: FamilyGraph = useMemo(() => {
@@ -136,12 +142,17 @@ function Chart({ treeId, treeName, data, rootPersonId, mePersonId, canEdit, demo
   const { positions, stale } = useElkLayout(elkGraph, layoutKey);
 
   const [selectedId, setSelectedId] = useState<string | null>(initialSelectedId ?? null);
+  const sheetRef = useRef<SheetHandle>(null);
 
   const selected = selectedId ? byId.get(selectedId) : undefined;
-  const kinship = useMemo(
-    () => (selected && mePersonId && selected.id !== mePersonId ? describeKinship(data, mePersonId, selected.id) : null),
-    [selected, mePersonId, data],
-  );
+  const kinOf = useMemo(() => (mePersonId ? createKinshipResolver(data, mePersonId) : null), [data, mePersonId]);
+  const kinship = useMemo(() => (selected && kinOf && selected.id !== mePersonId ? kinOf(selected.id) : null), [selected, kinOf, mePersonId]);
+
+  const childrenOfUnion = useMemo(() => {
+    const m = new Map<string, string[]>();
+    for (const c of data.children) m.set(c.unionId, [...(m.get(c.unionId) ?? []), c.childId]);
+    return m;
+  }, [data.children]);
 
   // The chain of people (and the unions between them) from me to the selected person,
   // drawn in soga on the chart: the "how are we related" answer, made visible.
@@ -153,14 +164,14 @@ function Chart({ treeId, treeName, data, rootPersonId, mePersonId, canEdit, demo
       const [a, b] = [ids[i - 1], ids[i]];
       for (const u of data.unions) {
         const partners = [u.partnerAId, u.partnerBId];
-        const kids = data.children.filter((c) => c.unionId === u.id).map((c) => c.childId);
+        const kids = childrenOfUnion.get(u.id) ?? [];
         const linked =
           (partners.includes(a) && (kids.includes(b) || partners.includes(b))) || (partners.includes(b) && kids.includes(a));
         if (linked) unions.add(u.id);
       }
     }
     return { persons, unions };
-  }, [kinship, data.unions, data.children]);
+  }, [kinship, data.unions, childrenOfUnion]);
 
   const nodes: Node[] = useMemo(() => {
     if (!positions) return [];
@@ -215,6 +226,16 @@ function Chart({ treeId, treeName, data, rootPersonId, mePersonId, canEdit, demo
   );
 
   const { fitView, setCenter, getZoom } = useReactFlow();
+
+  function openNode(node: Node) {
+    if (node.type !== "person") return;
+    setSelectedId((node.data as PersonNodeData).person.id);
+    // On phones the sheet covers the lower half: bring the tapped card into the top half.
+    if (window.innerWidth < 640) {
+      const zoom = getZoom();
+      setCenter(node.position.x + 98, node.position.y + 36 + (window.innerHeight * 0.22) / zoom, { zoom, duration: 280 });
+    }
+  }
   const fittedFor = useRef<string | null>(null);
   useEffect(() => {
     if (!positions || stale || fittedFor.current === viewKey) return;
@@ -224,7 +245,18 @@ function Chart({ treeId, treeName, data, rootPersonId, mePersonId, canEdit, demo
       // shrinking the whole tree to fit; the rest is a pan away.
       const narrow = window.innerWidth < 640;
       const p = focusId ? positions[`p:${focusId}`] : undefined;
-      if (p && (narrow || graph.nodes.length > 60)) {
+      // A relative is already selected (the public example, a shared link): frame the whole route from
+      // "Saya" to them, keeping clear of the summary panel on the right.
+      // Between the two cards, shifted left by half the summary panel (420px) so neither sits under it,
+      // at a zoom (0.6 to 0.9) that fits both cards (196 wide) in the room left of the panel.
+      const me = mePersonId ? positions[`p:${mePersonId}`] : undefined;
+      const them = selectedId ? positions[`p:${selectedId}`] : undefined;
+      const room = window.innerWidth - 420 - 96;
+      const span = me && them ? Math.abs(me.x - them.x) + 196 : Infinity;
+      if (!narrow && me && them && path.persons.size > 1 && span * 0.6 <= room) {
+        const zoom = Math.min(0.9, room / span);
+        setCenter((me.x + them.x) / 2 + 98 + 210 / zoom, (me.y + them.y) / 2 + 36, { zoom, duration: 0 });
+      } else if (p && (narrow || graph.nodes.length > 60)) {
         setCenter(p.x + 98, p.y + (narrow ? 200 : 180), { zoom: narrow ? 0.95 : 0.85, duration: 0 });
       } else {
         fitView({ padding: 0.15, maxZoom: 1.1, duration: 0 }).then(() => {
@@ -234,7 +266,7 @@ function Chart({ treeId, treeName, data, rootPersonId, mePersonId, canEdit, demo
         });
       }
     });
-  }, [positions, stale, viewKey, fitView, setCenter, getZoom, graph.nodes.length, focusId, mePersonId]);
+  }, [positions, stale, viewKey, fitView, setCenter, getZoom, graph.nodes.length, focusId, mePersonId, selectedId, path]);
 
 
   const [savingRoot, startRoot] = useTransition();
@@ -286,14 +318,14 @@ function Chart({ treeId, treeName, data, rootPersonId, mePersonId, canEdit, demo
         </div>
         <FocusSearch data={data} onPick={(id) => setView({ focus: id })} />
         {mePersonId && mePersonId !== focusId ? (
-          <Button variant="outline" size="sm" className="h-8 bg-card shadow-sm" onClick={() => setView({ focus: mePersonId })}>
+          <Button variant="outline" size="sm" className="bg-card" onClick={() => setView({ focus: mePersonId })}>
             <CrosshairIcon data-icon="inline-start" /> Saya
           </Button>
         ) : null}
         <div className="ml-auto">
           <DropdownMenu>
-            <DropdownMenuTrigger render={<Button variant="outline" size="sm" className="h-8 bg-card shadow-sm" disabled={exporting} />}>
-              {exporting ? <LoaderIcon className="animate-spin" /> : <DownloadIcon />} Ekspor
+            <DropdownMenuTrigger render={<Button variant="outline" size="sm" className="bg-card" disabled={exporting} />}>
+              {exporting ? <Spinner data-icon="inline-start" /> : <DownloadIcon data-icon="inline-start" />} Ekspor
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-52">
               <DropdownMenuGroup>
@@ -319,11 +351,22 @@ function Chart({ treeId, treeName, data, rootPersonId, mePersonId, canEdit, demo
         {!positions ? (
           <div className="absolute inset-0 grid place-items-center text-sm text-muted-foreground">
             <span className="flex items-center gap-2">
-              <LoaderIcon className="size-4 animate-spin" /> Menyusun bagan…
+              <Spinner /> Menyusun bagan…
             </span>
           </div>
         ) : null}
-        <div className="absolute inset-0">
+        <div
+          className="absolute inset-0"
+          onKeyDown={(e) => {
+            // React Flow focuses nodes but only opens them on click; Enter/Space do the same for keyboard users.
+            if (e.key !== "Enter" && e.key !== " ") return;
+            const id = (e.target as HTMLElement).closest<HTMLElement>(".react-flow__node-person")?.dataset.id;
+            const node = id ? nodes.find((n) => n.id === id) : undefined;
+            if (!node) return;
+            e.preventDefault();
+            openNode(node);
+          }}
+        >
         <ReactFlow
           nodes={nodes}
           edges={edges}
@@ -334,16 +377,8 @@ function Chart({ treeId, treeName, data, rootPersonId, mePersonId, canEdit, demo
           elementsSelectable={false}
           minZoom={0.08}
           maxZoom={2}
-          onNodeClick={(_, node) => {
-            if (node.type !== "person") return;
-            setSelectedId((node.data as PersonNodeData).person.id);
-            // On phones the sheet covers the lower half: bring the tapped card into the top half.
-            if (window.innerWidth < 640) {
-              const zoom = getZoom();
-              setCenter(node.position.x + 98, node.position.y + 36 + (window.innerHeight * 0.22) / zoom, { zoom, duration: 280 });
-            }
-          }}
-          onPaneClick={() => setSelectedId(null)}
+          onNodeClick={(_, node) => openNode(node)}
+          onPaneClick={() => (sheetRef.current ? sheetRef.current.dismiss() : setSelectedId(null))}
         >
           <Background variant={BackgroundVariant.Dots} gap={22} size={1.2} className="opacity-50" />
           <Controls showInteractive={false} position="bottom-left" className="no-print !hidden sm:!flex" />
@@ -356,7 +391,7 @@ function Chart({ treeId, treeName, data, rootPersonId, mePersonId, canEdit, demo
 
       {selected ? (
         <PersonSheet
-          key={selected.id}
+          ref={sheetRef}
           treeId={treeId}
           person={selected}
           isMe={selected.id === mePersonId}
@@ -389,60 +424,53 @@ function Chart({ treeId, treeName, data, rootPersonId, mePersonId, canEdit, demo
   );
 }
 
+/** Arrow keys move through the matches, Enter or a click makes the person the chart's centre. */
 function FocusSearch({ data, onPick }: { data: TreeData; onPick: (id: string) => void }) {
   const [q, setQ] = useState("");
-  const [open, setOpen] = useState(false);
-  const results = useMemo(() => {
-    const needle = q.trim().toLowerCase();
-    if (!needle) return [];
-    return data.persons
-      .filter((p) => p.fullName.toLowerCase().includes(needle) || p.nickname?.toLowerCase().includes(needle))
-      .slice(0, 8);
-  }, [q, data.persons]);
   return (
-    <div className="relative order-last w-full sm:order-none sm:w-auto">
-      <SearchIcon className="pointer-events-none absolute top-1/2 left-2.5 size-3.5 -translate-y-1/2 text-muted-foreground" />
-      <input
-        value={q}
-        onChange={(e) => {
-          setQ(e.target.value);
-          setOpen(true);
-        }}
-        onFocus={() => setOpen(true)}
-        onBlur={() => setTimeout(() => setOpen(false), 150)}
-        onKeyDown={(e) => {
-          if (e.key === "Enter" && results[0]) {
-            onPick(results[0].id);
-            setQ("");
-            setOpen(false);
-          }
-        }}
+    <Combobox<Person>
+      items={data.persons}
+      value={null}
+      inputValue={q}
+      onInputValueChange={setQ}
+      onValueChange={(p) => {
+        if (!p) return;
+        onPick(p.id);
+        setQ("");
+      }}
+      itemToStringLabel={(p) => p.fullName}
+      itemToStringValue={(p) => p.id}
+      filter={(p, query) => {
+        const needle = query.trim().toLowerCase();
+        return Boolean(needle) && (p.fullName.toLowerCase().includes(needle) || Boolean(p.nickname?.toLowerCase().includes(needle)));
+      }}
+      limit={8}
+      autoHighlight
+    >
+      <ComboboxInput
+        showTrigger={false}
+        name="chartSearch"
+        autoComplete="off"
         placeholder="Cari & pusatkan…"
         aria-label="Cari orang untuk dijadikan pusat bagan"
-        className="h-9 w-full rounded-lg border bg-card pr-2 pl-8 text-base shadow-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 sm:h-8 sm:w-56 sm:text-sm"
-      />
-      {open && results.length > 0 ? (
-        <ul className="absolute top-10 left-0 z-30 w-full overflow-hidden sm:top-9 sm:w-72 rounded-lg border bg-popover py-1 shadow-lg">
-          {results.map((p) => (
-            <li key={p.id}>
-              <button
-                type="button"
-                onMouseDown={(e) => e.preventDefault()}
-                onClick={() => {
-                  onPick(p.id);
-                  setQ("");
-                  setOpen(false);
-                }}
-                className="block w-full px-3 py-1.5 text-left text-sm hover:bg-muted"
-              >
-                <span className="font-medium">{p.fullName}</span>
-                <span className="ml-1.5 text-xs text-muted-foreground">{subtitle(p)}</span>
-              </button>
-            </li>
-          ))}
-        </ul>
-      ) : null}
-    </div>
+        className="order-last w-full bg-card shadow-sm sm:order-none sm:w-56"
+      >
+        <InputGroupAddon align="inline-start">
+          <SearchIcon />
+        </InputGroupAddon>
+      </ComboboxInput>
+      <ComboboxContent className="sm:min-w-72">
+        <ComboboxEmpty>Tidak ada yang cocok.</ComboboxEmpty>
+        <ComboboxList>
+          {(p: Person) => (
+            <ComboboxItem key={p.id} value={p}>
+              <span className="min-w-0 truncate font-medium">{p.fullName}</span>
+              <span className="shrink-0 text-xs text-muted-foreground">{subtitle(p)}</span>
+            </ComboboxItem>
+          )}
+        </ComboboxList>
+      </ComboboxContent>
+    </Combobox>
   );
 }
 
@@ -465,7 +493,7 @@ const QUICK_ADD = [
 ] as const;
 
 const quickAddClass =
-  "flex flex-col items-center gap-1 rounded-xl border border-dashed px-1 py-2 text-xs font-medium text-muted-foreground transition-[color,border-color,background-color,transform] duration-150 hover:border-soga hover:bg-accent/60 hover:text-foreground active:scale-[0.97]";
+  "flex flex-col items-center gap-1 rounded-xl border border-dashed px-1 py-2 text-xs font-medium text-muted-foreground transition-[color,border-color,background-color,transform] duration-150 active:duration-0 hover:border-soga hover:bg-accent/60 hover:text-foreground active:scale-[0.97]";
 
 function QuickAdd({ treeId, personId, onAdd }: { treeId: string; personId: string; onAdd?: SandboxActions["onAdd"] }) {
   return (
@@ -487,7 +515,12 @@ function QuickAdd({ treeId, personId, onAdd }: { treeId: string; personId: strin
   );
 }
 
-/** Bottom sheet on phones, floating card on larger screens. */
+/** Lets the chart close the sheet with the same motion as its close button. */
+interface SheetHandle {
+  dismiss: () => void;
+}
+
+/** Bottom sheet on phones (drag down to close), floating card on larger screens. */
 function PersonSheet(props: {
   treeId: string;
   person: Person;
@@ -500,18 +533,24 @@ function PersonSheet(props: {
   isRoot: boolean;
   savingRoot: boolean;
   sandbox?: SandboxActions;
+  /** Called once the sheet has finished leaving. */
   onClose: () => void;
   onFocus: () => void;
   onMakeRoot: () => void;
+  ref?: React.Ref<SheetHandle>;
 }) {
-  const { treeId, person, isMe, kinshipLabel, meLinked, demo, isFocus, canEdit, isRoot, savingRoot, sandbox, onClose, onFocus, onMakeRoot } = props;
+  const { treeId, person, isMe, kinshipLabel, meLinked, demo, isFocus, canEdit, isRoot, savingRoot, sandbox, onClose, onFocus, onMakeRoot, ref } = props;
+  const { ref: sheetEl, dismiss, handlers } = useSheetMotion<HTMLElement>(onClose);
+  useImperativeHandle(ref, () => ({ dismiss }), [dismiss]);
   return (
     <aside
-      className="sheet-in no-print absolute inset-x-0 bottom-0 z-20 rounded-t-3xl border-t bg-popover px-4 pt-2 pb-[calc(1rem+env(safe-area-inset-bottom))] shadow-[0_-8px_30px_rgb(0_0_0/0.12)] sm:inset-x-auto sm:right-3 sm:bottom-3 sm:w-96 sm:rounded-2xl sm:border sm:pt-4 sm:pb-4 sm:shadow-lg"
+      ref={sheetEl}
+      {...handlers}
+      className="no-print absolute inset-x-0 bottom-0 z-20 touch-none will-change-transform rounded-t-3xl border-t bg-popover px-4 pt-2 pb-[calc(1rem+env(safe-area-inset-bottom))] shadow-[0_-8px_30px_rgb(0_0_0/0.12)] sm:inset-x-auto sm:right-3 sm:bottom-3 sm:w-96 sm:rounded-2xl sm:border sm:pt-4 sm:pb-4 sm:shadow-lg"
       aria-label={`Ringkasan ${person.fullName}`}
     >
       <div className="mx-auto mb-2 h-1 w-10 rounded-full bg-border sm:hidden" aria-hidden />
-      <button type="button" onClick={onClose} className="absolute top-3 right-3 grid size-8 place-items-center rounded-full text-muted-foreground hover:bg-muted hover:text-foreground" aria-label="Tutup">
+      <button type="button" onClick={dismiss} className="absolute top-3 right-3 grid size-8 place-items-center rounded-full text-muted-foreground hover:bg-muted hover:text-foreground" aria-label="Tutup">
         <XIcon className="size-4" />
       </button>
       <div className="flex items-start gap-3 pr-8">
@@ -523,39 +562,40 @@ function PersonSheet(props: {
       {isMe ? (
         <p className="mt-3 inline-flex rounded-full bg-accent px-3 py-1 text-sm font-medium text-soga-ink">Ini Anda</p>
       ) : kinshipLabel ? (
-        <div className="mt-3 rounded-xl bg-accent/70 px-3 py-2">
+        <div className="mt-3 rounded-xl bg-accent px-3.5 py-2.5">
           <p className="text-xs text-muted-foreground">Hubungan dengan Anda</p>
           <p className="font-display text-xl leading-tight text-soga-ink">{kinshipLabel}</p>
         </div>
       ) : !meLinked ? (
         <p className="mt-3 text-xs text-muted-foreground">Tandai diri Anda di pohon untuk melihat hubungan dengan setiap kerabat.</p>
       ) : null}
-      <div className="mt-3 flex flex-wrap gap-2">
+      {/* Actions share the row evenly, as in an iOS sheet; a third one wraps under them. */}
+      <div className="mt-4 flex flex-wrap gap-2 *:min-w-[8.5rem] *:flex-1">
         {sandbox ? (
           <>
-            <Button size="lg" className="h-9" onClick={() => sandbox.onEdit(person.id)}>
+            <Button onClick={() => sandbox.onEdit(person.id)}>
               <PencilIcon data-icon="inline-start" /> Ubah
             </Button>
-            <Button variant="ghost" size="lg" className="h-9 text-destructive hover:text-destructive" onClick={() => sandbox.onDelete(person.id)}>
+            <Button variant="ghost" className="text-destructive hover:text-destructive" onClick={() => sandbox.onDelete(person.id)}>
               <Trash2Icon data-icon="inline-start" /> Hapus
             </Button>
           </>
         ) : demo ? (
-          <Link href="/masuk" className={buttonVariants({ size: "lg", className: "h-9" })}>
-            Buat pohon keluarga Anda
+          <Link href="/masuk" className={buttonVariants()}>
+            Buat pohon Anda
           </Link>
         ) : (
-          <Link href={`/pohon/${treeId}/orang/${person.id}`} className={buttonVariants({ size: "lg", className: "h-9" })}>
+          <Link href={`/pohon/${treeId}/orang/${person.id}`} className={buttonVariants()}>
             <ExternalLinkIcon data-icon="inline-start" /> Buka profil
           </Link>
         )}
         {!isFocus ? (
-          <Button variant="outline" size="lg" className="h-9" onClick={onFocus}>
+          <Button variant="outline" onClick={onFocus}>
             <CrosshairIcon data-icon="inline-start" /> Jadikan pusat
           </Button>
         ) : null}
         {canEdit && !isRoot ? (
-          <Button variant="ghost" size="lg" className="h-9" disabled={savingRoot} onClick={onMakeRoot}>
+          <Button variant="ghost" disabled={savingRoot} onClick={onMakeRoot}>
             Pusat bawaan
           </Button>
         ) : null}
