@@ -505,6 +505,10 @@ const quickAddClass =
   "flex flex-col items-center gap-1 rounded-xl border border-dashed px-1 py-2 text-xs font-medium text-muted-foreground transition-[color,border-color,background-color,transform] duration-150 active:duration-0 hover:border-soga hover:bg-accent/60 hover:text-foreground active:scale-[0.97]";
 
 function QuickAdd({ treeId, personId, onAdd }: { treeId: string; personId: string; onAdd?: SandboxActions["onAdd"] }) {
+  // Saving returns here with the same focus and direction instead of opening the new profile.
+  const pathname = usePathname();
+  const query = useSearchParams().toString();
+  const back = encodeURIComponent(query ? `${pathname}?${query}` : pathname);
   return (
     <div className="grid grid-cols-4 gap-1.5">
       {QUICK_ADD.map((a) =>
@@ -514,7 +518,7 @@ function QuickAdd({ treeId, personId, onAdd }: { treeId: string; personId: strin
             {a.label}
           </button>
         ) : (
-          <Link key={a.rel} href={`/pohon/${treeId}/orang/baru?rel=${a.rel}&dari=${personId}`} className={quickAddClass}>
+          <Link key={a.rel} href={`/pohon/${treeId}/orang/baru?rel=${a.rel}&dari=${personId}&kembali=${back}`} className={quickAddClass}>
             <a.icon className="size-4 text-soga-ink" />
             {a.label}
           </Link>

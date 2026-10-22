@@ -30,6 +30,7 @@ export function NewPersonForm({
   defaultUnionId,
   defaultChildRelation,
   candidates,
+  returnTo,
 }: {
   treeId: string;
   relation: RelationKind | null;
@@ -39,6 +40,8 @@ export function NewPersonForm({
   defaultUnionId: string;
   defaultChildRelation: ChildRelation;
   candidates: Candidate[];
+  /** Chart URL to go back to after saving; without it the new profile opens. */
+  returnTo: string | null;
 }) {
   const [state, onSubmit, pending] = useFormAction(createPersonAction.bind(null, treeId));
   const [mode, setMode] = useState<"new" | "existing">("new");
@@ -51,6 +54,7 @@ export function NewPersonForm({
 
   return (
     <form onSubmit={onSubmit} className="mt-8 grid gap-6">
+      {returnTo ? <input type="hidden" name="kembali" value={returnTo} /> : null}
       {relation && ofId ? (
         <>
           <input type="hidden" name="relKind" value={relation} />

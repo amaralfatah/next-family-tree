@@ -15,6 +15,8 @@ import type { ChildRelation, Role, UnionStatus } from "@/lib/types";
 import { formValue as get, parsePerson, run, type ActionResult } from "./shared";
 
 const treePath = (treeId: string) => `/pohon/${treeId}`;
+/** Only the tree's own chart is a valid place to return to after adding someone. */
+const chartReturn = (treeId: string, v: string | undefined) => (v && (v === treePath(treeId) || v.startsWith(`${treePath(treeId)}?`)) ? v : null);
 const refreshTree = (treeId: string) => revalidatePath(treePath(treeId), "layout");
 
 // ---------------------------------------------------------------- auth
@@ -117,7 +119,7 @@ export async function createPersonAction(treeId: string, _: ActionResult | null,
   });
   if (!r.ok) return r;
   refreshTree(treeId);
-  redirect(`${treePath(treeId)}/orang/${r.data}`);
+  redirect(chartReturn(treeId, get(fd, "kembali")) ?? `${treePath(treeId)}/orang/${r.data}`);
 }
 
 export async function updatePersonAction(

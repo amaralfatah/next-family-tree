@@ -26,11 +26,17 @@ export default async function NewPersonPage({ params, searchParams }: PageProps<
   const relation = rel && of ? rel : null;
   const unionsOfOf = of ? familyOf(data, of.id).own : [];
   const unionParam = typeof sp.ikatan === "string" ? sp.ikatan : null;
+  const base = `/pohon/${treeId}`;
+  const returnTo = typeof sp.kembali === "string" && (sp.kembali === base || sp.kembali.startsWith(`${base}?`)) ? sp.kembali : null;
   const childRel = (["biological", "adopted", "step"] as const).find((r) => r === sp.rel_anak) as ChildRelation | undefined;
 
   return (
     <main id="konten" className="mx-auto w-full max-w-2xl px-4 py-8">
-      {of ? (
+      {returnTo ? (
+        <Link href={returnTo} className="text-sm text-muted-foreground hover:text-foreground">
+          ← Bagan
+        </Link>
+      ) : of ? (
         <Link href={`/pohon/${treeId}/orang/${of.id}`} className="text-sm text-muted-foreground hover:text-foreground">
           ← {of.fullName}
         </Link>
@@ -49,6 +55,7 @@ export default async function NewPersonPage({ params, searchParams }: PageProps<
         unions={unionsOfOf.map((u) => ({ id: u.union.id, label: u.partner ? `Dengan ${u.partner.fullName}` : "Pasangan tidak diketahui" }))}
         defaultUnionId={unionParam && unionsOfOf.some((u) => u.union.id === unionParam) ? unionParam : (unionsOfOf[0]?.union.id ?? "")}
         defaultChildRelation={childRel ?? "biological"}
+        returnTo={returnTo}
         candidates={data.persons
           .filter((p) => p.id !== of?.id)
           .map((p) => ({ id: p.id, name: p.fullName, nickname: p.nickname, birthYear: p.birthDate && p.birthPrecision !== "unknown" ? p.birthDate.slice(0, 4) : null }))}

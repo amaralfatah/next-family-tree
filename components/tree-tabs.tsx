@@ -2,15 +2,23 @@
 
 import { HistoryIcon, ListIcon, NetworkIcon, SettingsIcon, UsersIcon } from "lucide-react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
 import { cn } from "@/lib/utils";
 
 function useTabs(treeId: string) {
   const pathname = usePathname();
   const base = `/pohon/${treeId}`;
+  // Adding a relative from the chart stays under Bagan, and the tab leads back to the same view.
+  const back = useSearchParams().get("kembali");
+  const fromChart = pathname === `${base}/orang/baru` && back !== null && (back === base || back.startsWith(`${base}?`));
   return [
-    { href: base, label: "Bagan", icon: NetworkIcon, active: pathname === base },
-    { href: `${base}/daftar`, label: "Daftar", icon: ListIcon, active: pathname.startsWith(`${base}/daftar`) || pathname.startsWith(`${base}/orang`) },
+    { href: fromChart ? back : base, label: "Bagan", icon: NetworkIcon, active: pathname === base || fromChart },
+    {
+      href: `${base}/daftar`,
+      label: "Daftar",
+      icon: ListIcon,
+      active: !fromChart && (pathname.startsWith(`${base}/daftar`) || pathname.startsWith(`${base}/orang`)),
+    },
     { href: `${base}/anggota`, label: "Anggota", icon: UsersIcon, active: pathname.startsWith(`${base}/anggota`) },
     { href: `${base}/riwayat`, label: "Riwayat", icon: HistoryIcon, active: pathname.startsWith(`${base}/riwayat`) },
     { href: `${base}/pengaturan`, label: "Atur", icon: SettingsIcon, active: pathname.startsWith(`${base}/pengaturan`) },
