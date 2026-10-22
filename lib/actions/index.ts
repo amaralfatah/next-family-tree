@@ -30,9 +30,12 @@ export async function devLogin(_: ActionResult | null, fd: FormData): Promise<Ac
   redirect(safeNext(get(fd, "next")));
 }
 
+/**
+ * No redirect here: rendering the next page in this same request would still read the old Neon Auth
+ * cookies from the request headers and bounce back to /pohon. The client does a full page load instead.
+ */
 export async function logout() {
   await destroySession();
-  redirect("/");
 }
 
 // ---------------------------------------------------------------- trees

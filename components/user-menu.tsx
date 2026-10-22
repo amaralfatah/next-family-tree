@@ -2,6 +2,7 @@
 
 import { LogOutIcon, TreesIcon } from "lucide-react";
 import Link from "next/link";
+import { useTransition } from "react";
 import { logout } from "@/lib/actions";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
@@ -24,6 +25,7 @@ export function initials(name: string) {
 }
 
 export function UserMenu({ name, email, image }: { name: string; email: string; image: string | null }) {
+  const [leaving, startLeaving] = useTransition();
   return (
     <DropdownMenu>
       <DropdownMenuTrigger className="rounded-full outline-none focus-visible:ring-3 focus-visible:ring-ring/50" aria-label="Menu akun">
@@ -43,8 +45,19 @@ export function UserMenu({ name, email, image }: { name: string; email: string; 
         <DropdownMenuItem render={<Link href="/pohon" />}>
           <TreesIcon /> Pohon saya
         </DropdownMenuItem>
-        <DropdownMenuItem onClick={() => logout()}>
-          <LogOutIcon /> Keluar
+        <DropdownMenuItem
+          closeOnClick={false}
+          disabled={leaving}
+          onClick={() =>
+            startLeaving(async () => {
+              await logout();
+              // A full load, so the next page is rendered from the cleared cookies and no signed-in page stays in the router cache.
+              // eslint-disable-next-line @next/next/no-location-assign-relative-destination -- the full load is the point
+              window.location.assign("/");
+            })
+          }
+        >
+          <LogOutIcon /> {leaving ? "Keluar…" : "Keluar"}
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>

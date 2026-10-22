@@ -92,7 +92,8 @@ export async function destroySession() {
     await db.delete(sessions).where(eq(sessions.id, hash(token)));
   }
   jar.delete(SESSION_COOKIE);
-  await neonAuth()?.signOut();
+  // Only round-trip to Neon Auth when there is a Google session to end; test-login users skip the wait.
+  if (jar.getAll().some((c) => c.name.startsWith("__Secure-neon-auth"))) await neonAuth()?.signOut();
 }
 
 /** Upserts by Neon Auth user id first, then by email (so a dev-login account can later link Google). */
