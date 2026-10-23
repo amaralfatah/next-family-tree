@@ -16,7 +16,6 @@ export default async function ChartPage({ params, searchParams }: PageProps<"/po
       <Suspense>
         <FamilyChart
           treeId={treeId}
-          treeName={tree.name}
           data={chartData}
           rootPersonId={tree.rootPersonId}
           mePersonId={mePersonId}

@@ -14,7 +14,6 @@ import {
   ArrowUpFromLineIcon,
   BabyIcon,
   CrosshairIcon,
-  DownloadIcon,
   ExternalLinkIcon,
   HeartIcon,
   PencilIcon,
@@ -30,15 +29,6 @@ import { useCallback, useEffect, useImperativeHandle, useMemo, useRef, useState,
 import { toast } from "sonner";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Combobox, ComboboxContent, ComboboxEmpty, ComboboxInput, ComboboxItem, ComboboxList } from "@/components/ui/combobox";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuGroup,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import { InputGroupAddon } from "@/components/ui/input-group";
 import { Spinner } from "@/components/ui/spinner";
 import { setRootAction } from "@/lib/actions";
@@ -65,7 +55,6 @@ export interface SandboxActions {
 
 interface Props {
   treeId: string;
-  treeName: string;
   data: TreeData;
   rootPersonId: string | null;
   mePersonId: string | null;
@@ -85,7 +74,7 @@ export function FamilyChart(props: Props) {
   );
 }
 
-function Chart({ treeId, treeName, data, rootPersonId, mePersonId, canEdit, demo = false, initialSelectedId, sandbox }: Props) {
+function Chart({ treeId, data, rootPersonId, mePersonId, canEdit, demo = false, initialSelectedId, sandbox }: Props) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -305,24 +294,8 @@ function Chart({ treeId, treeName, data, rootPersonId, mePersonId, canEdit, demo
 
 
   const [savingRoot, startRoot] = useTransition();
-  const [exporting, setExporting] = useState(false);
   const flowRef = useRef<HTMLDivElement>(null);
   const toolbarRef = useRef<HTMLDivElement>(null);
-
-  async function doExport(kind: "png" | "pdf" | "svg", paper?: "a4" | "a3" | "a2" | "a1") {
-    if (!positions) return;
-    setExporting(true);
-    try {
-      const { exportChart } = await import("./export");
-      await exportChart({ kind, paper, graph, positions, persons: byId, mePersonId, title: treeName, fileName: slug(treeName) });
-      toast.success("Bagan diunduh.");
-    } catch (e) {
-      console.error(e);
-      toast.error("Ekspor gagal. Coba lipat sebagian cabang lalu ulangi.");
-    } finally {
-      setExporting(false);
-    }
-  }
 
   if (!focusId) {
     return <p className="p-8 text-center text-muted-foreground">Belum ada orang di pohon ini.</p>;
@@ -360,29 +333,6 @@ function Chart({ treeId, treeName, data, rootPersonId, mePersonId, canEdit, demo
             <CrosshairIcon data-icon="inline-start" /> <span className="max-sm:sr-only">Saya</span>
           </Button>
         ) : null}
-        <div className="ml-auto">
-          <DropdownMenu>
-            <DropdownMenuTrigger render={<Button variant="outline" size="sm" className="material border-transparent bg-card/85 shadow-[0_1px_2px_rgb(0_0_0/0.06)] backdrop-blur-xl max-sm:px-2.5" disabled={exporting} />}>
-              {exporting ? <Spinner data-icon="inline-start" /> : <DownloadIcon data-icon="inline-start" />} <span className="max-sm:sr-only">Ekspor</span>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-52">
-              <DropdownMenuGroup>
-                <DropdownMenuLabel>Gambar</DropdownMenuLabel>
-                <DropdownMenuItem onClick={() => doExport("png")}>PNG resolusi tinggi</DropdownMenuItem>
-                <DropdownMenuItem onClick={() => doExport("svg")}>SVG (vektor, untuk percetakan)</DropdownMenuItem>
-              </DropdownMenuGroup>
-              <DropdownMenuSeparator />
-              <DropdownMenuGroup>
-                <DropdownMenuLabel>PDF untuk dicetak</DropdownMenuLabel>
-                {(["a4", "a3", "a2", "a1"] as const).map((p) => (
-                  <DropdownMenuItem key={p} onClick={() => doExport("pdf", p)}>
-                    PDF {p.toUpperCase()}
-                  </DropdownMenuItem>
-                ))}
-              </DropdownMenuGroup>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        </div>
       </div>
 
       <div ref={flowRef} className="relative min-h-[60dvh] flex-1" aria-label={`Bagan ${mode} ${byId.get(focusId)?.fullName ?? ""}`}>
@@ -508,17 +458,6 @@ function FocusSearch({ data, onPick }: { data: TreeData; onPick: (id: string) =>
         </ComboboxList>
       </ComboboxContent>
     </Combobox>
-  );
-}
-
-function slug(s: string) {
-  return (
-    s
-      .toLowerCase()
-      .normalize("NFKD")
-      .replace(/[^\w\s-]/g, "")
-      .trim()
-      .replace(/\s+/g, "-") || "silsilah"
   );
 }
 

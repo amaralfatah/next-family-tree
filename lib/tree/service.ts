@@ -172,15 +172,6 @@ async function readTreeData(conn: Conn, treeId: string): Promise<TreeData> {
   };
 }
 
-/** Person and union counts, for pages that show totals without the whole tree. */
-export async function countTreeContents(conn: Conn, treeId: string) {
-  const [[p], [u]] = await Promise.all([
-    conn.select({ n: count() }).from(persons).where(eq(persons.treeId, treeId)),
-    conn.select({ n: count() }).from(unions).where(eq(unions.treeId, treeId)),
-  ]);
-  return { persons: p.n, unions: u.n };
-}
-
 // ---------------------------------------------------------------- persons
 
 async function requirePerson(conn: Conn, treeId: string, personId: string): Promise<PersonRow> {
@@ -523,18 +514,6 @@ export async function listChangesWith(db: DB, access: TreeAccess, opts: { before
     .orderBy(desc(changeLog.createdAt))
     .limit(limit + 1);
   return { rows: rows.slice(0, limit), hasMore: rows.length > limit };
-}
-
-export async function exportTree(db: DB, userId: string, treeId: string) {
-  const { tree } = await getTree(db, userId, treeId);
-  const data = await readTreeData(db, treeId);
-  return {
-    format: "wargi-backup",
-    version: 1,
-    exportedAt: new Date().toISOString(),
-    tree: { id: tree.id, name: tree.name, description: tree.description, rootPersonId: tree.rootPersonId },
-    ...data,
-  };
 }
 
 export type { Role };

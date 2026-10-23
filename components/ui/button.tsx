@@ -3,9 +3,10 @@ import { cva, type VariantProps } from "class-variance-authority"
 import { cn } from "cn"
 
 // Buttons after the HIG's button styles: filled (default, the soga tint), gray (secondary), bordered
-// (outline), plain (ghost/link). Rounded rectangles, 44pt at lg for touch.
+// (outline), plain (ghost/link). Rounded rectangles, 44pt at lg for touch. A press dims and settles the
+// button at once, on pointer-down; the release eases back.
 const baseButtonVariants = cva(
-  "group/button inline-flex shrink-0 items-center justify-center rounded-[0.625rem] border border-transparent bg-clip-padding text-[0.9375rem] font-medium whitespace-nowrap transition-[color,background-color,border-color,box-shadow,opacity] outline-none select-none focus-visible:ring-3 focus-visible:ring-ring/40 active:not-aria-[haspopup]:opacity-80 active:transition-none disabled:pointer-events-none disabled:opacity-40 aria-invalid:border-destructive aria-invalid:ring-3 aria-invalid:ring-destructive/20 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
+  "group/button inline-flex shrink-0 items-center justify-center rounded-[0.625rem] border border-transparent bg-clip-padding text-[0.9375rem] font-medium whitespace-nowrap transition-[color,background-color,border-color,box-shadow,opacity,scale] duration-200 ease-out outline-none select-none focus-visible:ring-3 focus-visible:ring-ring/40 active:not-aria-[haspopup]:scale-[0.97] active:not-aria-[haspopup]:opacity-80 active:duration-0 disabled:pointer-events-none disabled:opacity-40 aria-invalid:border-destructive aria-invalid:ring-3 aria-invalid:ring-destructive/20 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
   {
     variants: {
       variant: {

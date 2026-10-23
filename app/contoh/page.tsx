@@ -49,7 +49,6 @@ export default async function DemoPage() {
         <Suspense>
           <FamilyChart
             treeId="contoh"
-            treeName={demo.name}
             data={demo.data}
             rootPersonId={demo.focusId}
             mePersonId={demo.meId}

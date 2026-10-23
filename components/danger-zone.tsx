@@ -21,7 +21,7 @@ export function DangerZone({ treeId, treeName, isOwner }: { treeId: string; tree
             <ConfirmButton
               label="Hapus pohon permanen"
               title={`Hapus “${treeName}” selamanya?`}
-              description="Semua orang, relasi, foto, undangan, dan riwayat dihapus dan tidak bisa dikembalikan. Unduh cadangan JSON dulu bila perlu."
+              description="Semua orang, relasi, foto, undangan, dan riwayat dihapus dan tidak bisa dikembalikan."
               confirmLabel="Hapus permanen"
               onConfirm={async () => {
                 if (typed.trim() !== treeName) return { ok: false, error: "Ketik nama pohon persis untuk mengonfirmasi." };

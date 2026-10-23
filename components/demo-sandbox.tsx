@@ -163,7 +163,6 @@ export function DemoSandbox({ migrations }: { migrations: string[] }) {
             <FamilyChart
               key={run}
               treeId="demo"
-              treeName={view.name}
               data={view.data}
               rootPersonId={view.rootId}
               mePersonId={view.meId}

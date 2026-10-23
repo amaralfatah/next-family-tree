@@ -6,7 +6,7 @@
 
 Banyak keluarga di Indonesia menyimpan silsilah dalam bentuk kertas, foto bagan yang dibagikan di grup WhatsApp, atau ingatan orang tua. Saat ada acara halal bihalal, reuni bani/trah, atau pernikahan, pertanyaan "dia itu siapa kita?" muncul berulang. Aplikasi silsilah global (MyHeritage, Ancestry, FamilySearch) berorientasi riset genealogi, berbahasa Inggris, banyak fitur berbayar, dan kurang cocok dengan struktur keluarga besar Indonesia.
 
-**Wargi** (bahasa Sunda: keluarga/kerabat) adalah web untuk mencatat silsilah keluarga bersama-sama: satu orang membuat pohon, anggota keluarga lain diundang untuk melengkapi, dan hasilnya bisa dilihat sebagai bagan, dicari, dan dicetak untuk acara keluarga.
+**Wargi** (bahasa Sunda: keluarga/kerabat) adalah web untuk mencatat silsilah keluarga bersama-sama: satu orang membuat pohon, anggota keluarga lain diundang untuk melengkapi, dan hasilnya bisa dilihat sebagai bagan dan dicari.
 
 Wargi adalah salah satu aplikasi di katalog **Caang Labs** (lihat `next-caanglabs/docs/01-prd.md`).
 
@@ -64,12 +64,7 @@ Karena itu Wargi memakai tiga entitas: **orang**, **ikatan** (pasangan), dan **a
 - Undang lewat link dengan peran tertentu; link bisa dicabut dan punya masa berlaku.
 - Riwayat perubahan: siapa mengubah apa dan kapan (log sederhana per pohon).
 
-### 4.5 Cetak dan ekspor
-
-- Ekspor bagan ke PNG dan PDF (ukuran A4 hingga A1, untuk dicetak saat acara keluarga).
-- Ekspor data ke JSON (backup penuh).
-
-### 4.6 Tidak termasuk (Roadmap)
+### 4.5 Tidak termasuk (Roadmap)
 
 GEDCOM impor/ekspor, halaman publik, penggabungan dua pohon, deteksi duplikat, timeline peristiwa, cerita/kenangan per orang, tanggal Hijriah, aplikasi Android.
 
@@ -139,14 +134,13 @@ change_log        id, tree_id, user_id, entity, entity_id, action, diff jsonb, c
 - Unit test `lib/graph/` (pernikahan ganda, satu orang tua, anak angkat), `lib/kinship/` (tabel kasus: kakak, adik, paman, bibi, sepupu, keponakan, cucu, mertua, ipar), `lib/access/`.
 - Test otorisasi: pembaca tidak bisa mengubah, non-anggota tidak bisa membaca, token undangan yang dicabut ditolak.
 - Test validasi siklus.
-- Cek manual: bagan dengan data keluarga nyata (± 100 orang, 4 generasi), cetak PDF A3.
+- Cek manual: bagan dengan data keluarga nyata (± 100 orang, 4 generasi).
 
 ## 10. Kriteria Sukses v1
 
 1. Satu keluarga nyata dengan 4 generasi dan ≥ 100 orang tercatat oleh ≥ 3 editor.
 2. Anggota yang diundang bisa menemukan dirinya dan melihat "hubungan dengan saya" dalam < 1 menit sejak membuka link.
-3. Bagan bisa dicetak dan terbaca saat acara keluarga.
-4. Tidak ada data yang bisa diakses tanpa keanggotaan (lolos test otorisasi).
+3. Tidak ada data yang bisa diakses tanpa keanggotaan (lolos test otorisasi).
 
 ## 11. Roadmap
 

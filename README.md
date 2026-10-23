@@ -10,7 +10,6 @@ Collaborative family-tree web app (UI in Indonesian), part of the Caang Labs cat
 - List view with search, generation filter, and pagination (the chart is never the only way to read the data).
 - Roles (owner / editor / viewer), invite links with expiry and revocation, ownership transfer, change history.
 - Photos (compressed in the browser, ≤ 1 MB, served only to members).
-- Export: PNG, SVG, and PDF (A4–A1) rendered from chart data; full JSON backup.
 - Validation: cycle prevention, self-partner prevention, non-blocking date warnings, edit-conflict detection.
 
 ## Stack

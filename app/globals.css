@@ -33,6 +33,10 @@
   --color-popover: var(--popover);
   --color-card-foreground: var(--card-foreground);
   --color-card: var(--card);
+  /* Tracking is size-specific (HIG): small text opens up slightly so it stays legible, body stays at 0,
+     and display sizes tighten (.font-display and the titles set their own negative values). */
+  --text-xs--letter-spacing: 0.01em;
+  --text-sm--letter-spacing: 0.005em;
   --radius-sm: calc(var(--radius) * 0.6);
   --radius-md: calc(var(--radius) * 0.8);
   --radius-lg: var(--radius);
@@ -197,6 +201,25 @@
 @media (prefers-reduced-motion: reduce) {
   .rise {
     animation: none;
+  }
+  /* Menus, popovers and dialogs cross-fade in place instead of zooming or sliding (tw-animate-css),
+     and Base UI sheets fade without travelling. */
+  .animate-in,
+  .animate-out {
+    --tw-enter-scale: 1 !important;
+    --tw-exit-scale: 1 !important;
+    --tw-enter-translate-x: 0 !important;
+    --tw-enter-translate-y: 0 !important;
+    --tw-exit-translate-x: 0 !important;
+    --tw-exit-translate-y: 0 !important;
+  }
+  [data-slot="sheet-content"][data-starting-style],
+  [data-slot="sheet-content"][data-ending-style] {
+    translate: none;
+  }
+  /* A press still dims the button; it just doesn't shrink. */
+  .group\/button:active {
+    scale: none;
   }
   .sheet-in {
     animation-name: fade-in;

@@ -1,4 +1,4 @@
-import { DownloadIcon, HistoryIcon, LockIcon, ShieldCheckIcon } from "lucide-react";
+import { HistoryIcon, LockIcon, ShieldCheckIcon } from "lucide-react";
 import Image, { type StaticImageData } from "next/image";
 import Link from "next/link";
 import { redirect } from "next/navigation";
@@ -23,7 +23,6 @@ const PROMISES = [
   { icon: LockIcon, title: "Hanya untuk yang diundang", body: "Pohon dan foto keluarga tidak bisa ditemukan orang lain di internet." },
   { icon: HistoryIcon, title: "Setiap perubahan tercatat", body: "Riwayat menyimpan siapa mengubah apa. Saudara yang cukup ingin melihat bisa diundang sebagai pembaca." },
   { icon: ShieldCheckIcon, title: "Gratis, tanpa iklan", body: "Cukup dibuka di browser ponsel atau laptop. Tidak perlu memasang aplikasi." },
-  { icon: DownloadIcon, title: "Bisa diunduh kapan saja", body: "Seluruh isi pohon bisa diunduh, dan bagannya bisa dicetak sampai ukuran A1." },
 ];
 
 export default async function Home() {
