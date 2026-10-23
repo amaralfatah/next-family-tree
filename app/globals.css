@@ -9,7 +9,7 @@
   --color-foreground: var(--foreground);
   --font-sans: -apple-system, BlinkMacSystemFont, "SF Pro Text", var(--font-inter), system-ui, sans-serif;
   --font-heading: var(--font-sans);
-  --font-display: -apple-system, BlinkMacSystemFont, "SF Pro Display", var(--font-inter), system-ui, sans-serif;
+  --font-display: var(--font-serif), "Tiempos Headline", Georgia, serif;
   --font-brand: var(--font-inter);
   --color-soga: var(--soga);
   --color-soga-ink: var(--soga-ink);
@@ -41,71 +41,70 @@
 }
 
 /*
- * Sararia Family Tree follows Apple's Human Interface Guidelines, as the Sararia family does
- * (sararia-logo/FAMILY.md): system type, ink #1d1d1f, semantic greys, and one tint colour.
- * The tint is soga (the brown of batik soga and of the icon's trunk), darkened to #a2552b so
- * text and filled buttons pass AA. It marks what you can act on and what is about you: buttons,
- * links, selection, your card and the kinship path. Everything else is ink and grey.
- * --grouped is the page behind grouped cards and lists (systemGroupedBackground: #f5f5f7, black at
- * night, so #1c1c1e cards stand out). --paper-2 is a secondary fill on a plain page (lists, info bars).
- * --nila is the tree's connecting lines.
+ * Colour follows DESIGN.md: a warm cream canvas, warm ink, hairlines in cream, and coral as the one
+ * tint, with Apple's HIG rules for how a tint is used. Coral marks what you can act on and what is about
+ * you: buttons, links, selection, your card and the kinship path. Everything else is ink and cream.
+ * The DESIGN.md coral #cc785c fails AA under white text, so --primary / --soga-ink use a deeper coral
+ * (#ad5a3c, 4.6:1 on the canvas) and #cc785c stays for non-text marks (--soga: rings, underlines).
+ * --grouped is the page behind grouped cards and lists; --paper-2 is a secondary fill on a plain page.
+ * --nila is the tree's connecting lines. Dark mode uses warm near-blacks, never pure #000.
  */
 :root {
-  --background: #ffffff;
-  --paper-2: #f5f5f7;
-  --grouped: #f5f5f7;
-  --foreground: #1d1d1f;
-  --card: #ffffff;
-  --card-foreground: #1d1d1f;
-  --popover: #ffffff;
-  --popover-foreground: #1d1d1f;
-  --primary: #a2552b;
+  --background: #faf9f5;
+  --paper-2: #f0eee6;
+  --grouped: #f3f0e8;
+  --foreground: #141413;
+  --card: #fdfcf9;
+  --card-foreground: #141413;
+  --popover: #fdfcf9;
+  --popover-foreground: #141413;
+  --primary: #ad5a3c;
   --primary-foreground: #ffffff;
-  --secondary: #e8e8ed;
-  --secondary-foreground: #1d1d1f;
-  --muted: #f5f5f7;
-  --muted-foreground: #6e6e73;
-  --accent: color-mix(in srgb, #a2552b 10%, #ffffff);
-  --accent-foreground: #1d1d1f;
-  --destructive: #d70015;
-  --warning: #b25000;
-  --border: #e5e5ea;
-  --input: #d2d2d7;
-  --ring: #a2552b;
-  --soga: #c46b39;
-  --soga-ink: #a2552b;
-  --nila: #c7c7cc;
+  --secondary: #e8e0d2;
+  --secondary-foreground: #141413;
+  --muted: #f0eee6;
+  --muted-foreground: #6c6a64;
+  --accent: color-mix(in srgb, #cc785c 14%, #faf9f5);
+  --accent-foreground: #141413;
+  --destructive: #c64545;
+  --warning: #9a5b00;
+  --border: #e6dfd8;
+  --input: #d6cec3;
+  --ring: #cc785c;
+  --soga: #cc785c;
+  --soga-ink: #ad5a3c;
+  --nila: #cdc5b8;
   --radius: 0.75rem;
 }
 
 /* Native controls (selects, checkboxes, scrollbars) follow the app theme, not only the OS. */
 .dark {
   color-scheme: dark;
-  --background: #000000;
-  --paper-2: #1c1c1e;
-  --grouped: #000000;
-  --foreground: #f5f5f7;
-  --card: #1c1c1e;
-  --card-foreground: #f5f5f7;
-  --popover: #2c2c2e;
-  --popover-foreground: #f5f5f7;
-  --primary: #e39a68;
-  --primary-foreground: #1d1d1f;
-  --secondary: #2c2c2e;
-  --secondary-foreground: #f5f5f7;
-  /* A fill one step up from cards, so avatars and rows show on #1c1c1e (tertiarySystemFill). */
-  --muted: #2c2c2e;
-  --muted-foreground: #a1a1a6;
-  --accent: color-mix(in srgb, #e39a68 16%, #1c1c1e);
-  --accent-foreground: #f5f5f7;
-  --destructive: #ff453a;
-  --warning: #ffb340;
-  --border: #38383a;
-  --input: #48484a;
-  --ring: #e39a68;
-  --soga: #e39a68;
-  --soga-ink: #e39a68;
-  --nila: #48484a;
+  --background: #1f1e1d;
+  --paper-2: #2a2927;
+  --grouped: #1f1e1d;
+  --foreground: #faf9f5;
+  --card: #2a2927;
+  --card-foreground: #faf9f5;
+  --popover: #30302e;
+  --popover-foreground: #faf9f5;
+  --primary: #d97757;
+  --primary-foreground: #141413;
+  --secondary: #34332f;
+  --secondary-foreground: #faf9f5;
+  /* A fill one step up from cards, so avatars and rows show on them. */
+  --muted: #34332f;
+  --muted-foreground: #a09d96;
+  --accent: color-mix(in srgb, #d97757 18%, #2a2927);
+  --accent-foreground: #faf9f5;
+  --destructive: #e5675f;
+  --warning: #e8a55a;
+  --border: #3d3c37;
+  --input: #4a4843;
+  --ring: #d97757;
+  --soga: #d97757;
+  --soga-ink: #e08a6b;
+  --nila: #4a4843;
 }
 
 @layer base {
@@ -143,11 +142,13 @@
   body {
     @apply bg-background text-foreground antialiased;
   }
-  /* Titles in the system face: SF Pro Display on Apple devices, Inter elsewhere. Tracking tightens as
-     size grows (-0.015em here; large titles and the hero set -0.02em / -0.025em); body text stays at 0. */
+  /* Titles in the serif at regular weight; emphasis comes from size, never bold (DESIGN.md). Tracking
+     tightens as size grows (-0.01em here; large titles and the hero set -0.02em / -0.025em) and the
+     optical-size axis follows the size; body text stays at 0. */
   .font-display {
-    font-weight: 700;
-    letter-spacing: -0.015em;
+    font-weight: 400;
+    letter-spacing: -0.01em;
+    font-optical-sizing: auto;
   }
   ::selection {
     background: color-mix(in oklch, var(--soga) 35%, transparent);
@@ -155,9 +156,9 @@
 }
 
 @layer components {
-  /* Initials avatar, as in Apple Contacts: a grey monogram that reads on any surface, in both themes. */
+  /* Initials avatar, as in Apple Contacts: a warm grey monogram that reads on any surface, in both themes. */
   .monogram {
-    background: linear-gradient(#a6a6ab, #86868b);
+    background: linear-gradient(#a8a49b, #8a867d);
     color: #ffffff;
   }
 
@@ -263,14 +264,14 @@
 /* Increase Contrast: stronger separators and secondary text. */
 @media (prefers-contrast: more) {
   :root {
-    --border: #a1a1a6;
-    --input: #8e8e93;
-    --muted-foreground: #4f4f54;
+    --border: #a39d93;
+    --input: #8e8b82;
+    --muted-foreground: #4d4b46;
   }
   .dark {
-    --border: #8e8e93;
-    --input: #a1a1a6;
-    --muted-foreground: #c7c7cc;
+    --border: #8e8b82;
+    --input: #a09d96;
+    --muted-foreground: #cdc9c0;
   }
 }
 

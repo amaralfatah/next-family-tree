@@ -47,7 +47,7 @@ export default async function Home() {
 
       <main id="konten" className="flex-1">
         <section className="px-4 pt-16 text-center sm:px-6 md:pt-24">
-          <h1 className="mx-auto max-w-3xl font-display text-[2.75rem] leading-[1.05] font-semibold tracking-[-0.025em] text-balance sm:text-6xl md:text-7xl">
+          <h1 className="mx-auto max-w-3xl font-display text-[2.75rem] leading-[1.05] tracking-[-0.025em] text-balance sm:text-6xl md:text-7xl">
             Saat kumpul keluarga, tak perlu lagi salah panggil.
           </h1>
           <p className="mx-auto mt-5 max-w-xl text-xl leading-snug text-pretty text-muted-foreground md:text-2xl">
@@ -91,7 +91,7 @@ export default async function Home() {
 
         <section className="px-4 py-20 sm:px-6 md:py-24">
           <div className="mx-auto max-w-2xl">
-            <h2 className="text-center font-display text-4xl leading-tight font-semibold tracking-[-0.02em] text-balance md:text-5xl">Data keluarga tetap milik keluarga.</h2>
+            <h2 className="text-center font-display text-4xl leading-tight tracking-[-0.02em] text-balance md:text-5xl">Data keluarga tetap milik keluarga.</h2>
             {/* An inset grouped list, as in iOS Settings. */}
             <ul className="mt-12 divide-y overflow-hidden rounded-2xl bg-paper-2">
               {PROMISES.map(({ icon: Icon, title, body }) => (
@@ -115,7 +115,7 @@ export default async function Home() {
         </section>
 
         <section className="border-t px-4 py-20 text-center sm:px-6 md:py-24">
-          <h2 className="mx-auto max-w-2xl font-display text-4xl leading-tight font-semibold tracking-[-0.02em] text-balance md:text-5xl">Mumpung para sesepuh masih bisa ditanya.</h2>
+          <h2 className="mx-auto max-w-2xl font-display text-4xl leading-tight tracking-[-0.02em] text-balance md:text-5xl">Mumpung para sesepuh masih bisa ditanya.</h2>
           <Link href="/masuk" className={buttonVariants({ size: "lg", className: "mt-8" })}>
             Buat pohon keluarga
           </Link>
@@ -147,7 +147,7 @@ function Tile({ title, body, children }: { title: string; body: string; children
   return (
     <article className="flex flex-col overflow-hidden rounded-3xl bg-card">
       <div className="px-7 pt-8 md:px-9 md:pt-10">
-        <h2 className="font-display text-2xl leading-tight font-semibold text-balance md:text-[1.75rem]">{title}</h2>
+        <h2 className="font-display text-2xl leading-tight text-balance md:text-[1.75rem]">{title}</h2>
         <p className="mt-3 text-[1.0625rem] leading-snug text-pretty text-muted-foreground">{body}</p>
       </div>
       {/* The same height in both tiles, so their bottoms line up; a tall shot is cut by the tile's edge. */}

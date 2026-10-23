@@ -5,15 +5,15 @@ import { nodeSize, PERSON_H, PERSON_W, type Positions } from "./layout";
 
 // Print palette: always light, whatever theme the viewer uses on screen.
 const C = {
-  paper: "#ffffff",
-  card: "#ffffff",
-  deceased: "#f5f5f7",
-  border: "#d2d2d7",
-  ink: "#1d1d1f",
-  muted: "#6e6e73",
-  line: "#c7c7cc",
-  soga: "#a2552b",
-  nila: "#8e8e93",
+  paper: "#faf9f5",
+  card: "#fdfcf9",
+  deceased: "#f0eee6",
+  border: "#d6cec3",
+  ink: "#141413",
+  muted: "#6c6a64",
+  line: "#cdc5b8",
+  soga: "#ad5a3c",
+  nila: "#8e8b82",
 };
 const SANS = "-apple-system,'SF Pro Text','Inter','Segoe UI',Roboto,Helvetica,Arial,sans-serif";
 

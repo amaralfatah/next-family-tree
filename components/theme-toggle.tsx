@@ -12,7 +12,7 @@ export function ThemeToggle({ label, className }: { label: string; className?: s
     if (document.startViewTransition && !matchMedia("(prefers-reduced-motion: reduce)").matches) document.startViewTransition(swap);
     else swap();
     // Keep the browser bar in step with the page, not only with the OS setting (app/layout.tsx themeColor).
-    document.querySelectorAll<HTMLMetaElement>("meta[name=theme-color]").forEach((m) => (m.content = dark ? "#000000" : "#ffffff"));
+    document.querySelectorAll<HTMLMetaElement>("meta[name=theme-color]").forEach((m) => (m.content = dark ? "#1f1e1d" : "#faf9f5"));
     try {
       localStorage.setItem("theme", dark ? "dark" : "light");
     } catch {
