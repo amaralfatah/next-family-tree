@@ -66,7 +66,7 @@ export const PersonNode = memo(function PersonNode({ data }: NodeProps<PersonFlo
         <span className="mt-0.5 block truncate text-[12.5px] leading-tight text-muted-foreground">{subtitle(person) || " "}</span>
       </span>
       {isMe ? (
-        <span className="absolute -top-2.5 right-2 rounded-full bg-soga px-2 py-px text-[10px] font-semibold text-primary-foreground dark:text-background">Saya</span>
+        <span className="absolute -top-2.5 right-2 rounded-full bg-primary px-2 py-px text-[10px] font-semibold text-primary-foreground">Saya</span>
       ) : null}
       {collapsible ? (
         <button
@@ -77,7 +77,7 @@ export const PersonNode = memo(function PersonNode({ data }: NodeProps<PersonFlo
           }}
           aria-label={collapsed ? `Buka cabang ${person.fullName}` : `Lipat cabang ${person.fullName}`}
           className={cn(
-            "nodrag absolute left-1/2 z-10 flex h-5 -translate-x-1/2 items-center gap-0.5 rounded-full border bg-background px-1.5 text-[10px] font-medium text-muted-foreground shadow-sm transition-colors hover:text-foreground",
+            "nodrag absolute left-1/2 z-10 flex h-5 -translate-x-1/2 items-center gap-0.5 rounded-full border bg-background px-1.5 text-[10px] font-medium text-muted-foreground tabular-nums shadow-sm outline-none transition-[color,scale] duration-150 after:absolute after:-inset-x-2 after:-inset-y-3 after:content-[''] hover:text-foreground focus-visible:ring-3 focus-visible:ring-ring/50 active:scale-90 active:duration-0",
             direction === "down" ? "-bottom-2.5" : "-top-2.5",
           )}
         >

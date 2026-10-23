@@ -115,6 +115,12 @@ export default async function ListPage({ params, searchParams }: PageProps<"/poh
                   <span className="block truncate text-sm text-muted-foreground">
                     {[subtitle(p), p.birthPlace].filter(Boolean).join(" · ") || "—"}
                   </span>
+                  {/* Phones: the relation column is hidden, so the kinship term joins the name instead. */}
+                  {p.id === mePersonId ? (
+                    <span className="block text-sm font-medium text-soga-ink sm:hidden">Saya</span>
+                  ) : kin ? (
+                    <span className="block truncate text-sm text-soga-ink sm:hidden">{kin.label}</span>
+                  ) : null}
                 </Link>
                 <span className="hidden shrink-0 text-right text-sm sm:block">
                   {p.id === mePersonId ? (
@@ -138,7 +144,7 @@ export default async function ListPage({ params, searchParams }: PageProps<"/poh
               Sebelumnya
             </Link>
           ) : null}
-          <span className="px-2 text-muted-foreground">
+          <span className="px-2 text-muted-foreground tabular-nums">
             Halaman {page} dari {pages}
           </span>
           {page < pages ? (

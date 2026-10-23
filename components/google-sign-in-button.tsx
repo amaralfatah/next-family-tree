@@ -36,7 +36,7 @@ export function GoogleSignInButton({ next }: { next: string }) {
         type="button"
         onClick={signIn}
         disabled={pending}
-        className="mt-6 flex h-11 w-full items-center justify-center gap-3 rounded-xl border border-input bg-card text-[0.9375rem] font-medium transition-colors outline-none hover:bg-muted focus-visible:ring-3 focus-visible:ring-ring/45 disabled:opacity-60"
+        className="mt-6 flex h-11 w-full items-center justify-center gap-3 rounded-xl border border-input bg-card text-[0.9375rem] font-medium transition-[background-color,scale] duration-200 ease-out outline-none hover:bg-muted focus-visible:ring-3 focus-visible:ring-ring/45 active:scale-[0.98] active:bg-muted active:duration-0 disabled:opacity-60"
       >
         <GoogleIcon /> {pending ? "Menghubungkan…" : "Lanjutkan dengan Google"}
       </button>

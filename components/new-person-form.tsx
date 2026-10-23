@@ -130,13 +130,13 @@ export function NewPersonForm({
                   role="option"
                   aria-selected={picked === c.id}
                   onClick={() => setPicked(c.id)}
-                  className={cn("flex w-full items-center justify-between px-3 py-2 text-left text-sm hover:bg-muted", picked === c.id && "bg-accent")}
+                  className={cn("flex min-h-11 w-full items-center justify-between gap-3 px-3 py-2 text-left text-sm outline-none hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring/50 focus-visible:ring-inset active:bg-muted", picked === c.id && "bg-accent")}
                 >
                   <span>
                     {c.name}
                     {c.nickname ? <span className="text-muted-foreground"> “{c.nickname}”</span> : null}
                   </span>
-                  {c.birthYear ? <span className="text-xs text-muted-foreground">l. {c.birthYear}</span> : null}
+                  {c.birthYear ? <span className="shrink-0 text-xs text-muted-foreground tabular-nums">l. {c.birthYear}</span> : null}
                 </button>
               </li>
             ))}

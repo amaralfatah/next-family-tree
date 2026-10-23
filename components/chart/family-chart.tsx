@@ -319,7 +319,7 @@ function Chart({ treeId, data, rootPersonId, mePersonId, canEdit, demo = false, 
               aria-pressed={mode === value}
               onClick={() => setView({ mode: value })}
               className={cn(
-                "flex h-8 items-center gap-1.5 rounded-lg px-3 text-sm transition-[color,background-color,box-shadow] duration-150",
+                "flex h-8 items-center gap-1.5 rounded-lg px-3 text-sm outline-none transition-[color,background-color,box-shadow,opacity] duration-150 focus-visible:ring-3 focus-visible:ring-ring/50 active:opacity-70 active:duration-0",
                 mode === value ? "bg-card font-medium text-foreground shadow-[0_1px_3px_rgb(0_0_0/0.12)]" : "text-muted-foreground hover:text-foreground",
               )}
             >
@@ -338,7 +338,7 @@ function Chart({ treeId, data, rootPersonId, mePersonId, canEdit, demo = false, 
       <div ref={flowRef} className="relative min-h-[60dvh] flex-1" aria-label={`Bagan ${mode} ${byId.get(focusId)?.fullName ?? ""}`}>
         {!positions ? (
           <div className="absolute inset-0 grid place-items-center text-sm text-muted-foreground">
-            <span className="flex items-center gap-2">
+            <span role="status" className="flex items-center gap-2">
               <Spinner /> Menyusun bagan…
             </span>
           </div>
@@ -372,7 +372,7 @@ function Chart({ treeId, data, rootPersonId, mePersonId, canEdit, demo = false, 
         </ReactFlow>
         </div>
         {stale && positions ? (
-          <span className="absolute top-16 left-1/2 -translate-x-1/2 rounded-full bg-card px-3 py-1 text-xs text-muted-foreground shadow">Menyusun ulang…</span>
+          <span role="status" className="absolute top-16 left-1/2 -translate-x-1/2 rounded-full bg-card px-3 py-1 text-xs text-muted-foreground shadow">Menyusun ulang…</span>
         ) : null}
       </div>
 
@@ -469,7 +469,7 @@ const QUICK_ADD = [
 ] as const;
 
 const quickAddClass =
-  "flex flex-col items-center gap-1 rounded-xl border border-dashed px-1 py-2 text-xs font-medium text-muted-foreground transition-[color,border-color,background-color,transform] duration-150 active:duration-0 hover:border-soga hover:bg-accent/60 hover:text-foreground active:scale-[0.97]";
+  "flex flex-col items-center gap-1 rounded-xl border border-dashed px-1 py-2 text-xs font-medium text-muted-foreground outline-none transition-[color,border-color,background-color,transform] duration-150 active:duration-0 hover:border-soga hover:bg-accent/60 hover:text-foreground focus-visible:border-soga focus-visible:ring-3 focus-visible:ring-ring/40 active:scale-[0.97]";
 
 function QuickAdd({ treeId, personId, onAdd }: { treeId: string; personId: string; onAdd?: SandboxActions["onAdd"] }) {
   // Saving returns here with the same focus and direction instead of opening the new profile.
@@ -530,7 +530,7 @@ function PersonSheet(props: {
       aria-label={`Ringkasan ${person.fullName}`}
     >
       <div className="mx-auto mb-2 h-1 w-10 rounded-full bg-border sm:hidden" aria-hidden />
-      <button type="button" onClick={dismiss} className="absolute top-3 right-3 grid size-8 place-items-center rounded-full text-muted-foreground hover:bg-muted hover:text-foreground" aria-label="Tutup">
+      <button type="button" onClick={dismiss} className="absolute top-3 right-3 grid size-8 place-items-center rounded-full text-muted-foreground outline-none transition-[color,background-color,scale] duration-150 hover:bg-muted hover:text-foreground focus-visible:ring-3 focus-visible:ring-ring/50 active:scale-90 active:bg-muted active:duration-0" aria-label="Tutup">
         <XIcon className="size-4" />
       </button>
       <div className="flex items-start gap-3 pr-8">

@@ -61,7 +61,7 @@ export default async function TreesPage() {
                 <li key={t.id}>
                   <Link
                     href={`/pohon/${t.id}`}
-                    className="group flex items-center gap-4 px-4 py-3.5 transition-colors outline-none hover:bg-muted focus-visible:bg-accent"
+                    className="group flex items-center gap-4 px-4 py-3.5 transition-colors outline-none hover:bg-muted focus-visible:bg-accent focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:ring-inset active:bg-muted active:duration-0"
                   >
                     <div className="min-w-0 flex-1">
                       <h2 className="truncate text-[1.0625rem] font-semibold">{t.name}</h2>

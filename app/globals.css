@@ -199,8 +199,10 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
+  /* Content still arrives, as a short cross-fade without the upward travel. */
   .rise {
-    animation: none;
+    animation-name: fade-in;
+    animation-duration: 200ms;
   }
   /* Menus, popovers and dialogs cross-fade in place instead of zooming or sliding (tw-animate-css),
      and Base UI sheets fade without travelling. */
@@ -278,7 +280,8 @@
     backdrop-filter: none;
   }
   [data-slot="dialog-overlay"],
-  [data-slot="alert-dialog-overlay"] {
+  [data-slot="alert-dialog-overlay"],
+  [data-slot="sheet-overlay"] {
     backdrop-filter: none;
     background-color: rgb(0 0 0 / 0.4);
   }

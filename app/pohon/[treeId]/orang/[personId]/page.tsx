@@ -147,7 +147,7 @@ export default async function PersonPage({ params }: PageProps<"/pohon/[treeId]/
                     ))}
                     {g.parents.length < 2 ? (
                       canEdit ? (
-                        <Link href={addHref("parent", `&rel_anak=${g.relation}`)} className="flex min-h-11 items-center gap-2.5 text-sm text-primary">
+                        <Link href={addHref("parent", `&rel_anak=${g.relation}`)} className="flex min-h-11 items-center gap-2.5 rounded-md text-sm text-primary outline-none underline-offset-4 hover:underline focus-visible:ring-3 focus-visible:ring-ring/50 active:opacity-70">
                           <PlusIcon className="size-4" /> Tambah orang tua lain
                         </Link>
                       ) : (
@@ -272,7 +272,7 @@ function PersonRow({ treeId, person, note, menu }: { treeId: string; person: Per
   return (
     <div className="flex min-h-14 items-center gap-3 transition-colors hover:bg-muted/50">
       <PersonAvatar treeId={treeId} person={person} size="sm" />
-      <Link href={`/pohon/${treeId}/orang/${person.id}`} className="min-w-0 flex-1">
+      <Link href={`/pohon/${treeId}/orang/${person.id}`} className="min-w-0 flex-1 rounded-sm outline-none focus-visible:ring-3 focus-visible:ring-ring/50">
         <span className="block truncate text-sm font-medium">{person.fullName}</span>
         <span className="block truncate text-xs text-muted-foreground">{[note, subtitle(person)].filter(Boolean).join(" · ") || "—"}</span>
       </Link>
