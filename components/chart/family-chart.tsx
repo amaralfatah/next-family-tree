@@ -42,7 +42,7 @@ import {
 import { InputGroupAddon } from "@/components/ui/input-group";
 import { Spinner } from "@/components/ui/spinner";
 import { setRootAction } from "@/lib/actions";
-import { autoCollapse, buildAncestorGraph, buildDescendantGraph, type FamilyGraph } from "@/lib/graph/build";
+import { autoCollapse, buildAncestorGraph, buildDescendantGraph, revealFocus, type FamilyGraph } from "@/lib/graph/build";
 import { PERSON_H, PERSON_W, toElk } from "@/lib/graph/layout";
 import { useElkLayout } from "@/lib/graph/use-layout";
 import { createKinshipResolver } from "@/lib/kinship";
@@ -99,6 +99,7 @@ function Chart({ treeId, treeName, data, rootPersonId, mePersonId, canEdit, demo
   const setView = useCallback(
     (next: { focus?: string; mode?: Mode }) => {
       const sp = new URLSearchParams(searchParams.toString());
+      sp.delete("ditambah");
       if (next.focus) sp.set("pusat", next.focus);
       if (next.mode) sp.set("arah", next.mode);
       router.replace(`${pathname}?${sp.toString()}`, { scroll: false });
@@ -132,15 +133,31 @@ function Chart({ treeId, treeName, data, rootPersonId, mePersonId, canEdit, demo
     return mode === "keturunan" ? buildDescendantGraph(data, focusId, collapsed) : buildAncestorGraph(data, focusId, collapsed);
   }, [data, focusId, mode, collapsed]);
 
-  const layoutKey = useMemo(
-    () => `${viewKey}|${[...collapsed].sort().join(",")}|${data.persons.length}|${data.unions.length}|${data.children.length}|${graph.nodes.length}`,
-    [viewKey, collapsed, data, graph.nodes.length],
-  );
+  // The graph's own shape, in order: a new birth order, a re-sorted sibling or a moved child changes it even
+  // when the counts stay the same.
+  const layoutKey = useMemo(() => `${viewKey}|${graph.nodes.map((n) => n.id).join(",")}|${graph.edges.map((e) => e.id).join(",")}`, [viewKey, graph]);
   const elkGraph = useMemo(() => toElk(graph), [graph]);
   const { positions, stale } = useElkLayout(elkGraph, layoutKey);
 
   const [selectedId, setSelectedId] = useState<string | null>(initialSelectedId ?? null);
   const sheetRef = useRef<SheetHandle>(null);
+
+  // `?ditambah=<id>`: someone was just added from the chart. Select them, and if the current view can't show
+  // them (a new parent in the descendant chart, a sibling of the focus), re-centre the descendant chart so it does.
+  const addedId = searchParams.get("ditambah");
+  const [revealId, setRevealId] = useState<string | null>(null);
+  if (addedId && addedId !== revealId && byId.has(addedId)) {
+    setRevealId(addedId);
+    setSelectedId(addedId);
+  }
+  useEffect(() => {
+    if (!revealId) return;
+    const shown = graph.nodes.some((n) => n.id === `p:${revealId}`);
+    setView(shown ? {} : { focus: revealFocus(data, revealId), mode: "keturunan" });
+    // Once per added person; the graph and data it reads are the ones that already include them.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [revealId]);
+  const revealedFor = useRef<string | null>(null);
 
   const selected = selectedId ? byId.get(selectedId) : undefined;
   const kinOf = useMemo(() => (mePersonId ? createKinshipResolver(data, mePersonId) : null), [data, mePersonId]);
@@ -242,7 +259,21 @@ function Chart({ treeId, treeName, data, rootPersonId, mePersonId, canEdit, demo
   }
   const fittedFor = useRef<string | null>(null);
   useEffect(() => {
-    if (!positions || stale || fittedFor.current === viewKey) return;
+    if (!positions || stale) return;
+    // A person just added: bring their card to the middle, whether or not the view itself changed.
+    const added = revealId && revealedFor.current !== revealId ? positions[`p:${revealId}`] : undefined;
+    if (added) {
+      revealedFor.current = revealId;
+      fittedFor.current = viewKey;
+      // Their summary opens with them, so keep the card clear of it: left of the side panel, above the phone sheet.
+      const zoom = Math.max(getZoom(), 0.85);
+      const narrow = window.innerWidth < 640;
+      requestAnimationFrame(() =>
+        setCenter(added.x + PERSON_W / 2 + (narrow ? 0 : 210 / zoom), added.y + PERSON_H / 2 + (narrow ? 140 / zoom : 0), { zoom, duration: 280 }),
+      );
+      return;
+    }
+    if (fittedFor.current === viewKey) return;
     fittedFor.current = viewKey;
     requestAnimationFrame(() => {
       // Phones always open on the focus person at a readable zoom (names stay around 13px) instead of
@@ -270,7 +301,7 @@ function Chart({ treeId, treeName, data, rootPersonId, mePersonId, canEdit, demo
         });
       }
     });
-  }, [positions, stale, viewKey, fitView, setCenter, getZoom, graph.nodes.length, focusId, mePersonId, selectedId, path]);
+  }, [positions, stale, viewKey, fitView, setCenter, getZoom, graph.nodes.length, focusId, mePersonId, selectedId, path, revealId]);
 
 
   const [savingRoot, startRoot] = useTransition();

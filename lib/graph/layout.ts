@@ -29,7 +29,8 @@ export function toElk(graph: FamilyGraph): ElkNode {
       "elk.layered.spacing.edgeNodeBetweenLayers": "18",
       "elk.edgeRouting": "ORTHOGONAL",
     },
-    children: graph.nodes.map((n) => ({ id: n.id, ...nodeSize(n) })),
+    // The "unknown" slot is shorter than a person card: centre it on the card's row instead of the top edge.
+    children: graph.nodes.map((n) => ({ id: n.id, ...nodeSize(n), ...(n.kind === "unknown" ? { layoutOptions: { "elk.alignment": "CENTER" } } : {}) })),
     edges: graph.edges.map((e) => ({ id: e.id, sources: [e.source], targets: [e.target] })),
   };
 }

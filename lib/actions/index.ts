@@ -112,14 +112,22 @@ export async function createPersonAction(treeId: string, _: ActionResult | null,
     const relation = parseRelation(fd);
     const existing = get(fd, "existingId");
     if (relation && existing) {
-      await tree.linkExisting(db, u, treeId, relation, z.uuid().parse(existing));
-      return relation.ofId;
+      const otherId = z.uuid().parse(existing);
+      await tree.linkExisting(db, u, treeId, relation, otherId);
+      return { profile: relation.ofId, added: otherId };
     }
-    return tree.createPerson(db, u, treeId, parsePerson(fd), relation);
+    const id = await tree.createPerson(db, u, treeId, parsePerson(fd), relation);
+    return { profile: id, added: id };
   });
   if (!r.ok) return r;
   refreshTree(treeId);
-  redirect(chartReturn(treeId, get(fd, "kembali")) ?? `${treePath(treeId)}/orang/${r.data}`);
+  // Back on the chart, `ditambah` lets it select the person and re-centre if the view can't show them yet.
+  const chart = chartReturn(treeId, get(fd, "kembali"));
+  if (!chart) redirect(`${treePath(treeId)}/orang/${r.data.profile}`);
+  const [path, query] = chart.split("?");
+  const sp = new URLSearchParams(query);
+  sp.set("ditambah", r.data.added);
+  redirect(`${path}?${sp}`);
 }
 
 export async function updatePersonAction(

@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { Suspense, useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { z } from "zod";
@@ -22,7 +23,7 @@ import { createDemoTree, demoView } from "@/lib/demo";
 import { UserError } from "@/lib/errors";
 import { parsePerson } from "@/lib/person-form";
 import { createPerson, deletePerson, getTree, loadTreeData, setRootPerson, updatePerson, type RelationKind, type RelationSpec } from "@/lib/tree/service";
-import type { TreeData, UnionStatus } from "@/lib/types";
+import type { Person, TreeData, UnionStatus } from "@/lib/types";
 
 // The chart (React Flow, layout, kinship) only shows once PGlite has booted in the browser, so its
 // code loads alongside that instead of in the first paint.
@@ -75,6 +76,7 @@ export function DemoSandbox({ migrations }: { migrations: string[] }) {
   const [run, setRun] = useState(0);
   const [editing, setEditing] = useState<Editing>(null);
   const started = useRef(-1);
+  const router = useRouter();
 
   useEffect(() => {
     if (started.current === run) return;
@@ -90,7 +92,7 @@ export function DemoSandbox({ migrations }: { migrations: string[] }) {
       });
   }, [migrations, run]);
 
-  const refresh = useCallback(async () => {
+  const refresh = useCallback(async (addedId?: string) => {
     if (!sandbox) return;
     const [{ tree }, data] = await Promise.all([getTree(sandbox.db, sandbox.userId, sandbox.treeId), loadTreeData(sandbox.db, sandbox.userId, sandbox.treeId)]);
     setView((v) => ({
@@ -99,7 +101,13 @@ export function DemoSandbox({ migrations }: { migrations: string[] }) {
       rootId: tree.rootPersonId,
       meId: v?.meId && data.persons.some((p) => p.id === v.meId) ? v.meId : null,
     }));
-  }, [sandbox]);
+    if (addedId) {
+      // Read at save time: the chart owns the query (focus, direction) and may have changed it since render.
+      const sp = new URLSearchParams(window.location.search);
+      sp.set("ditambah", addedId);
+      router.replace(`${window.location.pathname}?${sp}`, { scroll: false });
+    }
+  }, [sandbox, router]);
 
   function reset() {
     setSandbox(null);
@@ -188,11 +196,18 @@ export function DemoSandbox({ migrations }: { migrations: string[] }) {
   );
 }
 
-function PersonDialog({ sandbox, data, editing, onClose, onSaved }: { sandbox: Sandbox; data: TreeData; editing: Editing; onClose: () => void; onSaved: () => Promise<void> }) {
+function PersonDialog({ sandbox, data, editing: request, onClose, onSaved }: { sandbox: Sandbox; data: TreeData; editing: Editing; onClose: () => void; onSaved: (addedId?: string) => Promise<void> }) {
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
-  const personId = editing?.kind === "add" ? editing.ofId : editing?.personId;
-  const person = data.persons.find((p) => p.id === personId);
+  const requestedId = request?.kind === "add" ? request.ofId : request?.personId;
+  const requested = data.persons.find((p) => p.id === requestedId);
+  // While the dialog animates out the request is already gone (and a deleted person with it): keep showing
+  // what it was opened for instead of an empty "Hapus ?" form.
+  const [last, setLast] = useState<{ editing: NonNullable<Editing>; person: Person } | null>(null);
+  if (request && requested && (last?.editing !== request || last.person !== requested)) setLast({ editing: request, person: requested });
+  const editing = request && requested ? request : (last?.editing ?? null);
+  const person = request && requested ? requested : last?.person;
+  const personId = person?.id;
   const short = person ? person.nickname || person.fullName.split(" ")[0] : "";
   const nameOf = (id: string | null) => data.persons.find((p) => p.id === id)?.fullName ?? null;
 
@@ -200,8 +215,9 @@ function PersonDialog({ sandbox, data, editing, onClose, onSaved }: { sandbox: S
     setPending(true);
     setError(null);
     try {
-      await work();
-      await onSaved();
+      const result = await work();
+      // A new person's id goes back to the chart, which selects them and makes sure they are in view.
+      await onSaved(editing?.kind === "add" && typeof result === "string" ? result : undefined);
       toast.success(done);
       onClose();
     } catch (e) {
@@ -242,7 +258,7 @@ function PersonDialog({ sandbox, data, editing, onClose, onSaved }: { sandbox: S
     editing?.kind === "add" ? `Tambah ${RELATION_TITLE[editing.relation]} ${short}` : editing?.kind === "edit" ? `Ubah ${short}` : `Hapus ${person?.fullName ?? ""}?`;
 
   return (
-    <Dialog open={Boolean(editing && person)} onOpenChange={(open) => (open ? null : (setError(null), onClose()))}>
+    <Dialog open={Boolean(request && requested)} onOpenChange={(open) => (open ? null : (setError(null), onClose()))}>
       <DialogContent className={editing?.kind === "delete" ? undefined : "max-h-[90dvh] overflow-y-auto sm:max-w-xl"}>
         <form key={`${editing?.kind}-${personId}`} onSubmit={submit} className="grid gap-5">
           <DialogHeader>

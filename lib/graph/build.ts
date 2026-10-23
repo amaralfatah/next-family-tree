@@ -155,8 +155,47 @@ export function buildDescendantGraph(data: TreeData, rootId: string, collapsed: 
     }
   }
 
-  // Drop dangling unions (collapsed person whose union only had hidden children and no partner).
-  return { nodes: [...nodes.values()], edges };
+  return inFamilyOrder(index, rootId, nodes, edges);
+}
+
+/**
+ * ELK breaks ties within a row by model order, and the queue above adds people breadth-first, so
+ * a spouse would come after all of their partner's siblings and the siblings could swap places.
+ * Reorder depth-first instead: each person next to their spouses (the first spouse on the left when
+ * there are several), then their unions, then each child's family in birth order.
+ */
+function inFamilyOrder(index: Index, rootId: string, nodes: Map<string, GraphNode>, edges: GraphEdge[]): FamilyGraph {
+  const order: string[] = [];
+  const placed = new Set<string>();
+  const place = (id: string) => {
+    if (nodes.has(id) && !placed.has(id)) {
+      placed.add(id);
+      order.push(id);
+    }
+  };
+  const visit = (pid: string) => {
+    if (placed.has(`p:${pid}`) && pid !== rootId) return;
+    const own = (index.unionsOf.get(pid) ?? []).filter((u) => nodes.has(`u:${u.id}`));
+    const spouses = own.map((u) => {
+      const partner = u.partnerAId === pid ? u.partnerBId : u.partnerAId;
+      return partner ? `p:${partner}` : `x:${u.id}`;
+    });
+    if (spouses.length > 1) place(spouses[0]);
+    place(`p:${pid}`);
+    spouses.forEach((s, i) => (spouses.length > 1 && i === 0 ? null : place(s)));
+    for (const u of own) place(`u:${u.id}`);
+    for (const u of own) {
+      for (const c of index.childrenOf.get(u.id) ?? []) {
+        if (edges.some((e) => e.source === `u:${u.id}` && e.target === `p:${c.childId}`)) visit(c.childId);
+      }
+    }
+  };
+  place(`p:${rootId}`);
+  visit(rootId);
+  for (const id of nodes.keys()) place(id);
+  const rank = new Map(order.map((id, i) => [id, i]));
+  const sorted = [...edges].sort((a, b) => rank.get(a.target)! - rank.get(b.target)! || rank.get(a.source)! - rank.get(b.source)!);
+  return { nodes: order.map((id) => nodes.get(id)!), edges: sorted };
 }
 
 export function buildAncestorGraph(data: TreeData, personId: string, collapsed: ReadonlySet<string> = new Set()): FamilyGraph {
@@ -199,6 +238,21 @@ export function buildAncestorGraph(data: TreeData, personId: string, collapsed: 
     }
   }
   return { nodes: [...nodes.values()], edges };
+}
+
+/**
+ * Who to centre the descendant chart on so `personId` shows: one of their parents (a new sibling then
+ * sits next to the others), or the person themself when no parent is recorded (a new parent then sits
+ * above the child they were added to).
+ */
+export function revealFocus(data: TreeData, personId: string): string {
+  const index = indexTree(data);
+  const links = [...(index.parentUnionsOf.get(personId) ?? [])].sort((a, b) => Number(b.relation === "biological") - Number(a.relation === "biological"));
+  for (const link of links) {
+    const u = index.unions.get(link.unionId);
+    if (u) return u.partnerAId;
+  }
+  return personId;
 }
 
 function countAncestors(index: Index, personId: string): number {

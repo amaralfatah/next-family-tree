@@ -1,7 +1,7 @@
 import ELK from "elkjs/lib/elk.bundled.js";
 import { describe, expect, it } from "vitest";
 import type { ChildRelation, Person, TreeData } from "@/lib/types";
-import { autoCollapse, buildAncestorGraph, buildDescendantGraph, generations } from "./build";
+import { autoCollapse, buildAncestorGraph, buildDescendantGraph, generations, revealFocus } from "./build";
 import { positionsFromElk, toElk } from "./layout";
 
 function tree() {
@@ -82,6 +82,14 @@ describe("buildDescendantGraph", () => {
   });
 });
 
+describe("revealFocus", () => {
+  it("centres on a parent so a new sibling shows, or on the person when they have no parents", () => {
+    const { data } = tree().p("ayah").p("ibu").p("a").p("b").p("baru").u("u1", "ayah", "ibu", ["a", "b"]).u("u2", "baru", null, ["ayah"]);
+    expect(revealFocus(data, "b")).toBe("ayah");
+    expect(revealFocus(data, "baru")).toBe("baru");
+  });
+});
+
 describe("buildAncestorGraph", () => {
   it("walks up both parents", () => {
     const { data } = tree().p("me").p("ayah").p("ibu").p("kakek").u("u1", "ayah", "ibu", ["me"]).u("u2", "kakek", null, ["ayah"]);
@@ -118,6 +126,23 @@ describe("layout", () => {
     const pos = positionsFromElk(await new ELK().layout(toElk(buildDescendantGraph(data, "a"))));
     expect(pos["p:c"].y).toBeGreaterThan(pos["p:a"].y);
     expect(pos["p:a"].y).toBe(pos["p:b"].y);
+  });
+
+  it("keeps siblings in birth order when one has several unions", async () => {
+    const { data } = tree()
+      .p("r").p("s").p("a").p("b").p("as").p("a1")
+      .u("u0", "r", "s", ["a", "b"])
+      .u("ua", "a", null, ["a1"], "biological", 0)
+      .u("ua2", "a", "as", [], "biological", 1);
+    const pos = positionsFromElk(await new ELK().layout(toElk(buildDescendantGraph(data, "r"))));
+    expect(pos["p:a"].x).toBeLessThan(pos["p:b"].x);
+    expect(pos["p:as"].x).toBeLessThan(pos["p:b"].x);
+  });
+
+  it("centres the 'unknown' slot on its partner's row", async () => {
+    const { data } = tree().p("ibu").p("anak").u("u1", "ibu", null, ["anak"]);
+    const pos = positionsFromElk(await new ELK().layout(toElk(buildDescendantGraph(data, "ibu"))));
+    expect(pos["x:u1"].y + 20).toBe(pos["p:ibu"].y + 36);
   });
 
   it("lays out 300 people quickly", async () => {
