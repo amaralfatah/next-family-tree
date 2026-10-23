@@ -15,6 +15,7 @@ import { loadTreeContext } from "@/lib/tree/context";
 import { familyOf } from "@/lib/tree/family";
 import { dateWarnings } from "@/lib/tree/validate";
 import type { Person } from "@/lib/types";
+import { cn } from "@/lib/utils";
 
 export async function generateMetadata({ params }: PageProps<"/pohon/[treeId]/orang/[personId]">) {
   const { treeId, personId } = await params;
@@ -119,7 +120,7 @@ export default async function PersonPage({ params }: PageProps<"/pohon/[treeId]/
         </div>
       </section>
 
-      <div className="mt-8 grid gap-6 lg:grid-cols-2">
+      <div className="mt-6 grid items-start gap-6 lg:grid-cols-2">
         <Section
           title="Orang tua & saudara"
           action={
@@ -140,17 +141,17 @@ export default async function PersonPage({ params }: PageProps<"/pohon/[treeId]/
                   <p className="mb-1.5 text-[13px] text-muted-foreground">
                     Orang tua {g.relation !== "biological" ? CHILD_RELATION_LABEL[g.relation].toLowerCase() : "kandung"}
                   </p>
-                  <div className="grid gap-2 sm:grid-cols-2">
+                  <div className="flex flex-col divide-y">
                     {g.parents.map((p) => (
                       <PersonRow key={p.id} treeId={treeId} person={p} />
                     ))}
                     {g.parents.length < 2 ? (
                       canEdit ? (
-                        <Link href={addHref("parent", `&rel_anak=${g.relation}`)} className="grid place-items-center rounded-lg border border-dashed px-3 py-3 text-sm text-muted-foreground hover:border-foreground/40 hover:text-foreground">
-                          + Tambah orang tua lain
+                        <Link href={addHref("parent", `&rel_anak=${g.relation}`)} className="flex min-h-11 items-center gap-2.5 text-sm text-primary">
+                          <PlusIcon className="size-4" /> Tambah orang tua lain
                         </Link>
                       ) : (
-                        <span className="grid place-items-center rounded-lg border border-dashed px-3 py-3 text-sm text-muted-foreground">Tidak diketahui</span>
+                        <span className="flex min-h-11 items-center text-sm text-muted-foreground">Orang tua lain tidak diketahui</span>
                       )
                     ) : null}
                   </div>
@@ -158,7 +159,7 @@ export default async function PersonPage({ params }: PageProps<"/pohon/[treeId]/
                 {g.siblings.length > 0 ? (
                   <div>
                     <p className="mb-1.5 text-[13px] text-muted-foreground">Saudara</p>
-                    <div className="grid gap-2 sm:grid-cols-2">
+                    <div className="flex flex-col divide-y">
                       {g.siblings.map((s) => (
                         <PersonRow key={s.person.id} treeId={treeId} person={s.person} note={s.relation !== "biological" ? CHILD_RELATION_LABEL[s.relation] : undefined} />
                       ))}
@@ -175,7 +176,7 @@ export default async function PersonPage({ params }: PageProps<"/pohon/[treeId]/
             <Empty>Belum ada pasangan atau anak yang dicatat.</Empty>
           ) : (
             own.map((o, i) => (
-              <div key={o.union.id} className="flex flex-col gap-3 rounded-xl border p-3">
+              <div key={o.union.id} className={cn("flex flex-col gap-3", i > 0 && "border-t pt-4")}>
                 <div className="flex items-start justify-between gap-2">
                   <p className="text-[13px] text-muted-foreground">
                     {own.length > 1 ? `Ikatan ke-${i + 1} · ` : ""}
@@ -187,7 +188,7 @@ export default async function PersonPage({ params }: PageProps<"/pohon/[treeId]/
                 {o.partner ? (
                   <PersonRow treeId={treeId} person={o.partner} />
                 ) : (
-                  <p className="rounded-lg border border-dashed px-3 py-2.5 text-sm text-muted-foreground">Pasangan tidak diketahui</p>
+                  <p className="text-sm text-muted-foreground">Pasangan tidak diketahui</p>
                 )}
                 <div>
                   <div className="mb-1.5 flex items-center justify-between">
@@ -197,7 +198,7 @@ export default async function PersonPage({ params }: PageProps<"/pohon/[treeId]/
                   {o.children.length === 0 ? (
                     <Empty>Belum ada anak dicatat.</Empty>
                   ) : (
-                    <div className="grid gap-2">
+                    <div className="flex flex-col divide-y">
                       {o.children.map((c) => (
                         <PersonRow
                           key={c.person.id}
@@ -246,7 +247,7 @@ function Section({ title, action, children }: { title: string; action?: React.Re
   return (
     <section className="flex flex-col gap-4 rounded-2xl bg-card p-5">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <h2 className="font-display text-2xl">{title}</h2>
+        <h2 className="text-lg font-semibold tracking-[-0.01em]">{title}</h2>
         {action}
       </div>
       {children}
@@ -256,7 +257,7 @@ function Section({ title, action, children }: { title: string; action?: React.Re
 
 function AddLink({ href, children }: { href: string; children: React.ReactNode }) {
   return (
-    <Link href={href} className={buttonVariants({ variant: "secondary", size: "sm" })}>
+    <Link href={href} className={buttonVariants({ variant: "ghost", size: "sm", className: "text-primary hover:text-primary" })}>
       <PlusIcon data-icon="inline-start" /> {children}
     </Link>
   );
@@ -266,9 +267,10 @@ function Empty({ children }: { children: React.ReactNode }) {
   return <p className="text-sm text-muted-foreground">{children}</p>;
 }
 
+/** A plain row; its list draws hairlines between rows, as in an inset grouped list, so people read as content rather than boxes. */
 function PersonRow({ treeId, person, note, menu }: { treeId: string; person: Person; note?: string; menu?: React.ReactNode }) {
   return (
-    <div className="flex items-center gap-2.5 rounded-xl bg-muted px-3 py-2 transition-colors hover:bg-accent">
+    <div className="flex min-h-14 items-center gap-3 transition-colors hover:bg-muted/50">
       <PersonAvatar treeId={treeId} person={person} size="sm" />
       <Link href={`/pohon/${treeId}/orang/${person.id}`} className="min-w-0 flex-1">
         <span className="block truncate text-sm font-medium">{person.fullName}</span>

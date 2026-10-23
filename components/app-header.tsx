@@ -8,7 +8,18 @@ import type { CurrentUser } from "@/lib/auth/session";
 /**
  * `compactBrand` shows only the mark on phones so a tree name has room next to it.
  */
-export function AppHeader({ user, children, compactBrand = false }: { user: CurrentUser; children?: React.ReactNode; compactBrand?: boolean }) {
+export function AppHeader({
+  user,
+  children,
+  nav,
+  compactBrand = false,
+}: {
+  user: CurrentUser;
+  children?: React.ReactNode;
+  /** Section navigation shown inside the bar on wide screens. */
+  nav?: React.ReactNode;
+  compactBrand?: boolean;
+}) {
   return (
     <header className={navBar}>
       <div className="mx-auto flex h-14 max-w-6xl items-center gap-3 px-4">
@@ -23,6 +34,7 @@ export function AppHeader({ user, children, compactBrand = false }: { user: Curr
           )}
         </Link>
         <div className="min-w-0 flex-1">{children}</div>
+        {nav}
         <ThemeToggle label="Ganti tema terang/gelap" />
         <UserMenu name={user.name} email={user.email} image={user.image} />
       </div>

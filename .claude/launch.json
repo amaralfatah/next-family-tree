@@ -40,6 +40,23 @@
         "PGLITE_DIR": ".data/pglite-audit"
       },
       "port": 3200
+    },
+    {
+      "name": "start-pglite",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": [
+        "run",
+        "start",
+        "--",
+        "-p",
+        "3300"
+      ],
+      "env": {
+        "DATABASE_URL": "",
+        "PGLITE_DIR": ".data/pglite-audit",
+        "ALLOW_DEV_LOGIN": "1"
+      },
+      "port": 3300
     }
   ]
 }

@@ -19,13 +19,13 @@ export default async function SettingsPage({ params }: PageProps<"/pohon/[treeId
 
       {canEdit ? (
         <section>
-          <h2 className="font-display text-2xl">Info pohon</h2>
+          <h2 className="text-lg font-semibold tracking-[-0.01em]">Info pohon</h2>
           <TreeInfoForm treeId={treeId} name={tree.name} description={tree.description} />
         </section>
       ) : null}
 
-      <section>
-        <h2 className="font-display text-2xl">Cadangan data</h2>
+      <section className="rounded-2xl bg-card p-5">
+        <h2 className="text-lg font-semibold tracking-[-0.01em]">Cadangan data</h2>
         <p className="mt-1 text-sm text-muted-foreground">
           Unduh seluruh isi pohon ({counts.persons} orang, {counts.unions} ikatan) sebagai JSON. Simpan di tempat aman: berkas ini berisi data
           pribadi keluarga.

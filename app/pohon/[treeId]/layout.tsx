@@ -13,7 +13,7 @@ export default async function TreeLayout({ children, params }: LayoutProps<"/poh
   const { user, tree } = await loadTreeMeta(treeId);
   return (
     <div className="flex min-h-dvh flex-col">
-      <AppHeader user={user} compactBrand>
+      <AppHeader user={user} compactBrand nav={<TreeTabs treeId={treeId} inline />}>
         <span className="block truncate border-l border-border pl-3 font-display text-lg sm:text-xl">{tree.name}</span>
       </AppHeader>
       <TreeTabs treeId={treeId} />

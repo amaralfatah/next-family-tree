@@ -57,7 +57,7 @@ export function InviteManager({ treeId, invites }: { treeId: string; invites: In
 
   return (
     <section className="mt-10">
-      <h2 className="font-display text-2xl">Undang lewat link</h2>
+      <h2 className="text-lg font-semibold tracking-[-0.01em]">Undang lewat link</h2>
       <p className="mt-1 text-sm text-muted-foreground">Link hanya ditampilkan sekali. Siapa pun yang memegang link bisa bergabung sampai link kedaluwarsa atau dicabut.</p>
 
       <div className="mt-4 flex flex-wrap items-end gap-3 rounded-xl bg-card p-4">

@@ -3,7 +3,7 @@
 import { SearchIcon, XIcon } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
-import { Button, buttonVariants } from "@/components/ui/button";
+import { Button } from "@/components/ui/button";
 
 /**
  * Nudges a member who isn't linked to a person yet: finding yourself is the fastest
@@ -13,17 +13,17 @@ export function WelcomeBanner({ treeId, joined, linked }: { treeId: string; join
   const [hidden, setHidden] = useState(false);
   if (hidden) return null;
   return (
-    <div className="no-print border-b bg-paper-2">
-      <div className="mx-auto flex max-w-6xl items-center gap-3 px-4 py-2 text-[13px] sm:py-2.5 sm:text-sm">
+    <div className="no-print border-b">
+      <div className="mx-auto flex max-w-6xl items-center gap-3 px-4 py-1.5 text-[13px] text-muted-foreground sm:text-sm">
         <p className="flex-1">
-          {joined ? <strong className="font-semibold">Selamat bergabung! </strong> : null}
+          {joined ? <strong className="font-semibold text-foreground">Selamat bergabung! </strong> : null}
           {linked
             ? "Klik siapa pun di bagan untuk melihat hubungannya dengan Anda."
             : "Tandai diri Anda di pohon untuk melihat hubungan dengan setiap kerabat."}
         </p>
         {!linked ? (
-          <Link href={`/pohon/${treeId}/daftar?cari-saya=1`} className={buttonVariants({ size: "sm" })}>
-            <SearchIcon data-icon="inline-start" /> Cari saya
+          <Link href={`/pohon/${treeId}/daftar?cari-saya=1`} className="flex shrink-0 items-center gap-1.5 rounded-md font-medium text-primary outline-none hover:underline focus-visible:ring-3 focus-visible:ring-ring/40">
+            <SearchIcon className="size-3.5" /> Cari saya
           </Link>
         ) : null}
         <Button variant="ghost" size="icon-sm" onClick={() => setHidden(true)} aria-label="Tutup">

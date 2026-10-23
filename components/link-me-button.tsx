@@ -12,7 +12,7 @@ export function LinkMeButton({ treeId, personId, unlink = false }: { treeId: str
   return (
     <Button
       size="sm"
-      variant={unlink ? "ghost" : "default"}
+      variant={unlink ? "ghost" : "secondary"}
       disabled={pending}
       onClick={() =>
         start(async () => {

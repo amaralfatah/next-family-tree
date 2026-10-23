@@ -36,40 +36,42 @@ export default async function HistoryPage({ params, searchParams }: PageProps<"/
       {rows.length === 0 ? (
         <p className="mt-10 text-muted-foreground">Belum ada perubahan.</p>
       ) : (
-        <ol className="mt-6 flex flex-col gap-1">
-          {rows.map((r, i) => {
-            const day = dayFmt.format(r.createdAt);
-            const header = i === 0 || dayFmt.format(rows[i - 1].createdAt) !== day;
-            const fields =
-              r.action === "update" && r.entity === "person" && r.diff && typeof r.diff === "object"
-                ? Object.keys(r.diff as object).map((k) => FIELD_LABEL[k] ?? k)
-                : [];
-            return (
-              <li key={r.id}>
-                {header ? <h2 className="pt-6 pb-2 text-sm font-semibold text-muted-foreground">{day}</h2> : null}
-                <div className="flex gap-3 rounded-lg px-3 py-2 hover:bg-muted/60">
-                  <span className="mt-2 size-1.5 shrink-0 rounded-full bg-nila" aria-hidden />
-                  <div className="min-w-0 flex-1 text-sm">
-                    <p>
-                      <span className="font-medium">{r.userName ?? "Anggota terhapus"}</span>{" "}
-                      {r.entity === "person" && r.entityId && existing.has(r.entityId) ? (
-                        <Link href={`/pohon/${treeId}/orang/${r.entityId}`} className="underline-offset-2 hover:underline">
-                          {lowerFirst(r.summary)}
-                        </Link>
-                      ) : (
-                        lowerFirst(r.summary)
-                      )}
-                    </p>
-                    {fields.length ? <p className="text-xs text-muted-foreground">Bagian: {fields.join(", ")}</p> : null}
-                  </div>
-                  <time className="shrink-0 text-xs text-muted-foreground tabular-nums" dateTime={r.createdAt.toISOString()}>
-                    {timeFmt.format(r.createdAt).split(", ").pop()}
-                  </time>
-                </div>
-              </li>
-            );
-          })}
-        </ol>
+        // One inset grouped list per day, as in Settings: the day is the group's header, the changes are rows.
+        <div className="mt-6 flex flex-col gap-6">
+          {groupByDay(rows).map(({ day, items }) => (
+            <section key={day}>
+              <h2 className="px-4 pb-1.5 text-[13px] text-muted-foreground">{day}</h2>
+              <ol className="divide-y overflow-hidden rounded-2xl bg-card">
+                {items.map((r) => {
+                  const fields =
+                    r.action === "update" && r.entity === "person" && r.diff && typeof r.diff === "object"
+                      ? Object.keys(r.diff as object).map((k) => FIELD_LABEL[k] ?? k)
+                      : [];
+                  return (
+                    <li key={r.id} className="flex min-h-12 items-baseline gap-3 px-4 py-3">
+                      <div className="min-w-0 flex-1 text-sm">
+                        <p>
+                          <span className="font-medium">{r.userName ?? "Anggota terhapus"}</span>{" "}
+                          {r.entity === "person" && r.entityId && existing.has(r.entityId) ? (
+                            <Link href={`/pohon/${treeId}/orang/${r.entityId}`} className="underline-offset-2 hover:underline">
+                              {lowerFirst(r.summary)}
+                            </Link>
+                          ) : (
+                            lowerFirst(r.summary)
+                          )}
+                        </p>
+                        {fields.length ? <p className="mt-0.5 text-xs text-muted-foreground">Bagian: {fields.join(", ")}</p> : null}
+                      </div>
+                      <time className="shrink-0 text-xs text-muted-foreground tabular-nums" dateTime={r.createdAt.toISOString()}>
+                        {timeFmt.format(r.createdAt).split(", ").pop()}
+                      </time>
+                    </li>
+                  );
+                })}
+              </ol>
+            </section>
+          ))}
+        </div>
       )}
       {hasMore ? (
         <div className="mt-6 text-center">
@@ -84,4 +86,14 @@ export default async function HistoryPage({ params, searchParams }: PageProps<"/
 
 function lowerFirst(s: string) {
   return s.charAt(0).toLowerCase() + s.slice(1);
+}
+
+function groupByDay<T extends { createdAt: Date }>(rows: T[]): { day: string; items: T[] }[] {
+  const groups: { day: string; items: T[] }[] = [];
+  for (const r of rows) {
+    const day = dayFmt.format(r.createdAt);
+    if (groups.at(-1)?.day === day) groups.at(-1)!.items.push(r);
+    else groups.push({ day, items: [r] });
+  }
+  return groups;
 }

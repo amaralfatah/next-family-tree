@@ -25,11 +25,34 @@ function useTabs(treeId: string) {
   ];
 }
 
-/** Desktop: underline tabs under the header. Phones get the bottom bar instead. */
-export function TreeTabs({ treeId }: { treeId: string }) {
+/**
+ * Wide screens: the sections sit inside the navigation bar, so there is one bar above the content.
+ * Tablets: underline tabs under the header. Phones get the bottom bar instead.
+ */
+export function TreeTabs({ treeId, inline = false }: { treeId: string; inline?: boolean }) {
   const tabs = useTabs(treeId);
+  if (inline) {
+    return (
+      <nav aria-label="Navigasi pohon" className="hidden shrink-0 items-center gap-0.5 lg:flex">
+        {tabs.map((t) => (
+          <Link
+            key={t.href}
+            href={t.href}
+            aria-current={t.active ? "page" : undefined}
+            className={cn(
+              "flex h-8 items-center gap-1.5 rounded-lg px-2.5 text-sm text-muted-foreground transition-colors outline-none hover:text-foreground focus-visible:ring-3 focus-visible:ring-ring/50",
+              t.active && "bg-muted font-medium text-foreground",
+            )}
+          >
+            <t.icon className="size-4" />
+            {t.label === "Atur" ? "Pengaturan" : t.label}
+          </Link>
+        ))}
+      </nav>
+    );
+  }
   return (
-    <nav aria-label="Navigasi pohon" className="no-print hidden border-b bg-background sm:block">
+    <nav aria-label="Navigasi pohon" className="no-print hidden border-b bg-background sm:block lg:hidden">
       <div className="mx-auto flex max-w-6xl items-center gap-1 px-4">
         {tabs.map((t) => (
           <Link

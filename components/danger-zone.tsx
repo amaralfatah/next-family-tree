@@ -10,7 +10,7 @@ export function DangerZone({ treeId, treeName, isOwner }: { treeId: string; tree
   const [typed, setTyped] = useState("");
   return (
     <section className="rounded-xl border border-destructive/30 p-5">
-      <h2 className="font-display text-2xl text-destructive">Zona berbahaya</h2>
+      <h2 className="text-lg font-semibold tracking-[-0.01em] text-destructive">Zona berbahaya</h2>
       {isOwner ? (
         <>
           <p className="mt-1 text-sm text-muted-foreground">

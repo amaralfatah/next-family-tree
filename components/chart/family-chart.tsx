@@ -2,8 +2,6 @@
 
 import "@xyflow/react/dist/style.css";
 import {
-  Background,
-  BackgroundVariant,
   Controls,
   ReactFlow,
   ReactFlowProvider,
@@ -301,10 +299,10 @@ function Chart({ treeId, treeName, data, rootPersonId, mePersonId, canEdit, demo
 
   return (
     <div className="relative flex flex-1 flex-col">
-      {/* A toolbar in the HIG sense: one material bar the chart scrolls under, so cards never collide with
-          its controls. Phones get two rows: direction and actions, then search at full width. */}
-      <div ref={toolbarRef} className="material no-print absolute inset-x-0 top-0 z-10 flex flex-wrap items-center gap-2 border-b bg-background/80 px-3 py-2 backdrop-blur-xl backdrop-saturate-150">
-        <div className="flex rounded-lg border bg-card p-0.5" role="group" aria-label="Arah bagan">
+      {/* Controls float over the chart on their own material, with no bar behind them, so the family runs
+          edge to edge (HIG: defer to content). Phones get two rows: direction and actions, then search. */}
+      <div ref={toolbarRef} className="no-print pointer-events-none absolute inset-x-0 top-0 z-10 flex flex-wrap items-center gap-2 p-3 *:pointer-events-auto">
+        <div className="material flex rounded-[10px] bg-muted/85 p-0.5 shadow-[0_1px_2px_rgb(0_0_0/0.06)] backdrop-blur-xl" role="group" aria-label="Arah bagan">
           {(
             [
               ["keturunan", "Keturunan", ArrowDownFromLineIcon],
@@ -317,8 +315,8 @@ function Chart({ treeId, treeName, data, rootPersonId, mePersonId, canEdit, demo
               aria-pressed={mode === value}
               onClick={() => setView({ mode: value })}
               className={cn(
-                "flex h-8 items-center gap-1.5 rounded-md px-2.5 text-sm transition-colors",
-                mode === value ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground",
+                "flex h-8 items-center gap-1.5 rounded-lg px-3 text-sm transition-[color,background-color,box-shadow] duration-150",
+                mode === value ? "bg-card font-medium text-foreground shadow-[0_1px_3px_rgb(0_0_0/0.12)]" : "text-muted-foreground hover:text-foreground",
               )}
             >
               <Icon className="size-3.5" /> {label}
@@ -327,13 +325,13 @@ function Chart({ treeId, treeName, data, rootPersonId, mePersonId, canEdit, demo
         </div>
         <FocusSearch data={data} onPick={(id) => setView({ focus: id })} />
         {mePersonId && mePersonId !== focusId ? (
-          <Button variant="outline" size="sm" className="bg-card max-sm:px-2.5" onClick={() => setView({ focus: mePersonId })}>
+          <Button variant="outline" size="sm" className="material border-transparent bg-card/85 shadow-[0_1px_2px_rgb(0_0_0/0.06)] backdrop-blur-xl max-sm:px-2.5" onClick={() => setView({ focus: mePersonId })}>
             <CrosshairIcon data-icon="inline-start" /> <span className="max-sm:sr-only">Saya</span>
           </Button>
         ) : null}
         <div className="ml-auto">
           <DropdownMenu>
-            <DropdownMenuTrigger render={<Button variant="outline" size="sm" className="bg-card max-sm:px-2.5" disabled={exporting} />}>
+            <DropdownMenuTrigger render={<Button variant="outline" size="sm" className="material border-transparent bg-card/85 shadow-[0_1px_2px_rgb(0_0_0/0.06)] backdrop-blur-xl max-sm:px-2.5" disabled={exporting} />}>
               {exporting ? <Spinner data-icon="inline-start" /> : <DownloadIcon data-icon="inline-start" />} <span className="max-sm:sr-only">Ekspor</span>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-52">
@@ -389,7 +387,6 @@ function Chart({ treeId, treeName, data, rootPersonId, mePersonId, canEdit, demo
           onNodeClick={(_, node) => openNode(node)}
           onPaneClick={() => (sheetRef.current ? sheetRef.current.dismiss() : setSelectedId(null))}
         >
-          <Background variant={BackgroundVariant.Dots} gap={22} size={1.2} className="opacity-50" />
           <Controls showInteractive={false} position="bottom-left" className="no-print !hidden sm:!flex" />
         </ReactFlow>
         </div>
@@ -462,7 +459,7 @@ function FocusSearch({ data, onPick }: { data: TreeData; onPick: (id: string) =>
         autoComplete="off"
         placeholder="Cari & pusatkan…"
         aria-label="Cari orang untuk dijadikan pusat bagan"
-        className="order-last w-full bg-card sm:order-none sm:w-56"
+        className="material order-last w-full border-transparent bg-card/85 shadow-[0_1px_2px_rgb(0_0_0/0.06)] backdrop-blur-xl sm:order-none sm:w-56"
       >
         <InputGroupAddon align="inline-start">
           <SearchIcon />
