@@ -28,6 +28,7 @@ function useTabs(treeId: string) {
 /**
  * Wide screens: the sections sit inside the navigation bar, so there is one bar above the content.
  * Tablets: underline tabs under the header. Phones get the bottom bar instead.
+ * Text only up here, as in an iPadOS or macOS toolbar; icons belong to the phone's bottom bar.
  */
 export function TreeTabs({ treeId, inline = false }: { treeId: string; inline?: boolean }) {
   const tabs = useTabs(treeId);
@@ -40,11 +41,10 @@ export function TreeTabs({ treeId, inline = false }: { treeId: string; inline?: 
             href={t.href}
             aria-current={t.active ? "page" : undefined}
             className={cn(
-              "flex h-8 items-center gap-1.5 rounded-lg px-2.5 text-sm text-muted-foreground transition-colors outline-none hover:text-foreground focus-visible:ring-3 focus-visible:ring-ring/50",
+              "flex h-8 items-center rounded-lg px-3 text-sm text-muted-foreground transition-colors outline-none hover:text-foreground focus-visible:ring-3 focus-visible:ring-ring/50",
               t.active && "bg-muted font-medium text-foreground",
             )}
           >
-            <t.icon className="size-4" />
             {t.label === "Atur" ? "Pengaturan" : t.label}
           </Link>
         ))}
@@ -60,11 +60,10 @@ export function TreeTabs({ treeId, inline = false }: { treeId: string; inline?: 
             href={t.href}
             aria-current={t.active ? "page" : undefined}
             className={cn(
-              "relative flex shrink-0 items-center gap-1.5 px-3 py-3 text-sm text-muted-foreground rounded-md transition-colors outline-none hover:text-foreground focus-visible:text-foreground focus-visible:ring-3 focus-visible:ring-ring/50",
+              "relative flex shrink-0 items-center px-3 py-3 text-sm text-muted-foreground rounded-md transition-colors outline-none hover:text-foreground focus-visible:text-foreground focus-visible:ring-3 focus-visible:ring-ring/50",
               t.active && "font-medium text-foreground after:absolute after:inset-x-2 after:bottom-0 after:h-0.5 after:rounded-full after:bg-soga",
             )}
           >
-            <t.icon className="size-4" />
             {t.label === "Atur" ? "Pengaturan" : t.label}
           </Link>
         ))}
