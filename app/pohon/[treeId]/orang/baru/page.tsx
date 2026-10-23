@@ -34,7 +34,7 @@ export default async function NewPersonPage({ params, searchParams }: PageProps<
     <main id="konten" className="mx-auto w-full max-w-2xl px-4 py-8">
       {returnTo ? (
         <Link href={returnTo} className="text-sm text-muted-foreground hover:text-foreground">
-          ← Bagan
+          ← Pohon
         </Link>
       ) : of ? (
         <Link href={`/pohon/${treeId}/orang/${of.id}`} className="text-sm text-muted-foreground hover:text-foreground">
@@ -44,7 +44,7 @@ export default async function NewPersonPage({ params, searchParams }: PageProps<
       <h1 className="mt-2 font-display text-[2.125rem] leading-tight tracking-[-0.02em]">{relation && of ? TITLES[relation](of.fullName) : "Tambah orang"}</h1>
       {!relation ? (
         <p className="mt-2 text-sm text-muted-foreground">
-          Orang ini belum terhubung dengan siapa pun. Sebaiknya tambahkan dari profil kerabatnya agar langsung tersambung di bagan.
+          Orang ini belum terhubung dengan siapa pun. Sebaiknya tambahkan dari profil kerabatnya agar langsung tersambung di pohon.
         </p>
       ) : null}
       <NewPersonForm

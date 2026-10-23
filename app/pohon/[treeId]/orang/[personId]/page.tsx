@@ -62,7 +62,7 @@ export default async function PersonPage({ params }: PageProps<"/pohon/[treeId]/
             </div>
             <div className="flex flex-wrap gap-2">
               <Link href={`${base}?pusat=${personId}`} className={buttonVariants({ variant: "outline" })}>
-                <NetworkIcon data-icon="inline-start" /> Lihat di bagan
+                <NetworkIcon data-icon="inline-start" /> Lihat di pohon
               </Link>
               {canEdit ? (
                 <Link href={`${base}/orang/${personId}/ubah`} className={buttonVariants({ variant: "outline" })}>

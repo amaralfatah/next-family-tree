@@ -324,7 +324,7 @@ function Chart({ treeId, data, rootPersonId, mePersonId, canEdit, demo = false, 
       {/* Controls float over the chart on their own material, with no bar behind them, so the family runs
           edge to edge (HIG: defer to content). Phones get two rows: direction and actions, then search. */}
       <div ref={toolbarRef} className="no-print pointer-events-none absolute inset-x-0 top-0 z-10 flex flex-wrap items-center gap-2 p-3 *:pointer-events-auto">
-        <div className="material flex rounded-[10px] bg-muted/85 p-0.5 shadow-[0_1px_2px_rgb(0_0_0/0.06)] backdrop-blur-xl" role="group" aria-label="Arah bagan">
+        <div className="material flex rounded-[10px] bg-muted/85 p-0.5 shadow-[0_1px_2px_rgb(0_0_0/0.06)] backdrop-blur-xl" role="group" aria-label="Arah pohon">
           {(
             [
               ["semua", "Semua", NetworkIcon],
@@ -365,11 +365,11 @@ function Chart({ treeId, data, rootPersonId, mePersonId, canEdit, demo = false, 
         ) : null}
       </div>
 
-      <div ref={flowRef} className="relative min-h-[60dvh] flex-1" aria-label={mode === "semua" ? "Bagan seluruh keluarga" : `Bagan ${mode} ${byId.get(focusId)?.fullName ?? ""}`}>
+      <div ref={flowRef} className="relative min-h-[60dvh] flex-1" aria-label={mode === "semua" ? "Pohon seluruh keluarga" : `Pohon ${mode} ${byId.get(focusId)?.fullName ?? ""}`}>
         {!positions ? (
           <div className="absolute inset-0 grid place-items-center text-sm text-muted-foreground">
             <span role="status" className="flex items-center gap-2">
-              <Spinner /> Menyusun bagan…
+              <Spinner /> Menyusun pohon…
             </span>
           </div>
         ) : null}
@@ -429,7 +429,7 @@ function Chart({ treeId, data, rootPersonId, mePersonId, canEdit, demo = false, 
                 return;
               }
               const r = await setRootAction(treeId, selected.id);
-              if (r.ok) toast.success(`${selected.fullName} menjadi pusat bawaan bagan.`);
+              if (r.ok) toast.success(`${selected.fullName} menjadi pusat bawaan pohon.`);
               else toast.error(r.error);
             })
           }
@@ -469,7 +469,7 @@ function FocusSearch({ data, onPick }: { data: TreeData; onPick: (id: string) =>
         name="chartSearch"
         autoComplete="off"
         placeholder="Cari & pusatkan…"
-        aria-label="Cari orang untuk dijadikan pusat bagan"
+        aria-label="Cari orang untuk dijadikan pusat pohon"
         className="material order-last w-full border-transparent bg-card/85 shadow-[0_1px_2px_rgb(0_0_0/0.06)] backdrop-blur-xl sm:order-none sm:w-56"
       >
         <InputGroupAddon align="inline-start">
@@ -625,7 +625,7 @@ function StarterGuide({ treeId, person, onAdd }: { treeId: string; person: Perso
   return (
     <aside className="sheet-in no-print absolute inset-x-3 bottom-3 z-10 mx-auto max-w-md rounded-2xl border bg-popover p-4 shadow-lg sm:right-3 sm:left-auto sm:w-96">
       <p className="font-display text-xl leading-tight">Lanjutkan dari {person.nickname || person.fullName}</p>
-      <p className="mt-1 text-sm text-muted-foreground">Tambahkan kerabat terdekatnya. Setiap orang baru langsung tersambung di bagan.</p>
+      <p className="mt-1 text-sm text-muted-foreground">Tambahkan kerabat terdekatnya. Setiap orang baru langsung tersambung di pohon.</p>
       <div className="mt-3">
         <QuickAdd treeId={treeId} personId={person.id} onAdd={onAdd} />
       </div>

@@ -51,7 +51,7 @@ export default async function ListPage({ params, searchParams }: PageProps<"/poh
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
           <h1 className="font-display text-[2.125rem] leading-tight tracking-[-0.02em]">Daftar keluarga</h1>
-          <p className="mt-1 text-sm text-muted-foreground">{data.persons.length} orang tercatat · generasi dihitung dari pusat bawaan bagan</p>
+          <p className="mt-1 text-sm text-muted-foreground">{data.persons.length} orang tercatat · generasi dihitung dari pusat bawaan pohon</p>
         </div>
         {canEdit ? (
           <Link href={`/pohon/${treeId}/orang/baru`} className={buttonVariants({ variant: "outline" })}>

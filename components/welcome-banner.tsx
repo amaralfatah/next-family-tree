@@ -18,7 +18,7 @@ export function WelcomeBanner({ treeId, joined, linked }: { treeId: string; join
         <p className="flex-1">
           {joined ? <strong className="font-semibold text-foreground">Selamat bergabung! </strong> : null}
           {linked
-            ? "Klik siapa pun di bagan untuk melihat hubungannya dengan Anda."
+            ? "Klik siapa pun di pohon untuk melihat hubungannya dengan Anda."
             : "Tandai diri Anda di pohon untuk melihat hubungan dengan setiap kerabat."}
         </p>
         {!linked ? (

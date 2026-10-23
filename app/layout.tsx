@@ -7,7 +7,7 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   title: { default: "Sararia Family Tree · Silsilah keluarga", template: "%s · Sararia Family Tree" },
-  description: "Catat silsilah keluarga bersama-sama, lihat bagan bani, dan temukan hubungan Anda dengan kerabat.",
+  description: "Catat silsilah keluarga bersama-sama, lihat pohon bani, dan temukan hubungan Anda dengan kerabat.",
   applicationName: "Sararia Family Tree",
   robots: { index: false, follow: false },
 };

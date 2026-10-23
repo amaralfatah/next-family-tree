@@ -27,7 +27,7 @@ export default async function InvitePage({ params }: PageProps<"/undangan/[token
             <h1 className="mt-1 font-display text-4xl leading-tight">{state.treeName}</h1>
             <p className="mt-3 text-sm text-muted-foreground">
               sebagai <strong className="text-foreground">{ROLE_LABEL[state.role].toLowerCase()}</strong>
-              {state.role === "editor" ? ". Anda bisa menambah dan mengubah data keluarga." : ". Anda bisa melihat bagan dan profil."}
+              {state.role === "editor" ? ". Anda bisa menambah dan mengubah data keluarga." : ". Anda bisa melihat pohon keluarga dan profil."}
             </p>
             <p className="mt-2 text-xs text-muted-foreground">Masuk sebagai {user.email}</p>
             <AcceptInviteButton token={token} />

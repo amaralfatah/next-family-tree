@@ -11,7 +11,7 @@ export default async function ChartPage({ params, searchParams }: PageProps<"/po
   const chartData = { ...data, persons: data.persons.map((p) => ({ ...p, notes: null, birthPlace: null })) };
   return (
     <main id="konten" className="flex flex-1 flex-col">
-      <h1 className="sr-only">Bagan {tree.name}</h1>
+      <h1 className="sr-only">Pohon {tree.name}</h1>
       {sp.baru === "1" || !mePersonId ? <WelcomeBanner treeId={treeId} joined={sp.baru === "1"} linked={Boolean(mePersonId)} /> : null}
       <Suspense>
         <FamilyChart

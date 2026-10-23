@@ -29,7 +29,7 @@ export function NewTreeForm() {
       <section className="grid gap-4 rounded-2xl bg-card p-5 sm:p-6">
         <div>
           <h2 className="text-base font-semibold tracking-[-0.01em]">Orang pertama</h2>
-          <p className="mt-1 text-sm text-muted-foreground">Biasanya leluhur tertua. Orang ini menjadi pusat bagan secara bawaan.</p>
+          <p className="mt-1 text-sm text-muted-foreground">Biasanya leluhur tertua. Orang ini menjadi pusat pohon secara bawaan.</p>
         </div>
         <PersonFields idPrefix="first" />
         <FieldLabel htmlFor="isMe">

@@ -124,7 +124,7 @@ export function DemoSandbox({ migrations }: { migrations: string[] }) {
         onMakeRoot: async (personId) => {
           await setRootPerson(sandbox.db, sandbox.userId, sandbox.treeId, personId);
           await refresh();
-          toast.success("Pusat bawaan bagan diubah.");
+          toast.success("Pusat bawaan pohon diubah.");
         },
       }
     : undefined;

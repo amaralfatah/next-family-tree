@@ -3,87 +3,83 @@
 import { HistoryIcon, ListIcon, NetworkIcon, SettingsIcon, UsersIcon } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
+import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
 function useTabs(treeId: string) {
   const pathname = usePathname();
   const base = `/pohon/${treeId}`;
-  // Adding a relative from the chart stays under Bagan, and the tab leads back to the same view.
+  // Adding a relative from the chart stays under Pohon, and the tab leads back to the same view.
   const back = useSearchParams().get("kembali");
   const fromChart = pathname === `${base}/orang/baru` && back !== null && (back === base || back.startsWith(`${base}?`));
-  return [
-    { href: fromChart ? back : base, label: "Bagan", icon: NetworkIcon, active: pathname === base || fromChart },
-    {
-      href: `${base}/daftar`,
-      label: "Daftar",
-      icon: ListIcon,
-      active: !fromChart && (pathname.startsWith(`${base}/daftar`) || pathname.startsWith(`${base}/orang`)),
-    },
-    { href: `${base}/anggota`, label: "Anggota", icon: UsersIcon, active: pathname.startsWith(`${base}/anggota`) },
-    { href: `${base}/riwayat`, label: "Riwayat", icon: HistoryIcon, active: pathname.startsWith(`${base}/riwayat`) },
-    { href: `${base}/pengaturan`, label: "Atur", icon: SettingsIcon, active: pathname.startsWith(`${base}/pengaturan`) },
-  ];
+  return {
+    tabs: [
+      { href: fromChart ? back : base, label: "Pohon", icon: NetworkIcon, active: pathname === base || fromChart },
+      {
+        href: `${base}/daftar`,
+        label: "Daftar",
+        icon: ListIcon,
+        active: !fromChart && (pathname.startsWith(`${base}/daftar`) || pathname.startsWith(`${base}/orang`)),
+      },
+      { href: `${base}/anggota`, label: "Anggota", icon: UsersIcon, active: pathname.startsWith(`${base}/anggota`) },
+      { href: `${base}/riwayat`, label: "Riwayat", icon: HistoryIcon, active: pathname.startsWith(`${base}/riwayat`) },
+    ],
+    settings: { href: `${base}/pengaturan`, active: pathname.startsWith(`${base}/pengaturan`) },
+  };
 }
 
+const focusRing = "outline-none focus-visible:ring-3 focus-visible:ring-ring/50";
+
 /**
- * Wide screens: the sections sit inside the navigation bar, so there is one bar above the content.
- * Tablets: underline tabs under the header. Phones get the bottom bar instead.
- * Text only up here, as in an iPadOS or macOS toolbar; icons belong to the phone's bottom bar.
+ * Tablets and up: the sections sit inside the navigation bar, as in an iPadOS or macOS toolbar, so there is
+ * one bar above the chart, with settings as a toolbar button. Phones get the bottom bar instead, with
+ * settings still up here.
  */
-export function TreeTabs({ treeId, inline = false }: { treeId: string; inline?: boolean }) {
-  const tabs = useTabs(treeId);
-  if (inline) {
-    return (
-      <nav aria-label="Navigasi pohon" className="hidden shrink-0 items-center gap-0.5 lg:flex">
+export function TreeTabs({ treeId }: { treeId: string }) {
+  const { tabs, settings } = useTabs(treeId);
+  return (
+    <>
+      <nav aria-label="Navigasi pohon" className="hidden shrink-0 items-center gap-0.5 sm:flex">
         {tabs.map((t) => (
           <Link
-            key={t.href}
+            key={t.label}
             href={t.href}
             aria-current={t.active ? "page" : undefined}
             className={cn(
-              "flex h-8 items-center rounded-lg px-3 text-sm text-muted-foreground transition-colors outline-none hover:text-foreground focus-visible:ring-3 focus-visible:ring-ring/50",
+              "flex h-8 items-center rounded-lg px-3 text-sm text-muted-foreground transition-colors hover:text-foreground",
+              focusRing,
               t.active && "bg-muted font-medium text-foreground",
             )}
           >
-            {t.label === "Atur" ? "Pengaturan" : t.label}
+            {t.label}
           </Link>
         ))}
       </nav>
-    );
-  }
-  return (
-    <nav aria-label="Navigasi pohon" className="no-print hidden border-b bg-background sm:block lg:hidden">
-      <div className="mx-auto flex max-w-6xl items-center gap-1 px-4">
-        {tabs.map((t) => (
-          <Link
-            key={t.href}
-            href={t.href}
-            aria-current={t.active ? "page" : undefined}
-            className={cn(
-              "relative flex shrink-0 items-center px-3 py-3 text-sm text-muted-foreground rounded-md transition-colors outline-none hover:text-foreground focus-visible:text-foreground focus-visible:ring-3 focus-visible:ring-ring/50",
-              t.active && "font-medium text-foreground after:absolute after:inset-x-2 after:bottom-0 after:h-0.5 after:rounded-full after:bg-soga",
-            )}
-          >
-            {t.label === "Atur" ? "Pengaturan" : t.label}
-          </Link>
-        ))}
-      </div>
-    </nav>
+      <Link
+        href={settings.href}
+        aria-label="Pengaturan pohon"
+        title="Pengaturan pohon"
+        aria-current={settings.active ? "page" : undefined}
+        className={cn(buttonVariants({ variant: "ghost", size: "icon" }), settings.active && "bg-muted text-foreground")}
+      >
+        <SettingsIcon />
+      </Link>
+    </>
   );
 }
 
 /** Thumb-reachable tab bar for phones, padded clear of the home indicator. */
 export function TreeBottomBar({ treeId }: { treeId: string }) {
-  const tabs = useTabs(treeId);
+  const { tabs } = useTabs(treeId);
   return (
     <nav
       aria-label="Navigasi pohon"
       className="no-print fixed inset-x-0 bottom-0 z-40 border-t bg-background pb-[env(safe-area-inset-bottom)] sm:hidden"
     >
-      <div className="grid grid-cols-5">
+      <div className="grid grid-cols-4">
         {tabs.map((t) => (
           <Link
-            key={t.href}
+            key={t.label}
             href={t.href}
             aria-current={t.active ? "page" : undefined}
             className={cn(

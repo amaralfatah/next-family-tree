@@ -6,7 +6,7 @@ import { Mark, Wordmark } from "@/components/wordmark";
 import type { CurrentUser } from "@/lib/auth/session";
 
 /**
- * `compactBrand` shows only the mark on phones so a tree name has room next to it.
+ * `compactBrand` shows only the mark below desktop width so a tree name and the section tabs have room next to it.
  */
 export function AppHeader({
   user,
@@ -16,7 +16,7 @@ export function AppHeader({
 }: {
   user: CurrentUser;
   children?: React.ReactNode;
-  /** Section navigation shown inside the bar on wide screens. */
+  /** Section navigation and toolbar buttons shown inside the bar, before the theme toggle. */
   nav?: React.ReactNode;
   compactBrand?: boolean;
 }) {
@@ -26,8 +26,8 @@ export function AppHeader({
         <Link href="/pohon" aria-label="Sararia Family Tree, ke pohon saya" className="flex shrink-0 items-center rounded-md outline-none focus-visible:ring-3 focus-visible:ring-ring/40">
           {compactBrand ? (
             <>
-              <Mark className="sm:hidden" />
-              <Wordmark className="hidden sm:inline-flex" />
+              <Mark className="lg:hidden" />
+              <Wordmark className="hidden lg:inline-flex" />
             </>
           ) : (
             <Wordmark />

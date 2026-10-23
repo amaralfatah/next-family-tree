@@ -63,7 +63,7 @@ export default async function Home() {
             <Shot
               light={chartLight}
               dark={chartDark}
-              alt="Bagan keluarga contoh di Sararia Family Tree, dengan panel sebutan untuk kerabat yang dipilih"
+              alt="Pohon keluarga contoh di Sararia Family Tree, dengan panel sebutan untuk kerabat yang dipilih"
               priority
               sizes="(min-width: 1024px) 1024px, 100vw"
               className="rounded-xl shadow-[0_2px_6px_rgb(0_0_0/0.06),0_30px_60px_-20px_rgb(0_0_0/0.25)] ring-1 ring-black/10 dark:ring-white/10"
@@ -73,7 +73,7 @@ export default async function Home() {
 
         <section className="mt-16 bg-grouped px-4 py-16 sm:px-6 md:mt-24 md:py-24">
           <div className="mx-auto grid max-w-5xl gap-5 md:grid-cols-2">
-            <Tile title="Sebutan yang tepat untuk setiap kerabat." body="Ketuk siapa pun di bagan. Dari paman dan bibi sampai besan dan sepupu dua kali, sebutannya dihitung dari silsilah.">
+            <Tile title="Sebutan yang tepat untuk setiap kerabat." body="Ketuk siapa pun di pohon. Dari paman dan bibi sampai besan dan sepupu dua kali, sebutannya dihitung dari silsilah.">
               <div className="flex h-full items-center px-7 pb-8 md:px-9">
                 <Shot light={sheetLight} dark={sheetDark} alt="Panel kerabat: Rizky Nurdin, Paman (kakak ayah)" sizes="(min-width: 768px) 400px, 90vw" className={shotFrame} />
               </div>

@@ -9,7 +9,7 @@ import { loadPublicDemo } from "@/lib/demo-public";
 
 export const metadata = {
   title: "Contoh pohon keluarga",
-  description: "Coba bagan keluarga fiktif empat generasi tanpa masuk, lengkap dengan sebutan hubungan seperti paman, sepupu, dan besan.",
+  description: "Coba pohon keluarga fiktif empat generasi tanpa masuk, lengkap dengan sebutan hubungan seperti paman, sepupu, dan besan.",
 };
 
 // Built once at build time from the fictional demo generator; no session or real data involved.
@@ -34,7 +34,7 @@ export default async function DemoPage() {
         </div>
       </header>
       <main id="konten" className="flex flex-1 flex-col">
-        <h1 className="sr-only">Contoh bagan {demo.name}</h1>
+        <h1 className="sr-only">Contoh pohon {demo.name}</h1>
         <div className="no-print border-b bg-paper-2">
           <div className="mx-auto flex max-w-6xl items-center gap-3 px-4 py-2 text-[13px] sm:py-2.5 sm:text-sm">
             <p className="min-w-0 flex-1">
