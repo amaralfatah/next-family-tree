@@ -6,7 +6,7 @@ import { redirect } from "next/navigation";
 import { cache } from "react";
 import { getDb } from "@/lib/db";
 import { sessions, users } from "@/lib/db/schema";
-import { neonAuth, neonAuthEnabled } from "./neon";
+import { NEON_AUTH_SESSION_COOKIE, neonAuth, neonAuthEnabled } from "./neon";
 
 export const SESSION_COOKIE = "wargi_session";
 const DAY = 86_400_000;
@@ -47,7 +47,12 @@ export const getCurrentUser = cache(async (): Promise<CurrentUser | null> => {
 async function neonAuthUser(): Promise<CurrentUser | null> {
   const auth = neonAuth();
   if (!auth) return null;
-  const { data } = await auth.getSession();
+  if (!(await cookies()).has(NEON_AUTH_SESSION_COOKIE)) return null;
+  // Once the 5-minute session cache lapses, getSession() asks Neon Auth over the network. A failed call
+  // is not a signed-out user: retry once, then throw so the error page offers a retry instead of /masuk.
+  let { data, error } = await auth.getSession();
+  if (error) ({ data, error } = await auth.getSession());
+  if (error) throw new Error(`Neon Auth session check failed: ${error.status ?? ""} ${error.message ?? ""}`.trim());
   const authUser = data?.user;
   if (!authUser?.email) return null;
   const db = await getDb();
