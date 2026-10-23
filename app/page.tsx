@@ -32,12 +32,9 @@ export default async function Home() {
       <header className={navBar}>
         <div className="mx-auto flex h-12 max-w-5xl items-center gap-1 px-4 sm:px-6">
           <Link href="/" aria-label="Sararia Family Tree, beranda" className="mr-auto flex items-center rounded-md outline-none focus-visible:ring-3 focus-visible:ring-ring/40">
-            <Wordmark full />
+            <Wordmark />
           </Link>
           <ThemeToggle label="Ganti tema terang/gelap" />
-          <Link href="/contoh" className={buttonVariants({ variant: "ghost", size: "sm", className: "hidden sm:inline-flex" })}>
-            Contoh
-          </Link>
           <Link href="/masuk" className={buttonVariants({ variant: "ghost", size: "sm" })}>
             Masuk
           </Link>
@@ -52,11 +49,12 @@ export default async function Home() {
           <p className="mx-auto mt-5 max-w-xl text-xl leading-snug text-pretty text-muted-foreground md:text-2xl">
             Susun silsilah keluarga besar bersama saudara, dan ketahui sebutan yang tepat untuk setiap kerabat.
           </p>
-          <div className="mt-8 flex flex-wrap items-center justify-center gap-x-6 gap-y-3">
+          {/* Phones: one full-width action with the secondary link under it; wider screens: side by side. */}
+          <div className="mx-auto mt-8 flex max-w-xs flex-col items-stretch gap-1 sm:max-w-none sm:flex-row sm:items-center sm:justify-center sm:gap-6">
             <Link href="/masuk" className={buttonVariants({ size: "lg" })}>
               Buat pohon keluarga
             </Link>
-            <Link href="/contoh" className="rounded-sm text-[1.0625rem] text-primary outline-none hover:underline focus-visible:ring-3 focus-visible:ring-ring/40">
+            <Link href="/contoh" className="inline-flex h-11 items-center justify-center rounded-sm text-[1.0625rem] text-primary outline-none hover:underline focus-visible:ring-3 focus-visible:ring-ring/40">
               Lihat contoh
             </Link>
           </div>
