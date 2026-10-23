@@ -13,6 +13,7 @@ import {
   ArrowDownFromLineIcon,
   ArrowUpFromLineIcon,
   BabyIcon,
+  ChevronsUpDownIcon,
   CrosshairIcon,
   ExternalLinkIcon,
   HeartIcon,
@@ -21,6 +22,7 @@ import {
   Trash2Icon,
   UserRoundPlusIcon,
   UsersRoundIcon,
+  NetworkIcon,
   XIcon,
 } from "lucide-react";
 import Link from "next/link";
@@ -32,17 +34,17 @@ import { Combobox, ComboboxContent, ComboboxEmpty, ComboboxInput, ComboboxItem, 
 import { InputGroupAddon } from "@/components/ui/input-group";
 import { Spinner } from "@/components/ui/spinner";
 import { setRootAction } from "@/lib/actions";
-import { autoCollapse, buildAncestorGraph, buildDescendantGraph, revealFocus, type FamilyGraph } from "@/lib/graph/build";
+import { autoCollapse, buildAncestorGraph, buildDescendantGraph, buildFamilyGraph, familyRoots, indexTree, revealFocus, type FamilyGraph } from "@/lib/graph/build";
 import { PERSON_H, PERSON_W, toElk } from "@/lib/graph/layout";
 import { useElkLayout } from "@/lib/graph/use-layout";
 import { createKinshipResolver } from "@/lib/kinship";
 import { photoUrl, subtitle } from "@/lib/person";
 import type { Person, TreeData } from "@/lib/types";
 import { cn } from "@/lib/utils";
-import { nodeTypes, type PersonNodeData } from "./nodes";
+import { nodeTypes, type PersonNodeData, type UnionNodeData } from "./nodes";
 import { useSheetMotion } from "./sheet-motion";
 
-type Mode = "keturunan" | "leluhur";
+type Mode = "semua" | "keturunan" | "leluhur";
 type RelationKind = (typeof QUICK_ADD)[number]["rel"];
 
 /** In-browser edits for the /demo sandbox: the sheet opens local dialogs instead of profile pages. */
@@ -79,11 +81,14 @@ function Chart({ treeId, data, rootPersonId, mePersonId, canEdit, demo = false, 
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const byId = useMemo(() => new Map(data.persons.map((p) => [p.id, p])), [data.persons]);
+  const unionById = useMemo(() => new Map(data.unions.map((u) => [u.id, u])), [data.unions]);
 
   const fallbackFocus = rootPersonId && byId.has(rootPersonId) ? rootPersonId : (data.persons[0]?.id ?? null);
   const paramFocus = searchParams.get("pusat");
   const focusId = paramFocus && byId.has(paramFocus) ? paramFocus : fallbackFocus;
-  const mode: Mode = searchParams.get("arah") === "leluhur" ? "leluhur" : "keturunan";
+  // The whole family by default, so siblings and cousins show without re-centring on a parent first.
+  const arah = searchParams.get("arah");
+  const mode: Mode = arah === "leluhur" || arah === "keturunan" ? arah : "semua";
 
   const setView = useCallback(
     (next: { focus?: string; mode?: Mode }) => {
@@ -96,29 +101,32 @@ function Chart({ treeId, data, rootPersonId, mePersonId, canEdit, demo = false, 
     [pathname, router, searchParams],
   );
 
-  // Collapsed branches, reset whenever the focus or direction changes.
+  // Folded families (union ids), remembered per view so switching tabs and back keeps them. Clicking a
+  // marriage dot folds its children; big trees start with the deepest families folded so the first
+  // render stays fast.
   const viewKey = `${mode}:${focusId}`;
-  const [collapsedState, setCollapsedState] = useState<{ key: string; set: Set<string> } | null>(null);
-  const defaultCollapsed = useMemo(
-    () => (focusId && mode === "keturunan" ? autoCollapse(data, focusId) : new Set<string>()),
-    [data, focusId, mode],
-  );
-  const collapsed = collapsedState?.key === viewKey ? collapsedState.set : defaultCollapsed;
-
-  // Functional update: toggle keeps its identity across collapses, so memoised nodes don't all re-render.
+  const [folds, setFolds] = useState<Record<string, ReadonlySet<string>>>({});
+  const autoFolded = useMemo(() => {
+    if (!focusId || mode === "leluhur") return new Set<string>();
+    return autoCollapse(data, mode === "semua" ? familyRoots(indexTree(data), focusId) : focusId);
+  }, [data, focusId, mode]);
+  const collapsed = folds[viewKey] ?? autoFolded;
+  // Functional update: toggle keeps its identity across folds, so memoised nodes don't all re-render.
   const toggle = useCallback(
-    (personId: string) =>
-      setCollapsedState((prev) => {
-        const next = new Set(prev?.key === viewKey ? prev.set : defaultCollapsed);
-        if (next.has(personId)) next.delete(personId);
-        else next.add(personId);
-        return { key: viewKey, set: next };
+    (unionId: string) =>
+      setFolds((prev) => {
+        const next = new Set(prev[viewKey] ?? autoFolded);
+        if (next.has(unionId)) next.delete(unionId);
+        else next.add(unionId);
+        return { ...prev, [viewKey]: next };
       }),
-    [viewKey, defaultCollapsed],
+    [viewKey, autoFolded],
   );
+  const unfoldAll = () => setFolds((prev) => ({ ...prev, [viewKey]: new Set() }));
 
   const graph: FamilyGraph = useMemo(() => {
     if (!focusId) return { nodes: [], edges: [] };
+    if (mode === "semua") return buildFamilyGraph(data, focusId, collapsed);
     return mode === "keturunan" ? buildDescendantGraph(data, focusId, collapsed) : buildAncestorGraph(data, focusId, collapsed);
   }, [data, focusId, mode, collapsed]);
 
@@ -190,20 +198,27 @@ function Chart({ treeId, data, rootPersonId, mePersonId, canEdit, demo = false, 
             photo: photoUrl(treeId, person),
             focus: n.focus,
             isMe: n.personId === mePersonId,
-            hiddenCount: n.hiddenCount,
-            collapsible: n.collapsible,
-            collapsed: collapsed.has(n.personId),
-            direction: mode === "keturunan" ? "down" : "up",
-            onToggle: toggle,
             onPath: path.persons.has(n.personId),
             isSelected: selectedId === n.personId,
           };
           return { id: n.id, type: "person", position, data: nodeData };
         }
-        if (n.kind === "union") return { id: n.id, type: "union", position, data: { status: n.status, onPath: path.unions.has(n.unionId) }, selectable: false };
+        if (n.kind === "union") {
+          const u = unionById.get(n.unionId);
+          const unionData: UnionNodeData = {
+            unionId: n.unionId,
+            status: n.status,
+            onPath: path.unions.has(n.unionId),
+            collapsible: n.collapsible,
+            collapsed: collapsed.has(n.unionId),
+            owner: [u?.partnerAId, u?.partnerBId].map((id) => (id ? byId.get(id)?.fullName : null)).filter(Boolean).join(" & "),
+            onToggle: toggle,
+          };
+          return { id: n.id, type: "union", position, data: unionData, selectable: false };
+        }
         return { id: n.id, type: "unknown", position, data: {}, selectable: false };
       });
-  }, [positions, graph.nodes, byId, treeId, mePersonId, collapsed, mode, toggle, selectedId, path]);
+  }, [positions, graph.nodes, byId, unionById, treeId, mePersonId, collapsed, toggle, selectedId, path]);
 
   const edges: Edge[] = useMemo(
     () =>
@@ -293,6 +308,9 @@ function Chart({ treeId, data, rootPersonId, mePersonId, canEdit, demo = false, 
   }, [positions, stale, viewKey, fitView, setCenter, getZoom, graph.nodes.length, focusId, mePersonId, selectedId, path, revealId]);
 
 
+  // Folded families in the current chart, for the "Buka semua" button.
+  const foldedCount = graph.nodes.filter((n) => n.kind === "union" && collapsed.has(n.unionId)).length;
+
   const [savingRoot, startRoot] = useTransition();
   const flowRef = useRef<HTMLDivElement>(null);
   const toolbarRef = useRef<HTMLDivElement>(null);
@@ -309,6 +327,7 @@ function Chart({ treeId, data, rootPersonId, mePersonId, canEdit, demo = false, 
         <div className="material flex rounded-[10px] bg-muted/85 p-0.5 shadow-[0_1px_2px_rgb(0_0_0/0.06)] backdrop-blur-xl" role="group" aria-label="Arah bagan">
           {(
             [
+              ["semua", "Semua", NetworkIcon],
               ["keturunan", "Keturunan", ArrowDownFromLineIcon],
               ["leluhur", "Leluhur", ArrowUpFromLineIcon],
             ] as const
@@ -327,6 +346,17 @@ function Chart({ treeId, data, rootPersonId, mePersonId, canEdit, demo = false, 
             </button>
           ))}
         </div>
+        {foldedCount > 0 ? (
+          <Button
+            variant="outline"
+            size="sm"
+            className="material border-transparent bg-card/85 shadow-[0_1px_2px_rgb(0_0_0/0.06)] backdrop-blur-xl"
+            onClick={unfoldAll}
+            title={folds[viewKey] ? undefined : "Pohon ini besar, jadi sebagian cabang dilipat agar cepat tampil."}
+          >
+            <ChevronsUpDownIcon data-icon="inline-start" /> Buka semua ({foldedCount})
+          </Button>
+        ) : null}
         <FocusSearch data={data} onPick={(id) => setView({ focus: id })} />
         {mePersonId && mePersonId !== focusId ? (
           <Button variant="outline" size="sm" className="material border-transparent bg-card/85 shadow-[0_1px_2px_rgb(0_0_0/0.06)] backdrop-blur-xl max-sm:px-2.5" onClick={() => setView({ focus: mePersonId })}>
@@ -335,7 +365,7 @@ function Chart({ treeId, data, rootPersonId, mePersonId, canEdit, demo = false, 
         ) : null}
       </div>
 
-      <div ref={flowRef} className="relative min-h-[60dvh] flex-1" aria-label={`Bagan ${mode} ${byId.get(focusId)?.fullName ?? ""}`}>
+      <div ref={flowRef} className="relative min-h-[60dvh] flex-1" aria-label={mode === "semua" ? "Bagan seluruh keluarga" : `Bagan ${mode} ${byId.get(focusId)?.fullName ?? ""}`}>
         {!positions ? (
           <div className="absolute inset-0 grid place-items-center text-sm text-muted-foreground">
             <span role="status" className="flex items-center gap-2">

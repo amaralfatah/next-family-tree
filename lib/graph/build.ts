@@ -6,8 +6,8 @@ import type { Person, TreeData, Union } from "@/lib/types";
  * descendant ("bani") and the ancestor view.
  */
 export type GraphNode =
-  | { id: string; kind: "person"; personId: string; focus: boolean; hiddenCount: number; collapsible: boolean }
-  | { id: string; kind: "union"; unionId: string; status: Union["status"] }
+  | { id: string; kind: "person"; personId: string; focus: boolean }
+  | { id: string; kind: "union"; unionId: string; status: Union["status"]; collapsible: boolean }
   | { id: string; kind: "unknown"; unionId: string };
 
 export interface GraphEdge {
@@ -77,66 +77,77 @@ const personNode = (personId: string, focus: boolean): GraphNode => ({
   kind: "person",
   personId,
   focus,
-  hiddenCount: 0,
-  collapsible: false,
 });
 
-/** Number of distinct descendants below a person (children, their partners' children, ...). */
-export function countDescendants(index: Index, personId: string): number {
-  const seen = new Set<string>();
-  const stack = [personId];
-  while (stack.length) {
-    const id = stack.pop()!;
-    for (const u of index.unionsOf.get(id) ?? []) {
-      for (const c of index.childrenOf.get(u.id) ?? []) {
-        if (!seen.has(c.childId) && c.childId !== personId) {
-          seen.add(c.childId);
-          stack.push(c.childId);
-        }
-      }
-    }
-  }
-  return seen.size;
-}
-
+/**
+ * Descendants fold per union, so a person with several marriages can have each family folded on its
+ * own. `collapsed` holds union ids.
+ */
 export function buildDescendantGraph(data: TreeData, rootId: string, collapsed: ReadonlySet<string> = new Set()): FamilyGraph {
   const index = indexTree(data);
+  if (!index.persons.has(rootId)) return { nodes: [], edges: [] };
+  return descendantsOf(index, [rootId], rootId, collapsed);
+}
+
+/**
+ * The whole family at once: everyone's descendants, starting from every earliest ancestor, so siblings,
+ * cousins and in-laws' families all show without re-centring. `focusId` is only highlighted.
+ */
+export function buildFamilyGraph(data: TreeData, focusId: string, collapsed: ReadonlySet<string> = new Set()): FamilyGraph {
+  const index = indexTree(data);
+  if (!index.persons.has(focusId)) return { nodes: [], edges: [] };
+  return descendantsOf(index, familyRoots(index, focusId), focusId, collapsed);
+}
+
+/**
+ * People with no recorded parents, except those who only married in (their partner has parents): they
+ * show next to that partner instead. The focus's own line comes first so it sits on the left.
+ */
+export function familyRoots(index: Index, focusId: string): string[] {
+  const hasParents = (id: string | null) => Boolean(id && index.parentUnionsOf.get(id)?.length);
+  const roots = [...index.persons.keys()].filter(
+    (id) => !hasParents(id) && !(index.unionsOf.get(id) ?? []).some((u) => hasParents(u.partnerAId === id ? u.partnerBId : u.partnerAId)),
+  );
+  // Walk up from the focus (first recorded parent each time) to find its earliest ancestor.
+  let top = focusId;
+  const seen = new Set([top]);
+  for (;;) {
+    const link = index.parentUnionsOf.get(top)?.[0];
+    const parent = link && index.unions.get(link.unionId)?.partnerAId;
+    if (!parent || seen.has(parent)) break;
+    seen.add(parent);
+    top = parent;
+  }
+  const first = roots.includes(top) ? top : roots.find((r) => (index.unionsOf.get(r) ?? []).some((u) => u.partnerAId === top || u.partnerBId === top));
+  return first ? [first, ...roots.filter((r) => r !== first)] : roots;
+}
+
+function descendantsOf(index: Index, roots: string[], focusId: string, collapsed: ReadonlySet<string>): FamilyGraph {
   const nodes = new Map<string, GraphNode>();
   const edges: GraphEdge[] = [];
-  if (!index.persons.has(rootId)) return { nodes: [], edges: [] };
-
   const expanded = new Set<string>();
-  const queue = [rootId];
-  nodes.set(`p:${rootId}`, personNode(rootId, true));
+  const queue = [...roots];
+  for (const r of roots) nodes.set(`p:${r}`, personNode(r, r === focusId));
 
   while (queue.length) {
     const pid = queue.shift()!;
     if (expanded.has(pid)) continue;
     expanded.add(pid);
-    const node = nodes.get(`p:${pid}`) as Extract<GraphNode, { kind: "person" }>;
-    const own = index.unionsOf.get(pid) ?? [];
-    const hasChildren = own.some((u) => (index.childrenOf.get(u.id) ?? []).length > 0);
-    node.collapsible = hasChildren && pid !== rootId;
-    if (collapsed.has(pid) && pid !== rootId) {
-      node.hiddenCount = countDescendants(index, pid);
-      // Partners stay visible so the card still reads "X & Y".
-      for (const u of own) addUnion(u, pid, false);
-      continue;
-    }
-    for (const u of own) addUnion(u, pid, true);
+    for (const u of index.unionsOf.get(pid) ?? []) addUnion(u, pid, !collapsed.has(u.id));
   }
 
   function addUnion(u: Union, from: string, withChildren: boolean) {
     const uid = `u:${u.id}`;
     const kids = index.childrenOf.get(u.id) ?? [];
     const partner = u.partnerAId === from ? u.partnerBId : u.partnerAId;
-    // A union without a partner and without visible children adds nothing to the chart.
-    if (!partner && (!withChildren || kids.length === 0)) return;
+    // A union without a partner and without children adds nothing to the chart. A folded one stays:
+    // its dot is what unfolds it.
+    if (!partner && kids.length === 0) return;
     if (!nodes.has(uid)) {
-      nodes.set(uid, { id: uid, kind: "union", unionId: u.id, status: u.status });
+      nodes.set(uid, { id: uid, kind: "union", unionId: u.id, status: u.status, collapsible: kids.length > 0 });
       edges.push({ id: `e:${from}>${u.id}`, source: `p:${from}`, target: uid, kind: "partner" });
       if (partner) {
-        if (!nodes.has(`p:${partner}`)) nodes.set(`p:${partner}`, personNode(partner, false));
+        if (!nodes.has(`p:${partner}`)) nodes.set(`p:${partner}`, personNode(partner, partner === focusId));
         edges.push({ id: `e:${partner}>${u.id}`, source: `p:${partner}`, target: uid, kind: "partner" });
       } else {
         const unk = `x:${u.id}`;
@@ -146,7 +157,7 @@ export function buildDescendantGraph(data: TreeData, rootId: string, collapsed: 
     }
     if (!withChildren) return;
     for (const c of kids) {
-      if (!nodes.has(`p:${c.childId}`)) nodes.set(`p:${c.childId}`, personNode(c.childId, false));
+      if (!nodes.has(`p:${c.childId}`)) nodes.set(`p:${c.childId}`, personNode(c.childId, c.childId === focusId));
       const eid = `e:${u.id}>${c.childId}`;
       if (!edges.some((e) => e.id === eid)) {
         edges.push({ id: eid, source: uid, target: `p:${c.childId}`, kind: "child", relation: c.relation });
@@ -155,7 +166,7 @@ export function buildDescendantGraph(data: TreeData, rootId: string, collapsed: 
     }
   }
 
-  return inFamilyOrder(index, rootId, nodes, edges);
+  return inFamilyOrder(index, roots, nodes, edges);
 }
 
 /**
@@ -164,9 +175,10 @@ export function buildDescendantGraph(data: TreeData, rootId: string, collapsed: 
  * Reorder depth-first instead: each person next to their spouses (the first spouse on the left when
  * there are several), then their unions, then each child's family in birth order.
  */
-function inFamilyOrder(index: Index, rootId: string, nodes: Map<string, GraphNode>, edges: GraphEdge[]): FamilyGraph {
+function inFamilyOrder(index: Index, roots: string[], nodes: Map<string, GraphNode>, edges: GraphEdge[]): FamilyGraph {
   const order: string[] = [];
   const placed = new Set<string>();
+  const visited = new Set<string>();
   const place = (id: string) => {
     if (nodes.has(id) && !placed.has(id)) {
       placed.add(id);
@@ -174,7 +186,9 @@ function inFamilyOrder(index: Index, rootId: string, nodes: Map<string, GraphNod
     }
   };
   const visit = (pid: string) => {
-    if (placed.has(`p:${pid}`) && pid !== rootId) return;
+    if (placed.has(`p:${pid}`) && !roots.includes(pid)) return;
+    if (visited.has(pid)) return;
+    visited.add(pid);
     const own = (index.unionsOf.get(pid) ?? []).filter((u) => nodes.has(`u:${u.id}`));
     const spouses = own.map((u) => {
       const partner = u.partnerAId === pid ? u.partnerBId : u.partnerAId;
@@ -190,8 +204,10 @@ function inFamilyOrder(index: Index, rootId: string, nodes: Map<string, GraphNod
       }
     }
   };
-  place(`p:${rootId}`);
-  visit(rootId);
+  for (const r of roots) {
+    place(`p:${r}`);
+    visit(r);
+  }
   for (const id of nodes.keys()) place(id);
   const rank = new Map(order.map((id, i) => [id, i]));
   const sorted = [...edges].sort((a, b) => rank.get(a.target)! - rank.get(b.target)! || rank.get(a.source)! - rank.get(b.source)!);
@@ -210,19 +226,14 @@ export function buildAncestorGraph(data: TreeData, personId: string, collapsed: 
     const pid = queue.shift()!;
     if (seen.has(pid)) continue;
     seen.add(pid);
-    const node = nodes.get(`p:${pid}`) as Extract<GraphNode, { kind: "person" }>;
     const ups = index.parentUnionsOf.get(pid) ?? [];
-    node.collapsible = ups.length > 0 && pid !== personId;
-    if (collapsed.has(pid) && pid !== personId) {
-      node.hiddenCount = countAncestors(index, pid);
-      continue;
-    }
+    if (collapsed.has(pid) && pid !== personId) continue;
     for (const link of ups) {
       const u = index.unions.get(link.unionId);
       if (!u) continue;
       const uid = `u:${u.id}`;
       if (!nodes.has(uid)) {
-        nodes.set(uid, { id: uid, kind: "union", unionId: u.id, status: u.status });
+        nodes.set(uid, { id: uid, kind: "union", unionId: u.id, status: u.status, collapsible: false });
         for (const partner of [u.partnerAId, u.partnerBId]) {
           if (partner) {
             if (!nodes.has(`p:${partner}`)) nodes.set(`p:${partner}`, personNode(partner, false));
@@ -255,34 +266,17 @@ export function revealFocus(data: TreeData, personId: string): string {
   return personId;
 }
 
-function countAncestors(index: Index, personId: string): number {
-  const seen = new Set<string>();
-  const stack = [personId];
-  while (stack.length) {
-    const id = stack.pop()!;
-    for (const link of index.parentUnionsOf.get(id) ?? []) {
-      const u = index.unions.get(link.unionId);
-      for (const p of [u?.partnerAId, u?.partnerBId]) {
-        if (p && !seen.has(p)) {
-          seen.add(p);
-          stack.push(p);
-        }
-      }
-    }
-  }
-  return seen.size;
-}
-
 /**
- * For big trees, collapse every branch below the first depth where the chart would
- * exceed `budget` people, so the first render stays fast. Users expand branches on demand.
+ * For big trees, fold every family below the first depth where the chart would exceed `budget`
+ * people, so the first render stays fast. Users unfold branches on demand. Returns union ids.
  */
-export function autoCollapse(data: TreeData, rootId: string, budget = 300): Set<string> {
+export function autoCollapse(data: TreeData, rootId: string | string[], budget = 300): Set<string> {
   const index = indexTree(data);
   const collapsed = new Set<string>();
-  let frontier = [rootId];
+  const roots = Array.isArray(rootId) ? rootId : [rootId];
+  let frontier = roots;
   const seen = new Set(frontier);
-  let total = 1;
+  let total = roots.length;
   while (frontier.length) {
     const next: string[] = [];
     for (const pid of frontier) {
@@ -301,13 +295,15 @@ export function autoCollapse(data: TreeData, rootId: string, budget = 300): Set<
       }
     }
     if (total + next.length > budget) {
-      for (const pid of frontier) collapsed.add(pid);
+      for (const pid of frontier) {
+        if (roots.includes(pid)) continue;
+        for (const u of index.unionsOf.get(pid) ?? []) if ((index.childrenOf.get(u.id) ?? []).length) collapsed.add(u.id);
+      }
       break;
     }
     total += next.length;
     frontier = next;
   }
-  if (collapsed.has(rootId)) collapsed.delete(rootId);
   return collapsed;
 }
 

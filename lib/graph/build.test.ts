@@ -1,7 +1,7 @@
 import ELK from "elkjs/lib/elk.bundled.js";
 import { describe, expect, it } from "vitest";
 import type { ChildRelation, Person, TreeData } from "@/lib/types";
-import { autoCollapse, buildAncestorGraph, buildDescendantGraph, generations, revealFocus } from "./build";
+import { autoCollapse, buildAncestorGraph, buildDescendantGraph, buildFamilyGraph, generations, revealFocus } from "./build";
 import { positionsFromElk, toElk } from "./layout";
 
 function tree() {
@@ -67,12 +67,28 @@ describe("buildDescendantGraph", () => {
     expect(g.edges.filter((e) => e.kind === "child").map((e) => e.target)).toEqual(["p:tua", "p:muda"]);
   });
 
-  it("collapses a branch and counts what is hidden", () => {
+  it("folds a family away", () => {
     const { data } = tree().p("a").p("b").p("c").p("d").u("u1", "a", null, ["b"]).u("u2", "b", null, ["c"]).u("u3", "c", null, ["d"]);
-    const g = buildDescendantGraph(data, "a", new Set(["b"]));
+    const g = buildDescendantGraph(data, "a", new Set(["u2"]));
     expect(ids(g)).not.toContain("p:c");
-    const b = g.nodes.find((n) => n.id === "p:b");
-    expect(b).toMatchObject({ hiddenCount: 2, collapsible: true });
+    expect(ids(g)).toContain("p:b");
+    expect(g.nodes.find((n) => n.id === "u:u2")).toMatchObject({ collapsible: true });
+  });
+
+  it("folds each marriage on its own", () => {
+    const { data } = tree()
+      .p("kakek").p("istri1").p("istri2").p("a").p("c")
+      .u("u1", "kakek", "istri1", ["a"], "biological", 0)
+      .u("u2", "kakek", "istri2", ["c"], "biological", 1);
+    const g = buildDescendantGraph(data, "kakek", new Set(["u1"]));
+    expect(ids(g)).toEqual(["p:c", "p:istri1", "p:istri2", "p:kakek", "u:u1", "u:u2"].sort());
+  });
+
+
+  it("keeps a folded single-parent union so its dot can unfold it", () => {
+    const { data } = tree().p("ibu").p("anak").u("u1", "ibu", null, ["anak"]);
+    const g = buildDescendantGraph(data, "ibu", new Set(["u1"]));
+    expect(ids(g)).toEqual(["p:ibu", "u:u1", "x:u1"].sort());
   });
 
   it("does not loop on cousin marriages", () => {
@@ -95,6 +111,8 @@ describe("buildAncestorGraph", () => {
     const { data } = tree().p("me").p("ayah").p("ibu").p("kakek").u("u1", "ayah", "ibu", ["me"]).u("u2", "kakek", null, ["ayah"]);
     const g = buildAncestorGraph(data, "me");
     expect(ids(g)).toEqual(["p:ayah", "p:ibu", "p:kakek", "p:me", "u:u1", "u:u2", "x:u2"].sort());
+    const folded = buildAncestorGraph(data, "me", new Set(["ayah"]));
+    expect(ids(folded)).not.toContain("p:kakek");
   });
 });
 
@@ -166,5 +184,21 @@ describe("layout", () => {
     const start = performance.now();
     await new ELK().layout(toElk(buildDescendantGraph(t.data, "r")));
     expect(performance.now() - start).toBeLessThan(2000);
+  });
+});
+
+describe("buildFamilyGraph", () => {
+  it("shows siblings, cousins and an in-law's family without re-centring", () => {
+    const { data } = tree()
+      .p("kakek").p("nenek").p("ayah").p("paman").p("ibu").p("kakekIbu").p("me").p("adik").p("sepupu")
+      .u("u0", "kakek", "nenek", ["ayah", "paman"])
+      .u("uI", "kakekIbu", null, ["ibu"])
+      .u("u1", "ayah", "ibu", ["me", "adik"])
+      .u("u2", "paman", null, ["sepupu"]);
+    const g = buildFamilyGraph(data, "me");
+    for (const id of ["kakek", "nenek", "ayah", "paman", "ibu", "kakekIbu", "me", "adik", "sepupu"]) expect(ids(g)).toContain(`p:${id}`);
+    expect(g.nodes.filter((n) => n.kind === "person" && n.focus).map((n) => n.id)).toEqual(["p:me"]);
+    // Both parents' lines start the chart, the focus's own line first.
+    expect(g.nodes[0].id).toBe("p:kakek");
   });
 });

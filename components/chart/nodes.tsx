@@ -1,7 +1,6 @@
 "use client";
 
 import { Handle, Position, type Node, type NodeProps } from "@xyflow/react";
-import { ChevronDownIcon, ChevronUpIcon } from "lucide-react";
 import { memo } from "react";
 import { PERSON_H, PERSON_W, UNION_SIZE, UNKNOWN_H, UNKNOWN_W } from "@/lib/graph/layout";
 import { subtitle } from "@/lib/person";
@@ -13,11 +12,6 @@ export interface PersonNodeData extends Record<string, unknown> {
   photo: string | null;
   focus: boolean;
   isMe: boolean;
-  hiddenCount: number;
-  collapsible: boolean;
-  collapsed: boolean;
-  direction: "down" | "up";
-  onToggle: (personId: string) => void;
   /** On the highlighted kinship path between me and the selected person. */
   onPath: boolean;
   isSelected: boolean;
@@ -37,7 +31,7 @@ function initialsOf(name: string) {
 }
 
 export const PersonNode = memo(function PersonNode({ data }: NodeProps<PersonFlowNode>) {
-  const { person, photo, focus, isMe, hiddenCount, collapsible, collapsed, direction, onToggle, onPath, isSelected: selected } = data;
+  const { person, photo, focus, isMe, onPath, isSelected: selected } = data;
   // Pedigree convention instead of a colour code: circle for women, square for men.
   const avatarShape = person.gender === "male" ? "rounded-[5px]" : person.gender === "female" ? "rounded-full" : "rounded-lg";
   return (
@@ -68,48 +62,53 @@ export const PersonNode = memo(function PersonNode({ data }: NodeProps<PersonFlo
       {isMe ? (
         <span className="absolute -top-2.5 right-2 rounded-full bg-primary px-2 py-px text-[10px] font-semibold text-primary-foreground">Saya</span>
       ) : null}
-      {collapsible ? (
-        <button
-          type="button"
-          onClick={(e) => {
-            e.stopPropagation();
-            onToggle(person.id);
-          }}
-          aria-label={collapsed ? `Buka cabang ${person.fullName}` : `Lipat cabang ${person.fullName}`}
-          className={cn(
-            "nodrag absolute left-1/2 z-10 flex h-5 -translate-x-1/2 items-center gap-0.5 rounded-full border bg-background px-1.5 text-[10px] font-medium text-muted-foreground tabular-nums shadow-sm outline-none transition-[color,scale] duration-150 after:absolute after:-inset-x-2 after:-inset-y-3 after:content-[''] hover:text-foreground focus-visible:ring-3 focus-visible:ring-ring/50 active:scale-90 active:duration-0",
-            direction === "down" ? "-bottom-2.5" : "-top-2.5",
-          )}
-        >
-          {collapsed ? (
-            <>
-              {direction === "down" ? <ChevronDownIcon className="size-3" /> : <ChevronUpIcon className="size-3" />}+{hiddenCount}
-            </>
-          ) : direction === "down" ? (
-            <ChevronUpIcon className="size-3" />
-          ) : (
-            <ChevronDownIcon className="size-3" />
-          )}
-        </button>
-      ) : null}
       <Handle type="source" position={Position.Bottom} className={hidden} isConnectable={false} />
     </div>
   );
 });
 
-export type UnionFlowNode = Node<{ status: string; onPath?: boolean }, "union">;
+export interface UnionNodeData extends Record<string, unknown> {
+  unionId: string;
+  status: string;
+  onPath?: boolean;
+  /** Has children to fold (descendant charts only): the dot then works as the fold/unfold switch. */
+  collapsible: boolean;
+  collapsed: boolean;
+  /** Who the marriage belongs to, for the dot's label: "Fajar & Dewi". */
+  owner: string;
+  onToggle: (unionId: string) => void;
+}
+
+export type UnionFlowNode = Node<UnionNodeData, "union">;
 
 export const UnionNode = memo(function UnionNode({ data }: NodeProps<UnionFlowNode>) {
+  const dot = cn(
+    "rounded-full transition-[scale,background-color,box-shadow] duration-150",
+    data.status === "divorced" ? "border-2 border-nila/70 bg-background" : "bg-nila",
+    // Folded: a bigger dot with a halo, so the family hiding behind it stands out.
+    data.collapsed ? "size-3.5 bg-foreground/75 ring-4 ring-foreground/15" : "size-2.5",
+    data.onPath && "scale-125 border-soga bg-soga",
+  );
   return (
     <div style={{ width: UNION_SIZE, height: UNION_SIZE }} className="grid place-items-center" title={data.status === "divorced" ? "Bercerai" : undefined}>
       <Handle type="target" position={Position.Top} className={hidden} isConnectable={false} />
-      <span
-        className={cn(
-          "size-2.5 rounded-full transition-transform",
-          data.status === "divorced" ? "border-2 border-nila/70 bg-background" : "bg-nila",
-          data.onPath && "scale-125 border-soga bg-soga",
-        )}
-      />
+      {data.collapsible ? (
+        <button
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation();
+            data.onToggle(data.unionId);
+          }}
+          aria-expanded={!data.collapsed}
+          aria-label={`${data.collapsed ? "Tampilkan" : "Sembunyikan"} anak-anak ${data.owner}`}
+          title={data.collapsed ? "Tampilkan anak-anak" : "Sembunyikan anak-anak"}
+          className="nodrag nopan pointer-events-auto group/dot relative grid size-full cursor-pointer place-items-center rounded-full outline-none after:absolute after:-inset-3 after:content-[''] focus-visible:ring-3 focus-visible:ring-ring/50"
+        >
+          <span className={cn(dot, "group-hover/dot:scale-150 group-active/dot:scale-110 group-active/dot:duration-0")} />
+        </button>
+      ) : (
+        <span className={dot} />
+      )}
       <Handle type="source" position={Position.Bottom} className={hidden} isConnectable={false} />
     </div>
   );
