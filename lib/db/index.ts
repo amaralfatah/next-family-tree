@@ -6,6 +6,10 @@ export type DB = PgDatabase<PgQueryResultHKT, typeof schema>;
 
 const isNeon = (url: string) => /\.neon\.tech(:\d+)?\//.test(url) || url.includes(".neon.tech");
 
+// Neon hands out `sslmode=require`, which pg already treats as verify-full but warns about on every
+// start. Spell out verify-full so the behaviour stays the same and the warning goes away.
+const strictSsl = (url: string) => url.replace(/([?&]sslmode=)(prefer|require|verify-ca)(?=&|$)/, "$1verify-full");
+
 /**
  * - DATABASE_URL on Neon (the pooled `-pooler` URL from `neon env pull`): node-postgres, with the pool
  *   attached to Vercel Fluid compute so idle clients are released before suspend. Migrated with
@@ -19,7 +23,7 @@ async function connect(): Promise<DB> {
     const { Pool } = await import("pg");
     const { drizzle } = await import("drizzle-orm/node-postgres");
     const { attachDatabasePool } = await import("@vercel/functions");
-    const pool = new Pool({ connectionString: url });
+    const pool = new Pool({ connectionString: strictSsl(url) });
     attachDatabasePool(pool);
     return drizzle({ client: pool, schema }) as unknown as DB;
   }
@@ -27,7 +31,7 @@ async function connect(): Promise<DB> {
     const { Pool } = await import("pg");
     const { drizzle } = await import("drizzle-orm/node-postgres");
     const { migrate } = await import("drizzle-orm/node-postgres/migrator");
-    const db = drizzle({ client: new Pool({ connectionString: url, max: 10 }), schema });
+    const db = drizzle({ client: new Pool({ connectionString: strictSsl(url), max: 10 }), schema });
     await migrate(db, { migrationsFolder: "drizzle" });
     return db as unknown as DB;
   }

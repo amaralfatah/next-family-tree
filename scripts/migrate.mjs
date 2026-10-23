@@ -6,7 +6,11 @@ if (!process.env.DATABASE_URL) {
   process.exit(0);
 }
 
-const url = process.env.DATABASE_URL_UNPOOLED || process.env.DATABASE_URL;
+// Same as lib/db: make Neon's `sslmode=require` explicit as verify-full to silence pg's warning.
+const url = (process.env.DATABASE_URL_UNPOOLED || process.env.DATABASE_URL).replace(
+  /([?&]sslmode=)(prefer|require|verify-ca)(?=&|$)/,
+  "$1verify-full",
+);
 const { default: pg } = await import("pg");
 const { drizzle } = await import("drizzle-orm/node-postgres");
 const { migrate } = await import("drizzle-orm/node-postgres/migrator");
