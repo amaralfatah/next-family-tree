@@ -54,6 +54,7 @@
  * --nila is the tree's connecting lines. Dark mode uses warm near-blacks, never pure #000.
  */
 :root {
+  color-scheme: light;
   --background: #faf9f5;
   --paper-2: #f0eee6;
   --grouped: #f3f0e8;

@@ -47,7 +47,7 @@ export default async function PrivacyPage({ params }: PageProps<"/[locale]/priva
           <p className="mt-1 text-muted-foreground">{t("deletionBody")}</p>
         </section>
       </div>
-      <PreferencesInline className="mt-12 border-t border-border/70 pt-2" />
+      <PreferencesInline className="mt-12 border-t border-border/70 pt-3.5 pb-1.5" />
     </main>
   );
 }

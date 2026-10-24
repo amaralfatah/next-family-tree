@@ -13,14 +13,16 @@ import { cn } from "@/lib/utils";
  * - `PreferencesInline` at the foot of text pages (landing, sign-in, privacy), as apple.com does;
  * - `PreferencesMenu`, a More button, on the full-screen chart pages (example, demo) that have no footer.
  */
+// Each row keeps its 44px tap height, but rows that wrap overlap by 12px of empty space, so on a narrow
+// column (sign-in) the two settings read as one group instead of two loose lines.
 export function PreferencesInline({ className }: { className?: string }) {
   return (
     <div className={cn("flex flex-wrap items-center gap-x-10 text-muted-foreground", className)}>
-      <div className="flex items-center gap-2">
+      <div className="-my-1.5 flex items-center gap-2">
         <GlobeIcon aria-hidden className="size-3.5 opacity-70" />
         <LanguageSwitcher variant="inline" />
       </div>
-      <div className="flex items-center gap-2">
+      <div className="-my-1.5 flex items-center gap-2">
         <SunMoonIcon aria-hidden className="size-3.5 opacity-70" />
         <ThemeSwitcher variant="inline" />
       </div>

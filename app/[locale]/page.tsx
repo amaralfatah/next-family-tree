@@ -142,7 +142,7 @@ export default async function Home({ params }: PageProps<"/[locale]">) {
               </Link>
             </nav>
           </div>
-          <PreferencesInline className="mt-2 border-t border-border/70 pt-2" />
+          <PreferencesInline className="mt-2 border-t border-border/70 pt-3.5 pb-1.5" />
         </div>
       </footer>
     </div>

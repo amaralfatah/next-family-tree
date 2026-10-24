@@ -47,7 +47,7 @@ export default async function LoginPage({ params, searchParams }: PageProps<"/[l
             {t("privacyPolicy")}
           </Link>
         </p>
-        <PreferencesInline className="mt-8 border-t border-border/70 pt-2" />
+        <PreferencesInline className="mt-8 border-t border-border/70 pt-3.5 pb-1.5" />
       </div>
     </main>
   );
