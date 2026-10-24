@@ -17,7 +17,13 @@
     "label": "Language"
   },
   "theme": {
-    "toggle": "Switch light/dark theme"
+    "label": "Appearance",
+    "system": "Automatic",
+    "light": "Light",
+    "dark": "Dark"
+  },
+  "preferences": {
+    "menuAria": "Appearance and language"
   },
   "header": {
     "homeAria": "Sararia Family Tree, go to my trees"

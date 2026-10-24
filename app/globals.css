@@ -351,7 +351,7 @@
   }
 }
 
-/* Theme switch (components/theme-toggle.tsx): a short cross-fade rather than a jump in brightness. */
+/* Theme switch (components/theme-switcher.tsx): a short cross-fade rather than a jump in brightness. */
 ::view-transition-old(root),
 ::view-transition-new(root) {
   animation-duration: 280ms;

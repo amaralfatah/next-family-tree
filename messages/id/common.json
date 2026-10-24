@@ -17,7 +17,13 @@
     "label": "Bahasa"
   },
   "theme": {
-    "toggle": "Ganti tema terang/gelap"
+    "label": "Tampilan",
+    "system": "Otomatis",
+    "light": "Terang",
+    "dark": "Gelap"
+  },
+  "preferences": {
+    "menuAria": "Tampilan dan bahasa"
   },
   "header": {
     "homeAria": "Sararia Family Tree, ke pohon saya"

@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import { Link } from "@/i18n/navigation";
+import { PreferencesInline } from "@/components/preferences";
 import { Wordmark } from "@/components/wordmark";
 
 export async function generateMetadata({ params }: PageProps<"/[locale]/privacy">): Promise<Metadata> {
@@ -46,6 +47,7 @@ export default async function PrivacyPage({ params }: PageProps<"/[locale]/priva
           <p className="mt-1 text-muted-foreground">{t("deletionBody")}</p>
         </section>
       </div>
+      <PreferencesInline className="mt-12 border-t border-border/70 pt-2" />
     </main>
   );
 }

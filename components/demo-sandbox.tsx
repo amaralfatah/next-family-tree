@@ -7,7 +7,7 @@ import dynamic from "next/dynamic";
 import { navBar } from "@/components/nav-bar";
 import type { EditActions } from "@/components/chart/family-chart";
 import { PersonDialog, type Editing, type PersonStore } from "@/components/person-dialog";
-import { ThemeToggle } from "@/components/theme-toggle";
+import { PreferencesMenu } from "@/components/preferences";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { useErrorMessage } from "@/components/use-error-message";
 import { Mark, Wordmark } from "@/components/wordmark";
@@ -151,10 +151,10 @@ export function DemoSandbox({ migrations }: { migrations: string[] }) {
             <Wordmark className="hidden sm:inline-flex" />
           </Link>
           <span className="min-w-0 flex-1 truncate border-l border-border pl-3 font-display text-lg sm:text-xl">{view?.name ?? t("fallbackName")}</span>
-          <ThemeToggle label={t("toggleTheme")} />
           <Link href="/login" className={buttonVariants({ className: "hit" })}>
             {t("createTree")}
           </Link>
+          <PreferencesMenu />
         </div>
       </header>
       <main id="content" className="flex flex-1 flex-col">

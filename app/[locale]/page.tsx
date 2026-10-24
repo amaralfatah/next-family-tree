@@ -5,8 +5,7 @@ import Image, { type StaticImageData } from "next/image";
 import { Link } from "@/i18n/navigation";
 import { redirectTo } from "@/i18n/server";
 import { navBar } from "@/components/nav-bar";
-import { LanguageSwitcher } from "@/components/language-switcher";
-import { ThemeToggle } from "@/components/theme-toggle";
+import { PreferencesInline } from "@/components/preferences";
 import { buttonVariants } from "@/components/ui/button";
 import { Wordmark } from "@/components/wordmark";
 import { getCurrentUser } from "@/lib/auth/session";
@@ -46,7 +45,6 @@ export default async function Home({ params }: PageProps<"/[locale]">) {
           <Link href="/" aria-label={t("homeLabel")} className="mr-auto flex items-center rounded-md outline-none focus-visible:ring-3 focus-visible:ring-ring/40">
             <Wordmark />
           </Link>
-          <ThemeToggle label={t("toggleTheme")} />
           <Link href="/login" className={buttonVariants({ variant: "ghost", className: "hit" })}>
             {t("signIn")}
           </Link>
@@ -132,17 +130,19 @@ export default async function Home({ params }: PageProps<"/[locale]">) {
       </main>
 
       <footer className="bg-paper-2 pb-[env(safe-area-inset-bottom)]">
-        <div className="mx-auto flex max-w-5xl flex-wrap items-center justify-between gap-3 px-4 py-6 text-[13px] text-muted-foreground sm:px-6">
-          <span>{t("footerNote")}</span>
-          <nav className="flex items-center gap-5">
-            <Link href="/privacy" className="inline-flex min-h-11 items-center hover:text-foreground">
-              {t("privacy")}
-            </Link>
-            <Link href="/login" className="inline-flex min-h-11 items-center hover:text-foreground">
-              {t("signIn")}
-            </Link>
-            <LanguageSwitcher variant="inline" />
-          </nav>
+        <div className="mx-auto max-w-5xl px-4 py-6 text-[13px] text-muted-foreground sm:px-6">
+          <div className="flex flex-wrap items-center justify-between gap-x-5">
+            <span>{t("footerNote")}</span>
+            <nav className="flex items-center gap-5">
+              <Link href="/privacy" className="inline-flex min-h-11 items-center hover:text-foreground">
+                {t("privacy")}
+              </Link>
+              <Link href="/login" className="inline-flex min-h-11 items-center hover:text-foreground">
+                {t("signIn")}
+              </Link>
+            </nav>
+          </div>
+          <PreferencesInline className="mt-2 border-t border-border/70 pt-2" />
         </div>
       </footer>
     </div>

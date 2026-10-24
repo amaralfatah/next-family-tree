@@ -4,7 +4,7 @@ import { Link } from "@/i18n/navigation";
 import { Suspense } from "react";
 import { navBar } from "@/components/nav-bar";
 import { FamilyChart } from "@/components/chart/family-chart";
-import { ThemeToggle } from "@/components/theme-toggle";
+import { PreferencesMenu } from "@/components/preferences";
 import { buttonVariants } from "@/components/ui/button";
 import { Mark, Wordmark } from "@/components/wordmark";
 import { loadPublicDemo } from "@/lib/demo-public";
@@ -33,10 +33,10 @@ export default async function ExamplePage({ params }: PageProps<"/[locale]/examp
             <Wordmark className="hidden sm:inline-flex" />
           </Link>
           <span className="min-w-0 flex-1 truncate border-l border-border pl-3 font-display text-lg sm:text-xl">{demo.name}</span>
-          <ThemeToggle label={t("toggleTheme")} />
           <Link href="/login" className={buttonVariants({ className: "hit" })}>
             {t("createTree")}
           </Link>
+          <PreferencesMenu />
         </div>
       </header>
       <main id="content" className="flex flex-1 flex-col">

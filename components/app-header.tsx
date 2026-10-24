@@ -1,7 +1,6 @@
 import { useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
 import { navBar } from "@/components/nav-bar";
-import { ThemeToggle } from "@/components/theme-toggle";
 import { UserMenu } from "@/components/user-menu";
 import { Mark, Wordmark } from "@/components/wordmark";
 import type { CurrentUser } from "@/lib/auth/session";
@@ -17,7 +16,7 @@ export function AppHeader({
 }: {
   user: CurrentUser;
   children?: React.ReactNode;
-  /** Section navigation and toolbar buttons shown inside the bar, before the theme toggle. */
+  /** Section navigation and toolbar buttons shown inside the bar, before the account menu. */
   nav?: React.ReactNode;
   compactBrand?: boolean;
 }) {
@@ -37,7 +36,6 @@ export function AppHeader({
         </Link>
         <div className="min-w-0 flex-1">{children}</div>
         {nav}
-        <ThemeToggle />
         <UserMenu name={user.name} email={user.email} image={user.image} />
       </div>
     </header>

@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import { Link } from "@/i18n/navigation";
 import { redirectTo } from "@/i18n/server";
-import { LanguageSwitcher } from "@/components/language-switcher";
+import { PreferencesInline } from "@/components/preferences";
 import { GoogleSignInButton } from "@/components/google-sign-in-button";
 import { Wordmark } from "@/components/wordmark";
 import { getCurrentUser, googleEnabled, safeNext } from "@/lib/auth/session";
@@ -47,9 +47,7 @@ export default async function LoginPage({ params, searchParams }: PageProps<"/[l
             {t("privacyPolicy")}
           </Link>
         </p>
-        <div className="mt-4 flex justify-start">
-          <LanguageSwitcher variant="inline" />
-        </div>
+        <PreferencesInline className="mt-8 border-t border-border/70 pt-2" />
       </div>
     </main>
   );

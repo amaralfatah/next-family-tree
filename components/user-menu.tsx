@@ -4,6 +4,7 @@ import { LogOutIcon, TreesIcon } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
 import { LanguageSwitcher } from "@/components/language-switcher";
+import { ThemeSwitcher } from "@/components/theme-switcher";
 import { useTransition } from "react";
 import { logout } from "@/lib/actions";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -49,6 +50,8 @@ export function UserMenu({ name, email, image }: { name: string; email: string; 
         <DropdownMenuItem render={<Link href="/trees" />}>
           <TreesIcon /> {t("myTrees")}
         </DropdownMenuItem>
+        <DropdownMenuSeparator />
+        <ThemeSwitcher variant="menu" />
         <DropdownMenuSeparator />
         <LanguageSwitcher variant="menu" />
         <DropdownMenuSeparator />

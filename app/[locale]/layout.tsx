@@ -3,6 +3,7 @@ import { hasLocale, NextIntlClientProvider } from "next-intl";
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import { notFound } from "next/navigation";
 import { ThemeScript } from "@/components/theme-script";
+import { ThemeSync } from "@/components/theme-sync";
 import { Toaster } from "@/components/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { routing } from "@/i18n/routing";
@@ -56,6 +57,7 @@ export default async function RootLayout({ children, params }: LayoutProps<"/[lo
           {t("skipToContent")}
         </a>
         <NextIntlClientProvider>
+          <ThemeSync />
           <TooltipProvider>{children}</TooltipProvider>
           <Toaster />
         </NextIntlClientProvider>
