@@ -174,6 +174,44 @@
   .sheet-in {
     animation: sheet-in 260ms cubic-bezier(0.32, 0.72, 0, 1) both;
   }
+  /* Sidebars come in from the right and leave the same way, on the mirrored curve (HIG: symmetric paths). */
+  .side-in {
+    animation: side-in 260ms cubic-bezier(0.32, 0.72, 0, 1) both;
+  }
+  .side-out {
+    animation: side-out 200ms cubic-bezier(1, 0, 0.68, 0.28) both;
+    pointer-events: none;
+  }
+  /* A card being added materialises on the chart instead of popping in. */
+  .draft-in {
+    animation: draft-in 260ms cubic-bezier(0.32, 0.72, 0, 1) both;
+  }
+}
+
+/* Its own name: reusing side-in's keyframes would not restart the animation, and nothing would end it. */
+@keyframes side-out {
+  to {
+    opacity: 0;
+    transform: translateX(24px);
+  }
+}
+
+@keyframes draft-in {
+  from {
+    opacity: 0;
+    transform: scale(0.94);
+  }
+}
+
+@keyframes side-in {
+  from {
+    opacity: 0;
+    transform: translateX(24px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
 }
 
 @keyframes sheet-in {
@@ -219,18 +257,30 @@
   [data-slot="sheet-content"][data-ending-style] {
     translate: none;
   }
-  /* A press still dims the button; it just doesn't shrink. */
-  .group\/button:active {
-    scale: none;
+  /* A press still dims or highlights; nothing shrinks (buttons, rows, chart cards, tabs). */
+  :active {
+    scale: none !important;
   }
-  .sheet-in {
+  .sheet-in,
+  .side-in,
+  .draft-in {
     animation-name: fade-in;
+    animation-duration: 160ms;
+  }
+  .side-out {
+    animation-name: fade-out;
     animation-duration: 160ms;
   }
 }
 
 @keyframes fade-in {
   from {
+    opacity: 0;
+  }
+}
+
+@keyframes fade-out {
+  to {
     opacity: 0;
   }
 }
@@ -246,6 +296,59 @@
   --xy-controls-button-border-color: var(--border);
   --xy-minimap-background-color: var(--card);
   --xy-attribution-background-color: transparent;
+}
+
+/*
+ * Touch hit-slop: small chrome controls (32–36px) get an invisible 44px target on touch screens without
+ * changing how they look (HIG: 44pt minimum).
+ */
+@media (pointer: coarse) {
+  /* Already positioned (an absolute close button) keeps its own position; the rest anchor the slop. */
+  .hit:not(.absolute, .fixed, .sticky) {
+    position: relative;
+  }
+  .hit::before {
+    content: "";
+    position: absolute;
+    inset: -6px;
+  }
+}
+
+/* Keyboard focus on a card (Enter opens it): the same ring as every other control. */
+.react-flow__node:focus-visible {
+  outline: none;
+}
+.react-flow__node:focus-visible > div {
+  box-shadow: 0 0 0 3px color-mix(in oklch, var(--ring) 50%, transparent);
+}
+
+/* Zoom buttons: one material pill like the chart's other floating controls, 36px buttons, 44px on touch. */
+.react-flow__controls {
+  overflow: hidden;
+  border-radius: 12px;
+  background: color-mix(in oklch, var(--card) 85%, transparent);
+  box-shadow: 0 1px 2px rgb(0 0 0 / 0.06);
+  backdrop-filter: blur(24px);
+}
+.react-flow__controls-button {
+  width: 36px;
+  height: 36px;
+  border: 0;
+  border-bottom: 1px solid var(--border);
+  background: transparent;
+}
+.react-flow__controls-button:last-child {
+  border-bottom: 0;
+}
+.react-flow__controls-button svg {
+  max-width: 14px;
+  max-height: 14px;
+}
+@media (pointer: coarse) {
+  .react-flow__controls-button {
+    width: 44px;
+    height: 44px;
+  }
 }
 
 /* Theme switch (components/theme-toggle.tsx): a short cross-fade rather than a jump in brightness. */
@@ -266,6 +369,18 @@
     animation-range: 0 16px;
   }
 }
+/* The form sidebar's bar gets the same scroll edge, driven by the form it floats over. */
+@supports (animation-timeline: scroll()) {
+  .panel-scroll {
+    scroll-timeline: --panel block;
+  }
+  .panel-bar {
+    animation: nav-edge linear both;
+    animation-timeline: --panel;
+    animation-range: 0 16px;
+  }
+}
+
 @keyframes nav-edge {
   from {
     border-bottom-color: transparent;
@@ -278,6 +393,9 @@
   .material {
     background-color: var(--background);
     backdrop-filter: none;
+  }
+  .panel-bar {
+    background-color: var(--grouped);
   }
   [data-slot="dialog-overlay"],
   [data-slot="alert-dialog-overlay"],

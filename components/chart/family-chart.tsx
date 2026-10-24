@@ -6,6 +6,7 @@ import {
   ReactFlow,
   ReactFlowProvider,
   useReactFlow,
+  useStore,
   type Edge,
   type Node,
 } from "@xyflow/react";
@@ -13,13 +14,12 @@ import {
   ArrowDownFromLineIcon,
   ArrowUpFromLineIcon,
   BabyIcon,
+  ChevronRightIcon,
   ChevronsUpDownIcon,
   CrosshairIcon,
   ExternalLinkIcon,
   HeartIcon,
-  PencilIcon,
   SearchIcon,
-  Trash2Icon,
   UserRoundPlusIcon,
   UsersRoundIcon,
   NetworkIcon,
@@ -27,32 +27,37 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { useCallback, useEffect, useImperativeHandle, useMemo, useRef, useState, useTransition } from "react";
-import { toast } from "sonner";
+import { useCallback, useEffect, useImperativeHandle, useMemo, useRef, useState } from "react";
+import { barCancel, barConfirm, sheetBar } from "@/components/form-row-classes";
 import { Button, buttonVariants } from "@/components/ui/button";
+import { Empty, EmptyContent, EmptyDescription, EmptyHeader, EmptyTitle } from "@/components/ui/empty";
 import { Combobox, ComboboxContent, ComboboxEmpty, ComboboxInput, ComboboxItem, ComboboxList } from "@/components/ui/combobox";
 import { InputGroupAddon } from "@/components/ui/input-group";
 import { Spinner } from "@/components/ui/spinner";
-import { setRootAction } from "@/lib/actions";
 import { autoCollapse, buildAncestorGraph, buildDescendantGraph, buildFamilyGraph, familyRoots, indexTree, revealFocus, type FamilyGraph } from "@/lib/graph/build";
 import { PERSON_H, PERSON_W, toElk } from "@/lib/graph/layout";
 import { useElkLayout } from "@/lib/graph/use-layout";
 import { createKinshipResolver } from "@/lib/kinship";
+import { DRAFT_ID, withDraft, type Draft } from "@/lib/tree/draft";
+import { useWide } from "@/lib/use-wide";
 import { photoUrl, subtitle } from "@/lib/person";
 import type { Person, TreeData } from "@/lib/types";
 import { cn } from "@/lib/utils";
-import { nodeTypes, type PersonNodeData, type UnionNodeData } from "./nodes";
-import { useSheetMotion } from "./sheet-motion";
+import { initialsOf, nodeTypes, type PersonNodeData, type UnionNodeData } from "./nodes";
+import { reducedMotion, useSheetMotion } from "./sheet-motion";
 
 type Mode = "semua" | "keturunan" | "leluhur";
+
+/** How long the chart glides to a card; Reduce Motion jumps straight there. */
+const pan = () => (reducedMotion() ? 0 : 280);
 type RelationKind = (typeof QUICK_ADD)[number]["rel"];
 
-/** In-browser edits for the /demo sandbox: the sheet opens local dialogs instead of profile pages. */
-export interface SandboxActions {
+/** Edits from the chart itself: the sheet and quick-add buttons open dialogs instead of separate pages. */
+export interface EditActions {
   onAdd: (relation: RelationKind, personId: string) => void;
   onEdit: (personId: string) => void;
-  onDelete: (personId: string) => void;
-  onMakeRoot: (personId: string) => Promise<void>;
+  /** Closes the open form: tapping another card switches to that person instead of editing on. */
+  onClose: () => void;
 }
 
 interface Props {
@@ -65,18 +70,28 @@ interface Props {
   demo?: boolean;
   /** Person whose sheet is open on first render. */
   initialSelectedId?: string;
-  sandbox?: SandboxActions;
+  actions?: EditActions;
+  /** An open add/edit form: the chart draws its result (a placeholder card, a new link, a new name) live. */
+  draft?: Draft | null;
+  /**
+   * The add/edit form. On wide screens it takes the place of the person's summary in the inspector on the
+   * right while `panelOpen`; otherwise it is rendered outside it (a phone sheet, the delete alert).
+   */
+  panel?: React.ReactNode;
+  panelOpen?: boolean;
 }
 
-export function FamilyChart(props: Props) {
+export function FamilyChart({ data, draft, ...props }: Props) {
+  const shown = useMemo(() => withDraft(data, draft ?? null), [data, draft]);
   return (
     <ReactFlowProvider>
-      <Chart {...props} />
+      <Chart {...props} data={shown} draft={draft} />
     </ReactFlowProvider>
   );
 }
 
-function Chart({ treeId, data, rootPersonId, mePersonId, canEdit, demo = false, initialSelectedId, sandbox }: Props) {
+function Chart({ treeId, data, rootPersonId, mePersonId, canEdit, demo = false, initialSelectedId, actions, draft, panel, panelOpen = false }: Props) {
+  const wide = useWide();
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -160,6 +175,23 @@ function Chart({ treeId, data, rootPersonId, mePersonId, canEdit, demo = false, 
   const kinOf = useMemo(() => (mePersonId ? createKinshipResolver(data, mePersonId) : null), [data, mePersonId]);
   const kinship = useMemo(() => (selected && kinOf && selected.id !== mePersonId ? kinOf(selected.id) : null), [selected, kinOf, mePersonId]);
 
+  // Wide screens: one inspector on the right, the trailing side (HIG), for whatever is selected: the
+  // person's summary, or the form that replaces it. It takes its room from the chart instead of covering
+  // it, comes in from the right and leaves the same way, and only then gives the room back.
+  const formInInspector = wide && panelOpen;
+  const inspectorOpen = wide && (formInInspector || Boolean(selected));
+  const [inspectorMounted, setInspectorMounted] = useState(inspectorOpen);
+  if (inspectorOpen && !inspectorMounted) setInspectorMounted(true);
+  // What it showed, kept while it plays out after the selection is gone.
+  const [shownPerson, setShownPerson] = useState<Person | null>(selected ?? null);
+  if (selected && selected !== shownPerson) setShownPerson(selected);
+  // Backstop for when no animationend comes (animations turned off): never leave an empty panel taking room.
+  useEffect(() => {
+    if (inspectorOpen || !inspectorMounted) return;
+    const t = setTimeout(() => setInspectorMounted(false), 400);
+    return () => clearTimeout(t);
+  }, [inspectorOpen, inspectorMounted]);
+
   const childrenOfUnion = useMemo(() => {
     const m = new Map<string, string[]>();
     for (const c of data.children) m.set(c.unionId, [...(m.get(c.unionId) ?? []), c.childId]);
@@ -200,6 +232,7 @@ function Chart({ treeId, data, rootPersonId, mePersonId, canEdit, demo = false, 
             isMe: n.personId === mePersonId,
             onPath: path.persons.has(n.personId),
             isSelected: selectedId === n.personId,
+            draft: n.personId === DRAFT_ID,
           };
           return { id: n.id, type: "person", position, data: nodeData };
         }
@@ -244,23 +277,52 @@ function Chart({ treeId, data, rootPersonId, mePersonId, canEdit, demo = false, 
     [graph.edges, path],
   );
 
-  const { fitView, setCenter, getZoom } = useReactFlow();
+  const { fitView, setCenter, getZoom, flowToScreenPosition } = useReactFlow();
 
   function openNode(node: Node) {
-    if (node.type !== "person") return;
+    if (node.type !== "person" || (node.data as PersonNodeData).draft) return;
+    if (draft) actions?.onClose();
     setSelectedId((node.data as PersonNodeData).person.id);
     // On phones the toolbar covers the top and the sheet the lower part: centre the tapped card in the
     // strip still visible between them.
     const chart = flowRef.current;
-    if (window.innerWidth < 640 && chart) {
+    if (!wide && chart) {
       const zoom = getZoom();
       const height = chart.clientHeight;
       const top = toolbarRef.current?.offsetHeight ?? 0;
-      const sheet = Math.min(360, height * 0.5);
+      const sheet = Math.min(400, height * 0.55);
       const target = (top + (height - sheet)) / 2;
-      setCenter(node.position.x + PERSON_W / 2, node.position.y + PERSON_H / 2 + (height / 2 - target) / zoom, { zoom, duration: 280 });
+      setCenter(node.position.x + PERSON_W / 2, node.position.y + PERSON_H / 2 + (height / 2 - target) / zoom, { zoom, duration: pan() });
     }
   }
+  // A card being added (or someone being linked): keep it in view, beside the inspector on wide screens
+  // (which already took its room from the chart) and above the form sheet on phones. It moves when the
+  // form changes (another birth order), so check on every layout, but only pan when it has left the
+  // visible part of the chart.
+  const draftTarget = draft?.kind === "add" ? (draft.existingId ?? DRAFT_ID) : null;
+  // On wide screens the same goes for the selected card: opening the inspector narrows the chart and could
+  // leave it cut off at the new edge. (Phones centre a tapped card themselves, in openNode.)
+  const keepInView = draftTarget ?? (wide ? selectedId : null);
+  // The sidebar opening narrows the chart; React Flow learns its new width a frame later, and centring
+  // before that would use the old one. Checking again on every width change catches it.
+  const flowWidth = useStore((st) => st.width);
+  useEffect(() => {
+    const at = keepInView && positions && !stale ? positions[`p:${keepInView}`] : undefined;
+    const chart = flowRef.current;
+    if (!at || !chart) return;
+    const narrow = !wide;
+    const box = chart.getBoundingClientRect();
+    const bottom = narrow ? box.top + box.height * 0.4 : box.bottom;
+    const top = box.top + (toolbarRef.current?.offsetHeight ?? 0);
+    const a = flowToScreenPosition({ x: at.x, y: at.y });
+    const b = flowToScreenPosition({ x: at.x + PERSON_W, y: at.y + PERSON_H });
+    // With some room to spare, so the card and its "Belum disimpan" label don't touch the edge.
+    const m = 24;
+    if (a.x >= box.left + m && b.x <= box.right - m && a.y >= top + m && b.y <= bottom - m) return;
+    const zoom = Math.max(getZoom(), 0.85);
+    setCenter(at.x + PERSON_W / 2, at.y + PERSON_H / 2 + (narrow ? (box.height * 0.3) / zoom : 0), { zoom, duration: pan() });
+  }, [keepInView, positions, stale, getZoom, setCenter, flowToScreenPosition, flowWidth, wide]);
+
   const fittedFor = useRef<string | null>(null);
   useEffect(() => {
     if (!positions || stale) return;
@@ -269,12 +331,11 @@ function Chart({ treeId, data, rootPersonId, mePersonId, canEdit, demo = false, 
     if (added) {
       revealedFor.current = revealId;
       fittedFor.current = viewKey;
-      // Their summary opens with them, so keep the card clear of it: left of the side panel, above the phone sheet.
+      // Their summary opens with them: in the inspector, which has its own room, or in the phone sheet, so
+      // keep the card above that.
       const zoom = Math.max(getZoom(), 0.85);
-      const narrow = window.innerWidth < 640;
-      requestAnimationFrame(() =>
-        setCenter(added.x + PERSON_W / 2 + (narrow ? 0 : 210 / zoom), added.y + PERSON_H / 2 + (narrow ? 140 / zoom : 0), { zoom, duration: 280 }),
-      );
+      const narrow = !wide;
+      requestAnimationFrame(() => setCenter(added.x + PERSON_W / 2, added.y + PERSON_H / 2 + (narrow ? 140 / zoom : 0), { zoom, duration: pan() }));
       return;
     }
     if (fittedFor.current === viewKey) return;
@@ -285,16 +346,15 @@ function Chart({ treeId, data, rootPersonId, mePersonId, canEdit, demo = false, 
       const narrow = window.innerWidth < 640;
       const p = focusId ? positions[`p:${focusId}`] : undefined;
       // A relative is already selected (the public example, a shared link): frame the whole route from
-      // "Saya" to them, keeping clear of the summary panel on the right.
-      // Between the two cards, shifted left by half the summary panel (420px) so neither sits under it,
-      // at a zoom (0.6 to 0.9) that fits both cards (196 wide) in the room left of the panel.
+      // "Saya" to them, between the two cards, at a zoom (0.6 to 0.9) that fits both (196 wide) in the
+      // chart's width; the inspector beside it already took its own room.
       const me = mePersonId ? positions[`p:${mePersonId}`] : undefined;
       const them = selectedId ? positions[`p:${selectedId}`] : undefined;
-      const room = window.innerWidth - 420 - 96;
+      const room = (flowRef.current?.clientWidth ?? window.innerWidth) - 96;
       const span = me && them ? Math.abs(me.x - them.x) + 196 : Infinity;
       if (!narrow && me && them && path.persons.size > 1 && span * 0.6 <= room) {
         const zoom = Math.min(0.9, room / span);
-        setCenter((me.x + them.x) / 2 + 98 + 210 / zoom, (me.y + them.y) / 2 + 36, { zoom, duration: 0 });
+        setCenter((me.x + them.x) / 2 + 98, (me.y + them.y) / 2 + 36, { zoom, duration: 0 });
       } else if (p && (narrow || graph.nodes.length > 60)) {
         setCenter(p.x + 98, p.y + (narrow ? 200 : 180), { zoom: narrow ? 0.95 : 0.85, duration: 0 });
       } else {
@@ -305,22 +365,50 @@ function Chart({ treeId, data, rootPersonId, mePersonId, canEdit, demo = false, 
         });
       }
     });
-  }, [positions, stale, viewKey, fitView, setCenter, getZoom, graph.nodes.length, focusId, mePersonId, selectedId, path, revealId]);
+  }, [positions, stale, viewKey, fitView, setCenter, getZoom, graph.nodes.length, focusId, mePersonId, selectedId, path, revealId, wide]);
 
 
   // Folded families in the current chart, for the "Buka semua" button.
   const foldedCount = graph.nodes.filter((n) => n.kind === "union" && collapsed.has(n.unionId)).length;
 
-  const [savingRoot, startRoot] = useTransition();
   const flowRef = useRef<HTMLDivElement>(null);
   const toolbarRef = useRef<HTMLDivElement>(null);
 
   if (!focusId) {
-    return <p className="p-8 text-center text-muted-foreground">Belum ada orang di pohon ini.</p>;
+    return (
+      <Empty className="m-4 bg-card">
+        <EmptyHeader>
+          <EmptyTitle>Belum ada orang di pohon ini</EmptyTitle>
+          <EmptyDescription>Mulai dari leluhur tertua yang Anda ketahui, atau dari diri sendiri.</EmptyDescription>
+        </EmptyHeader>
+        {canEdit && !demo ? (
+          <EmptyContent>
+            <Link href={`/pohon/${treeId}/orang/baru`} className={buttonVariants()}>
+              <UserRoundPlusIcon data-icon="inline-start" /> Tambah orang pertama
+            </Link>
+          </EmptyContent>
+        ) : null}
+      </Empty>
+    );
   }
 
+  const summary = (person: Person) => ({
+    treeId,
+    person,
+    isMe: person.id === mePersonId,
+    kinshipLabel: person.id === selected?.id ? (kinship?.label ?? null) : null,
+    meLinked: Boolean(mePersonId),
+    demo,
+    isFocus: person.id === focusId,
+    mode,
+    canEdit,
+    actions,
+    onFocus: () => setView({ focus: person.id }),
+  });
+
   return (
-    <div className="relative flex flex-1 flex-col">
+    <div className="flex min-w-0 flex-1">
+    <div className="relative flex min-w-0 flex-1 flex-col">
       {/* Controls float over the chart on their own material, with no bar behind them, so the family runs
           edge to edge (HIG: defer to content). Phones get two rows: direction and actions, then search. */}
       <div ref={toolbarRef} className="no-print pointer-events-none absolute inset-x-0 top-0 z-10 flex flex-wrap items-center gap-2 p-3 *:pointer-events-auto">
@@ -338,7 +426,7 @@ function Chart({ treeId, data, rootPersonId, mePersonId, canEdit, demo = false, 
               aria-pressed={mode === value}
               onClick={() => setView({ mode: value })}
               className={cn(
-                "flex h-8 items-center gap-1.5 rounded-lg px-3 text-sm outline-none transition-[color,background-color,box-shadow,opacity] duration-150 focus-visible:ring-3 focus-visible:ring-ring/50 active:opacity-70 active:duration-0",
+                "hit flex h-8 items-center gap-1.5 rounded-lg px-3 text-sm outline-none transition-[color,background-color,box-shadow,opacity] duration-150 focus-visible:ring-3 focus-visible:ring-ring/50 active:opacity-70 active:duration-0",
                 mode === value ? "bg-card font-medium text-foreground shadow-[0_1px_3px_rgb(0_0_0/0.12)]" : "text-muted-foreground hover:text-foreground",
               )}
             >
@@ -350,7 +438,7 @@ function Chart({ treeId, data, rootPersonId, mePersonId, canEdit, demo = false, 
           <Button
             variant="outline"
             size="sm"
-            className="material border-transparent bg-card/85 shadow-[0_1px_2px_rgb(0_0_0/0.06)] backdrop-blur-xl"
+            className="hit material border-transparent bg-card/85 shadow-[0_1px_2px_rgb(0_0_0/0.06)] backdrop-blur-xl"
             onClick={unfoldAll}
             title={folds[viewKey] ? undefined : "Pohon ini besar, jadi sebagian cabang dilipat agar cepat tampil."}
           >
@@ -359,7 +447,7 @@ function Chart({ treeId, data, rootPersonId, mePersonId, canEdit, demo = false, 
         ) : null}
         <FocusSearch data={data} onPick={(id) => setView({ focus: id })} />
         {mePersonId && mePersonId !== focusId ? (
-          <Button variant="outline" size="sm" className="material border-transparent bg-card/85 shadow-[0_1px_2px_rgb(0_0_0/0.06)] backdrop-blur-xl max-sm:px-2.5" onClick={() => setView({ focus: mePersonId })}>
+          <Button variant="outline" size="sm" className="hit material border-transparent bg-card/85 shadow-[0_1px_2px_rgb(0_0_0/0.06)] backdrop-blur-xl max-sm:px-2.5" onClick={() => setView({ focus: mePersonId })}>
             <CrosshairIcon data-icon="inline-start" /> <span className="max-sm:sr-only">Saya</span>
           </Button>
         ) : null}
@@ -406,37 +494,27 @@ function Chart({ treeId, data, rootPersonId, mePersonId, canEdit, demo = false, 
         ) : null}
       </div>
 
-      {selected ? (
-        <PersonSheet
-          ref={sheetRef}
-          treeId={treeId}
-          person={selected}
-          isMe={selected.id === mePersonId}
-          kinshipLabel={kinship?.label ?? null}
-          meLinked={Boolean(mePersonId)}
-          demo={demo}
-          isFocus={selected.id === focusId}
-          canEdit={canEdit}
-          isRoot={selected.id === rootPersonId}
-          savingRoot={savingRoot}
-          sandbox={sandbox}
-          onClose={() => setSelectedId(null)}
-          onFocus={() => setView({ focus: selected.id })}
-          onMakeRoot={() =>
-            startRoot(async () => {
-              if (sandbox) {
-                await sandbox.onMakeRoot(selected.id);
-                return;
-              }
-              const r = await setRootAction(treeId, selected.id);
-              if (r.ok) toast.success(`${selected.fullName} menjadi pusat bawaan pohon.`);
-              else toast.error(r.error);
-            })
-          }
-        />
-      ) : canEdit && data.persons.length < 4 && focusId ? (
-        <StarterGuide treeId={treeId} person={byId.get(focusId)!} onAdd={sandbox?.onAdd} />
+      {/* Phones: the summary is a sheet from the bottom, hidden while a form sheet shows the person. */}
+      {!wide && selected && !draft ? <PersonSheet ref={sheetRef} {...summary(selected)} onClose={() => setSelectedId(null)} /> : null}
+      {!inspectorOpen && !draft && !selected && canEdit && data.persons.length < 4 && focusId ? (
+        <StarterGuide treeId={treeId} person={byId.get(focusId)!} onAdd={actions?.onAdd} />
       ) : null}
+    </div>
+
+    {wide && inspectorMounted ? (
+      <aside
+        aria-label={formInInspector ? undefined : shownPerson ? `Ringkasan ${shownPerson.fullName}` : undefined}
+        inert={!inspectorOpen}
+        onKeyDown={(e) => (e.key === "Escape" && !formInInspector ? setSelectedId(null) : null)}
+        onAnimationEnd={(e) => (e.target === e.currentTarget && !inspectorOpen ? setInspectorMounted(false) : null)}
+        className={cn("no-print relative w-96 shrink-0 border-l bg-grouped xl:w-md", inspectorOpen ? "side-in" : "side-out")}
+      >
+        <div className="absolute inset-0 flex flex-col">
+          {formInInspector ? panel : shownPerson ? <InspectorSummary {...summary(shownPerson)} onClose={() => setSelectedId(null)} /> : null}
+        </div>
+      </aside>
+    ) : null}
+    {formInInspector ? null : panel}
     </div>
   );
 }
@@ -468,8 +546,8 @@ function FocusSearch({ data, onPick }: { data: TreeData; onPick: (id: string) =>
         showTrigger={false}
         name="chartSearch"
         autoComplete="off"
-        placeholder="Cari & pusatkan…"
-        aria-label="Cari orang untuk dijadikan pusat pohon"
+        placeholder="Cari nama…"
+        aria-label="Cari orang untuk dilihat di pohon"
         className="material order-last w-full border-transparent bg-card/85 shadow-[0_1px_2px_rgb(0_0_0/0.06)] backdrop-blur-xl sm:order-none sm:w-56"
       >
         <InputGroupAddon align="inline-start">
@@ -498,30 +576,47 @@ const QUICK_ADD = [
   { rel: "sibling", label: "Saudara", icon: UsersRoundIcon },
 ] as const;
 
-const quickAddClass =
-  "flex flex-col items-center gap-1 rounded-xl border border-dashed px-1 py-2 text-xs font-medium text-muted-foreground outline-none transition-[color,border-color,background-color,transform] duration-150 active:duration-0 hover:border-soga hover:bg-accent/60 hover:text-foreground focus-visible:border-soga focus-visible:ring-3 focus-visible:ring-ring/40 active:scale-[0.97]";
-
-function QuickAdd({ treeId, personId, onAdd }: { treeId: string; personId: string; onAdd?: SandboxActions["onAdd"] }) {
+/**
+ * "Tambah kerabat …", opening the form in place (or the page, without actions): one row per relation in the
+ * inspector; on the phone sheet, where height is short, a row of quick-action tiles like a contact's.
+ */
+function AddRows({ treeId, person, onAdd, title, tiles = false }: { treeId: string; person: Person; onAdd?: EditActions["onAdd"]; title: string; tiles?: boolean }) {
   // Saving returns here with the same focus and direction instead of opening the new profile.
   const pathname = usePathname();
   const query = useSearchParams().toString();
   const back = encodeURIComponent(query ? `${pathname}?${query}` : pathname);
+  if (tiles) {
+    const tile =
+      "grid min-h-16 justify-items-center content-center gap-1 rounded-xl bg-card px-1 py-2 text-[13px] font-medium text-soga-ink outline-none transition-colors duration-150 hover:bg-muted/60 focus-visible:ring-3 focus-visible:ring-ring/50 active:bg-muted active:duration-0";
+    return (
+      <section className="grid gap-1.5">
+        <h3 className="px-4 text-[13px] leading-tight text-muted-foreground">{title}</h3>
+        <div className="grid grid-cols-4 gap-2">
+          {QUICK_ADD.map((a) =>
+            onAdd ? (
+              <button key={a.rel} type="button" onClick={() => onAdd(a.rel, person.id)} className={tile}>
+                <a.icon className="size-5" />
+                {a.label}
+              </button>
+            ) : (
+              <Link key={a.rel} href={`/pohon/${treeId}/orang/baru?rel=${a.rel}&dari=${person.id}&kembali=${back}`} className={tile}>
+                <a.icon className="size-5" />
+                {a.label}
+              </Link>
+            ),
+          )}
+        </div>
+      </section>
+    );
+  }
   return (
-    <div className="grid grid-cols-4 gap-1.5">
-      {QUICK_ADD.map((a) =>
-        onAdd ? (
-          <button key={a.rel} type="button" onClick={() => onAdd(a.rel, personId)} className={quickAddClass}>
-            <a.icon className="size-4 text-soga-ink" />
-            {a.label}
-          </button>
-        ) : (
-          <Link key={a.rel} href={`/pohon/${treeId}/orang/baru?rel=${a.rel}&dari=${personId}&kembali=${back}`} className={quickAddClass}>
-            <a.icon className="size-4 text-soga-ink" />
-            {a.label}
-          </Link>
-        ),
-      )}
-    </div>
+    <Rows title={title}>
+      {QUICK_ADD.map((a) => (
+        <Row key={a.rel} icon={a.icon} onClick={onAdd ? () => onAdd(a.rel, person.id) : undefined} href={onAdd ? undefined : `/pohon/${treeId}/orang/baru?rel=${a.rel}&dari=${person.id}&kembali=${back}`}>
+          {a.label}
+        </Row>
+      ))}
+    </Rows>
   );
 }
 
@@ -530,8 +625,7 @@ interface SheetHandle {
   dismiss: () => void;
 }
 
-/** Bottom sheet on phones (drag down to close), floating card on larger screens. */
-function PersonSheet(props: {
+type SummaryProps = {
   treeId: string;
   person: Person;
   isMe: boolean;
@@ -539,96 +633,193 @@ function PersonSheet(props: {
   meLinked: boolean;
   demo: boolean;
   isFocus: boolean;
+  mode: Mode;
   canEdit: boolean;
-  isRoot: boolean;
-  savingRoot: boolean;
-  sandbox?: SandboxActions;
-  /** Called once the sheet has finished leaving. */
-  onClose: () => void;
+  actions?: EditActions;
   onFocus: () => void;
-  onMakeRoot: () => void;
-  ref?: React.Ref<SheetHandle>;
-}) {
-  const { treeId, person, isMe, kinshipLabel, meLinked, demo, isFocus, canEdit, isRoot, savingRoot, sandbox, onClose, onFocus, onMakeRoot, ref } = props;
+};
+
+function Avatar({ treeId, person, size }: { treeId: string; person: Person; size: "sm" | "lg" }) {
+  const photo = photoUrl(treeId, person);
+  const big = size === "lg";
+  const shape = person.gender === "male" ? (big ? "rounded-2xl" : "rounded-lg") : person.gender === "female" ? "rounded-full" : big ? "rounded-3xl" : "rounded-xl";
+  return (
+    <span className={cn("grid shrink-0 place-items-center overflow-hidden monogram font-semibold", big ? "size-20 text-2xl" : "size-11 text-sm", shape)}>
+      {photo ? (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img src={photo} alt="" width={big ? 80 : 44} height={big ? 80 : 44} className="size-full object-cover" />
+      ) : (
+        initialsOf(person.fullName)
+      )}
+    </span>
+  );
+}
+
+/**
+ * Phones and narrow windows: the summary as a bottom sheet (drag down or tap outside to close), with the
+ * same grouped rows as the inspector and a compact header: who it is on the left, Ubah and close on the right.
+ */
+function PersonSheet({ onClose, ref, ...props }: SummaryProps & { onClose: () => void; ref?: React.Ref<SheetHandle> }) {
   const { ref: sheetEl, dismiss, handlers } = useSheetMotion<HTMLElement>(onClose);
   useImperativeHandle(ref, () => ({ dismiss }), [dismiss]);
+  const { treeId, person, isMe, actions } = props;
   return (
     <aside
       ref={sheetEl}
       {...handlers}
-      className="no-print absolute inset-x-0 bottom-0 z-20 touch-none will-change-transform rounded-t-3xl border-t bg-popover px-4 pt-2 pb-[calc(1rem+env(safe-area-inset-bottom))] shadow-[0_-8px_30px_rgb(0_0_0/0.12)] sm:inset-x-auto sm:right-3 sm:bottom-3 sm:w-96 sm:rounded-2xl sm:border sm:pt-4 sm:pb-4 sm:shadow-lg"
+      className="no-print absolute inset-x-0 bottom-0 z-20 mx-auto max-w-lg touch-none will-change-transform rounded-t-3xl border-t bg-grouped px-4 pt-2 pb-[calc(1rem+env(safe-area-inset-bottom))] shadow-[0_-8px_30px_rgb(0_0_0/0.12)] sm:border-x"
       aria-label={`Ringkasan ${person.fullName}`}
     >
-      <div className="mx-auto mb-2 h-1 w-10 rounded-full bg-border sm:hidden" aria-hidden />
-      <button type="button" onClick={dismiss} className="absolute top-3 right-3 grid size-8 place-items-center rounded-full text-muted-foreground outline-none transition-[color,background-color,scale] duration-150 hover:bg-muted hover:text-foreground focus-visible:ring-3 focus-visible:ring-ring/50 active:scale-90 active:bg-muted active:duration-0" aria-label="Tutup">
-        <XIcon className="size-4" />
-      </button>
-      <div className="flex items-start gap-3 pr-8">
-        <div className="min-w-0">
-          <p className="font-display text-2xl leading-tight">{person.fullName}</p>
-          <p className="text-sm text-muted-foreground">{subtitle(person) || "Tanggal tidak diketahui"}</p>
+      <div className="mx-auto mb-2 h-1 w-10 rounded-full bg-border" aria-hidden />
+      <header className="flex items-center gap-3">
+        <Avatar treeId={treeId} person={person} size="sm" />
+        <div className="min-w-0 flex-1">
+          <p className="truncate font-display text-[1.375rem] leading-tight tracking-[-0.01em]">{person.fullName}</p>
+          <p className="truncate text-[13px] text-muted-foreground">
+            {isMe ? "Ini Anda · " : ""}
+            {subtitle(person) || "Tanggal tidak diketahui"}
+          </p>
         </div>
-      </div>
-      {isMe ? (
-        <p className="mt-3 inline-flex rounded-full bg-accent px-3 py-1 text-sm font-medium text-soga-ink">Ini Anda</p>
-      ) : kinshipLabel ? (
-        <div className="mt-3 rounded-xl bg-accent px-3.5 py-2.5">
-          <p className="text-xs text-muted-foreground">Hubungan dengan Anda</p>
-          <p className="font-display text-xl leading-tight text-soga-ink">{kinshipLabel}</p>
-        </div>
-      ) : !meLinked ? (
-        <p className="mt-3 text-xs text-muted-foreground">Tandai diri Anda di pohon untuk melihat hubungan dengan setiap kerabat.</p>
-      ) : null}
-      {/* Actions share the row evenly, as in an iOS sheet; a third one wraps under them. */}
-      <div className="mt-4 flex flex-wrap gap-2 *:min-w-[8.5rem] *:flex-1">
-        {sandbox ? (
-          <>
-            <Button onClick={() => sandbox.onEdit(person.id)}>
-              <PencilIcon data-icon="inline-start" /> Ubah
-            </Button>
-            <Button variant="ghost" className="text-destructive hover:text-destructive" onClick={() => sandbox.onDelete(person.id)}>
-              <Trash2Icon data-icon="inline-start" /> Hapus
-            </Button>
-          </>
-        ) : demo ? (
-          <Link href="/masuk" className={buttonVariants()}>
-            Buat pohon Anda
-          </Link>
-        ) : (
-          <Link href={`/pohon/${treeId}/orang/${person.id}`} className={buttonVariants()}>
-            <ExternalLinkIcon data-icon="inline-start" /> Buka profil
-          </Link>
-        )}
-        {!isFocus ? (
-          <Button variant="outline" onClick={onFocus}>
-            <CrosshairIcon data-icon="inline-start" /> Jadikan pusat
+        {actions ? (
+          <Button type="button" variant="ghost" className="h-11 px-2 text-[17px] font-semibold text-soga-ink" onClick={() => actions.onEdit(person.id)}>
+            Ubah
           </Button>
         ) : null}
-        {canEdit && !isRoot ? (
-          <Button variant="ghost" disabled={savingRoot} onClick={onMakeRoot}>
-            Pusat bawaan
-          </Button>
-        ) : null}
+        <button type="button" onClick={dismiss} className={closeButton} aria-label="Tutup">
+          <XIcon className="size-4" />
+        </button>
+      </header>
+      <div className="mt-4 grid gap-4">
+        <SummaryBody {...props} compact />
       </div>
-      {canEdit ? (
-        <div className="mt-4 border-t pt-3">
-          <p className="mb-2 text-xs font-medium text-muted-foreground">Tambah kerabat {person.nickname || person.fullName.split(" ")[0]}</p>
-          <QuickAdd treeId={treeId} personId={person.id} onAdd={sandbox?.onAdd} />
-        </div>
-      ) : null}
     </aside>
   );
 }
 
-/** Shown on a near-empty tree: the next step is always one tap away. */
-function StarterGuide({ treeId, person, onAdd }: { treeId: string; person: Person; onAdd?: SandboxActions["onAdd"] }) {
+/**
+ * Wide screens: the summary in the inspector, laid out like a contact in Contacts. The bar matches the form
+ * that replaces it (Tutup where Batal is, Ubah where Simpan is), and the rest is grouped rows straight on
+ * the panel, with no card inside the card.
+ */
+function InspectorSummary({ onClose, ...props }: SummaryProps & { onClose: () => void }) {
+  const { treeId, person, isMe, actions } = props;
   return (
-    <aside className="sheet-in no-print absolute inset-x-3 bottom-3 z-10 mx-auto max-w-md rounded-2xl border bg-popover p-4 shadow-lg sm:right-3 sm:left-auto sm:w-96">
-      <p className="font-display text-xl leading-tight">Lanjutkan dari {person.nickname || person.fullName}</p>
-      <p className="mt-1 text-sm text-muted-foreground">Tambahkan kerabat terdekatnya. Setiap orang baru langsung tersambung di pohon.</p>
-      <div className="mt-3">
-        <QuickAdd treeId={treeId} personId={person.id} onAdd={onAdd} />
+    <div className="panel-scroll min-h-0 flex-1 overflow-y-auto overscroll-contain">
+      <div className={cn("panel-bar material sticky top-0 z-10", sheetBar)}>
+        <Button type="button" variant="ghost" className={barCancel} onClick={onClose}>
+          Tutup
+        </Button>
+        <span />
+        {actions ? (
+          <Button type="button" variant="ghost" className={barConfirm} onClick={() => actions.onEdit(person.id)}>
+            Ubah
+          </Button>
+        ) : (
+          <span />
+        )}
       </div>
+
+      <div className="grid gap-6 px-4 pt-5 pb-8">
+        <header className="grid justify-items-center gap-3 text-center">
+          <Avatar treeId={treeId} person={person} size="lg" />
+          <div>
+            <h2 className="font-display text-[1.75rem] leading-tight tracking-[-0.015em] text-balance">{person.fullName}</h2>
+            {person.nickname ? <p className="text-[15px] text-muted-foreground">“{person.nickname}”</p> : null}
+            <p className="mt-0.5 text-[15px] text-muted-foreground">{subtitle(person) || "Tanggal tidak diketahui"}</p>
+          </div>
+          {isMe ? <p className="rounded-full bg-muted px-3 py-1 text-[13px] font-medium">Ini Anda</p> : null}
+        </header>
+        <SummaryBody {...props} />
+      </div>
+    </div>
+  );
+}
+
+/** Who the person is to me and what can be done from here: the same groups in the sheet and the inspector. */
+function SummaryBody({ treeId, person, isMe, kinshipLabel, meLinked, demo, isFocus, mode, canEdit, actions, onFocus, compact = false }: SummaryProps & { compact?: boolean }) {
+  const firstName = person.nickname || person.fullName.split(" ")[0];
+  return (
+    <>
+      {!isMe && kinshipLabel ? (
+        <Rows>
+          <div className="px-4 py-3">
+            <p className="text-[13px] text-muted-foreground">Hubungan dengan Anda</p>
+            <p className="font-display text-xl leading-tight">{kinshipLabel}</p>
+          </div>
+        </Rows>
+      ) : !isMe && !meLinked ? (
+        <p className="px-4 text-[13px] text-muted-foreground">Tandai diri Anda di pohon untuk melihat hubungan dengan setiap kerabat.</p>
+      ) : null}
+
+      {/* Says what the chart will show, instead of the internal "focus" idea. */}
+      {!isFocus || !demo || !actions ? (
+        <Rows>
+          {!isFocus ? (
+            <Row icon={CrosshairIcon} onClick={onFocus}>
+              {mode === "keturunan" ? "Lihat keturunan" : mode === "leluhur" ? "Lihat leluhur" : "Lihat keluarga"} {firstName}
+            </Row>
+          ) : null}
+          {!demo ? (
+            <Row icon={ExternalLinkIcon} href={`/pohon/${treeId}/orang/${person.id}`}>
+              Buka profil
+            </Row>
+          ) : !actions ? (
+            <Row icon={UserRoundPlusIcon} href="/masuk">
+              Buat pohon Anda
+            </Row>
+          ) : null}
+        </Rows>
+      ) : null}
+
+      {canEdit ? <AddRows treeId={treeId} person={person} onAdd={actions?.onAdd} title={`Tambah kerabat ${firstName}`} tiles={compact} /> : null}
+    </>
+  );
+}
+
+/** An inset grouped list, as in iOS Settings: an optional caption over rows on one card. */
+function Rows({ title, children }: { title?: string; children: React.ReactNode }) {
+  return (
+    <section className="grid gap-1.5">
+      {title ? <h3 className="px-4 text-[13px] leading-tight text-muted-foreground">{title}</h3> : null}
+      <div className="divide-y divide-border/70 overflow-hidden rounded-xl bg-card">{children}</div>
+    </section>
+  );
+}
+
+/** One tappable row: tinted icon, label, chevron. Highlights on press. */
+function Row({ icon: Icon, children, onClick, href }: { icon: React.ComponentType<{ className?: string }>; children: React.ReactNode; onClick?: () => void; href?: string }) {
+  const className =
+    "flex min-h-11 w-full items-center gap-3 px-4 py-2.5 text-left text-[15px] outline-none transition-colors duration-150 hover:bg-muted/60 focus-visible:bg-muted focus-visible:ring-2 focus-visible:ring-ring/50 focus-visible:ring-inset active:bg-muted active:duration-0";
+  const content = (
+    <>
+      <Icon className="size-[18px] shrink-0 text-soga-ink" />
+      <span className="min-w-0 flex-1 truncate">{children}</span>
+      <ChevronRightIcon className="size-4 shrink-0 text-muted-foreground/70" />
+    </>
+  );
+  return href ? (
+    <Link href={href} className={className}>
+      {content}
+    </Link>
+  ) : (
+    <button type="button" onClick={onClick} className={className}>
+      {content}
+    </button>
+  );
+}
+
+const closeButton =
+  "hit grid size-8 shrink-0 place-items-center rounded-full bg-muted text-muted-foreground outline-none transition-colors duration-150 hover:text-foreground focus-visible:ring-3 focus-visible:ring-ring/50 active:bg-border active:duration-0";
+
+/** Shown on a near-empty tree: the next step is always one tap away, as rows on a floating material card. */
+function StarterGuide({ treeId, person, onAdd }: { treeId: string; person: Person; onAdd?: EditActions["onAdd"] }) {
+  return (
+    <aside className="sheet-in no-print material absolute inset-x-3 bottom-3 z-10 mx-auto grid max-w-md gap-3 rounded-2xl bg-grouped/90 p-4 shadow-lg backdrop-blur-xl sm:right-3 sm:left-auto sm:w-96">
+      <div className="px-1">
+        <p className="font-display text-xl leading-tight tracking-[-0.01em]">Lanjutkan dari {person.nickname || person.fullName}</p>
+        <p className="mt-1 text-[13px] text-muted-foreground">Tambahkan kerabat terdekatnya. Setiap orang baru langsung tersambung di pohon.</p>
+      </div>
+      <AddRows treeId={treeId} person={person} onAdd={onAdd} title="Tambah kerabat" tiles />
     </aside>
   );
 }

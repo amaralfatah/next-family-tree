@@ -1,6 +1,6 @@
-import Link from "next/link";
 import { notFound } from "next/navigation";
 import { NewPersonForm } from "@/components/new-person-form";
+import { Page } from "@/components/page-shell";
 import { loadTreeContext } from "@/lib/tree/context";
 import { familyOf } from "@/lib/tree/family";
 import type { ChildRelation } from "@/lib/types";
@@ -31,35 +31,23 @@ export default async function NewPersonPage({ params, searchParams }: PageProps<
   const childRel = (["biological", "adopted", "step"] as const).find((r) => r === sp.rel_anak) as ChildRelation | undefined;
 
   return (
-    <main id="konten" className="mx-auto w-full max-w-2xl px-4 py-8">
-      {returnTo ? (
-        <Link href={returnTo} className="text-sm text-muted-foreground hover:text-foreground">
-          ← Pohon
-        </Link>
-      ) : of ? (
-        <Link href={`/pohon/${treeId}/orang/${of.id}`} className="text-sm text-muted-foreground hover:text-foreground">
-          ← {of.fullName}
-        </Link>
-      ) : null}
-      <h1 className="mt-2 font-display text-[2.125rem] leading-tight tracking-[-0.02em]">{relation && of ? TITLES[relation](of.fullName) : "Tambah orang"}</h1>
-      {!relation ? (
-        <p className="mt-2 text-sm text-muted-foreground">
-          Orang ini belum terhubung dengan siapa pun. Sebaiknya tambahkan dari profil kerabatnya agar langsung tersambung di pohon.
-        </p>
-      ) : null}
+    <Page className="pt-4">
       <NewPersonForm
         treeId={treeId}
         relation={relation}
         ofId={of?.id ?? null}
         ofName={of?.fullName ?? null}
-        unions={unionsOfOf.map((u) => ({ id: u.union.id, label: u.partner ? `Dengan ${u.partner.fullName}` : "Pasangan tidak diketahui" }))}
+        unions={unionsOfOf.map((u) => ({ id: u.union.id, label: u.partner ? u.partner.fullName : "Tidak diketahui" }))}
         defaultUnionId={unionParam && unionsOfOf.some((u) => u.union.id === unionParam) ? unionParam : (unionsOfOf[0]?.union.id ?? "")}
         defaultChildRelation={childRel ?? "biological"}
         returnTo={returnTo}
+        title={relation && of ? TITLES[relation](of.nickname || of.fullName.split(" ")[0]) : "Tambah orang"}
+        cancelHref={returnTo ?? (of ? `/pohon/${treeId}/orang/${of.id}` : `/pohon/${treeId}/daftar`)}
+        note={relation ? undefined : "Orang ini belum terhubung dengan siapa pun. Sebaiknya tambahkan dari profil kerabatnya agar langsung tersambung di pohon."}
         candidates={data.persons
           .filter((p) => p.id !== of?.id)
           .map((p) => ({ id: p.id, name: p.fullName, nickname: p.nickname, birthYear: p.birthDate && p.birthPrecision !== "unknown" ? p.birthDate.slice(0, 4) : null }))}
       />
-    </main>
+    </Page>
   );
 }

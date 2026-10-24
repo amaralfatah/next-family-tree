@@ -2,6 +2,7 @@
 
 import { MoonIcon, SunIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 
 export function ThemeToggle({ label, className }: { label: string; className?: string }) {
   function toggle() {
@@ -21,7 +22,7 @@ export function ThemeToggle({ label, className }: { label: string; className?: s
   }
 
   return (
-    <Button variant="ghost" size="icon" onClick={toggle} aria-label={label} title={label} className={className}>
+    <Button variant="ghost" size="icon" onClick={toggle} aria-label={label} title={label} className={cn("hit", className)}>
       <SunIcon className="hidden dark:block" />
       <MoonIcon className="dark:hidden" />
     </Button>

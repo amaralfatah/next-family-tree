@@ -35,7 +35,7 @@ export default async function Home() {
             <Wordmark />
           </Link>
           <ThemeToggle label="Ganti tema terang/gelap" />
-          <Link href="/masuk" className={buttonVariants({ variant: "ghost", size: "sm" })}>
+          <Link href="/masuk" className={buttonVariants({ variant: "ghost", className: "hit" })}>
             Masuk
           </Link>
         </div>
@@ -54,7 +54,7 @@ export default async function Home() {
             <Link href="/masuk" className={buttonVariants({ size: "lg" })}>
               Buat pohon keluarga
             </Link>
-            <Link href="/contoh" className="inline-flex h-11 items-center justify-center rounded-sm text-[1.0625rem] text-primary outline-none hover:underline focus-visible:ring-3 focus-visible:ring-ring/40">
+            <Link href="/contoh" className="inline-flex h-11 items-center justify-center rounded-sm text-[1.0625rem] text-primary outline-none hover:opacity-80 active:opacity-60 focus-visible:ring-3 focus-visible:ring-ring/40">
               Lihat contoh
             </Link>
           </div>
@@ -90,7 +90,7 @@ export default async function Home() {
           <div className="mx-auto max-w-2xl">
             <h2 className="text-center font-display text-4xl leading-tight tracking-[-0.02em] text-balance md:text-5xl">Data keluarga tetap milik keluarga.</h2>
             {/* An inset grouped list, as in iOS Settings. */}
-            <ul className="mt-12 divide-y overflow-hidden rounded-2xl bg-paper-2">
+            <ul className="mt-12 divide-y divide-border/70 overflow-hidden rounded-xl bg-paper-2">
               {PROMISES.map(({ icon: Icon, title, body }) => (
                 <li key={title} className="flex gap-4 px-5 py-4">
                   <span className="mt-0.5 grid size-8 shrink-0 place-items-center rounded-lg bg-primary text-primary-foreground">
@@ -104,7 +104,7 @@ export default async function Home() {
               ))}
             </ul>
             <p className="mt-4 text-center text-sm">
-              <Link href="/privasi" className="text-primary hover:underline">
+              <Link href="/privasi" className="inline-flex min-h-11 items-center text-[15px] text-primary hover:opacity-80 active:opacity-60">
                 Baca soal privasi
               </Link>
             </p>
@@ -120,16 +120,16 @@ export default async function Home() {
       </main>
 
       <footer className="bg-paper-2 pb-[env(safe-area-inset-bottom)]">
-        <div className="mx-auto flex max-w-5xl flex-wrap items-center justify-between gap-3 px-4 py-6 text-xs text-muted-foreground sm:px-6">
+        <div className="mx-auto flex max-w-5xl flex-wrap items-center justify-between gap-3 px-4 py-6 text-[13px] text-muted-foreground sm:px-6">
           <span>Sararia Family Tree, bagian dari keluarga aplikasi Sararia.</span>
           <nav className="flex gap-5">
-            <Link href="/contoh" className="hover:text-foreground">
+            <Link href="/contoh" className="inline-flex min-h-11 items-center hover:text-foreground">
               Contoh
             </Link>
-            <Link href="/privasi" className="hover:text-foreground">
+            <Link href="/privasi" className="inline-flex min-h-11 items-center hover:text-foreground">
               Privasi
             </Link>
-            <Link href="/masuk" className="hover:text-foreground">
+            <Link href="/masuk" className="inline-flex min-h-11 items-center hover:text-foreground">
               Masuk
             </Link>
           </nav>

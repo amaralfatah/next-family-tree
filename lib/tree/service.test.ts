@@ -112,6 +112,16 @@ describe("relations", () => {
     expect(after.children.filter((c) => c.unionId === union.id).map((c) => c.childId)).toEqual([child, sib]);
   });
 
+  it("puts a new sibling at the chosen place, or after the last one", async () => {
+    const parent = await createPerson(db, editor, treeId, person("Khadijah", "female"), { kind: "partner", ofId: rootId });
+    const union = (await loadTreeData(db, editor, treeId)).unions.find((u) => u.partnerBId === parent)!;
+    const first = await createPerson(db, editor, treeId, person("Zaid"), { kind: "child", ofId: parent, unionId: union.id });
+    const eldest = await createPerson(db, editor, treeId, person("Hasan"), { kind: "sibling", ofId: first, birthOrder: 1 });
+    const last = await createPerson(db, editor, treeId, person("Husain"), { kind: "sibling", ofId: first });
+    const order = (await loadTreeData(db, editor, treeId)).children.filter((c) => c.unionId === union.id);
+    expect(Object.fromEntries(order.map((c) => [c.childId, c.birthOrder]))).toEqual({ [eldest]: 1, [first]: 2, [last]: 3 });
+  });
+
   it("fills the empty parent slot, then refuses a third biological parent", async () => {
     const kid = await createPerson(db, editor, treeId, person("Budi"));
     const dad = await createPerson(db, editor, treeId, person("Ayah Budi", "male"), { kind: "parent", ofId: kid });

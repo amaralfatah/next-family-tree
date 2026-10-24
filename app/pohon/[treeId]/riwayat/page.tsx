@@ -1,5 +1,9 @@
+import { ChevronRightIcon } from "lucide-react";
 import Link from "next/link";
-import { buttonVariants } from "@/components/ui/button";
+import { toolbarAction } from "@/components/form-row-classes";
+import { Page, PageTitle } from "@/components/page-shell";
+import { Empty, EmptyDescription, EmptyHeader, EmptyTitle } from "@/components/ui/empty";
+import { cn } from "@/lib/utils";
 import { loadTreeContext } from "@/lib/tree/context";
 import { listChangesWith } from "@/lib/tree/service";
 
@@ -30,41 +34,54 @@ export default async function HistoryPage({ params, searchParams }: PageProps<"/
   const existing = new Set(data.persons.map((p) => p.id));
 
   return (
-    <main id="konten" className="mx-auto w-full max-w-3xl px-4 py-8">
-      <h1 className="font-display text-[2.125rem] leading-tight tracking-[-0.02em]">Riwayat perubahan</h1>
-      <p className="mt-1 text-sm text-muted-foreground">Siapa mengubah apa, dan kapan. Waktu dalam WIB.</p>
+    <Page>
+      <PageTitle title="Riwayat perubahan" subtitle="Siapa mengubah apa, dan kapan. Waktu dalam WIB." />
       {rows.length === 0 ? (
-        <p className="mt-10 text-muted-foreground">Belum ada perubahan.</p>
+        <Empty className="mt-6 bg-card">
+          <EmptyHeader>
+            <EmptyTitle>Belum ada perubahan</EmptyTitle>
+            <EmptyDescription>Setiap tambahan, ubahan, dan penghapusan oleh anggota tercatat di sini.</EmptyDescription>
+          </EmptyHeader>
+        </Empty>
       ) : (
         // One inset grouped list per day, as in Settings: the day is the group's header, the changes are rows.
         <div className="mt-6 flex flex-col gap-6">
           {groupByDay(rows).map(({ day, items }) => (
             <section key={day}>
               <h2 className="px-4 pb-1.5 text-[13px] text-muted-foreground">{day}</h2>
-              <ol className="divide-y overflow-hidden rounded-2xl bg-card">
+              <ol className="divide-y divide-border/70 overflow-hidden rounded-xl bg-card">
                 {items.map((r) => {
                   const fields =
                     r.action === "update" && r.entity === "person" && r.diff && typeof r.diff === "object"
                       ? Object.keys(r.diff as object).map((k) => FIELD_LABEL[k] ?? k)
                       : [];
+                  // A change about someone still in the tree opens them: the whole row, with a chevron.
+                  const opens = r.entity === "person" && r.entityId && existing.has(r.entityId);
                   return (
-                    <li key={r.id} className="flex min-h-12 items-baseline gap-3 px-4 py-3">
-                      <div className="min-w-0 flex-1 text-sm">
+                    <li
+                      key={r.id}
+                      className={cn(
+                        "relative flex min-h-12 items-center gap-3 px-4 py-3",
+                        opens && "transition-colors duration-150 hover:bg-muted/50 has-[a:active]:bg-muted has-[a:active]:duration-0 has-[a:focus-visible]:bg-accent/40",
+                      )}
+                    >
+                      <div className="min-w-0 flex-1 text-[15px]">
                         <p>
                           <span className="font-medium">{r.userName ?? "Anggota terhapus"}</span>{" "}
-                          {r.entity === "person" && r.entityId && existing.has(r.entityId) ? (
-                            <Link href={`/pohon/${treeId}/orang/${r.entityId}`} className="underline-offset-2 hover:underline">
+                          {opens ? (
+                            <Link href={`/pohon/${treeId}/orang/${r.entityId}`} className="outline-none after:absolute after:inset-0 after:content-['']">
                               {lowerFirst(r.summary)}
                             </Link>
                           ) : (
                             lowerFirst(r.summary)
                           )}
                         </p>
-                        {fields.length ? <p className="mt-0.5 text-xs text-muted-foreground">Bagian: {fields.join(", ")}</p> : null}
+                        {fields.length ? <p className="mt-0.5 text-[13px] text-muted-foreground">Bagian: {fields.join(", ")}</p> : null}
                       </div>
-                      <time className="shrink-0 text-xs text-muted-foreground tabular-nums" dateTime={r.createdAt.toISOString()}>
+                      <time className="shrink-0 text-[13px] text-muted-foreground tabular-nums" dateTime={r.createdAt.toISOString()}>
                         {timeFmt.format(r.createdAt).split(", ").pop()}
                       </time>
+                      {opens ? <ChevronRightIcon className="size-4 shrink-0 text-muted-foreground/70" aria-hidden /> : null}
                     </li>
                   );
                 })}
@@ -75,12 +92,12 @@ export default async function HistoryPage({ params, searchParams }: PageProps<"/
       )}
       {hasMore ? (
         <div className="mt-6 text-center">
-          <Link href={`/pohon/${treeId}/riwayat?sebelum=${encodeURIComponent(rows.at(-1)!.createdAt.toISOString())}`} className={buttonVariants({ variant: "outline" })}>
-            Lebih lama
+          <Link href={`/pohon/${treeId}/riwayat?sebelum=${encodeURIComponent(rows.at(-1)!.createdAt.toISOString())}`} className={toolbarAction}>
+            Tampilkan yang lebih lama
           </Link>
         </div>
       ) : null}
-    </main>
+    </Page>
   );
 }
 

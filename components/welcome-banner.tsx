@@ -18,15 +18,15 @@ export function WelcomeBanner({ treeId, joined, linked }: { treeId: string; join
         <p className="flex-1">
           {joined ? <strong className="font-semibold text-foreground">Selamat bergabung! </strong> : null}
           {linked
-            ? "Klik siapa pun di pohon untuk melihat hubungannya dengan Anda."
+            ? "Ketuk siapa pun di pohon untuk melihat hubungannya dengan Anda."
             : "Tandai diri Anda di pohon untuk melihat hubungan dengan setiap kerabat."}
         </p>
         {!linked ? (
-          <Link href={`/pohon/${treeId}/daftar?cari-saya=1`} className="flex shrink-0 items-center gap-1.5 rounded-md font-medium text-primary outline-none hover:underline focus-visible:ring-3 focus-visible:ring-ring/40">
+          <Link href={`/pohon/${treeId}/daftar?cari-saya=1`} className="hit flex min-h-9 shrink-0 items-center gap-1.5 rounded-md font-medium text-soga-ink outline-none hover:opacity-80 focus-visible:ring-3 focus-visible:ring-ring/40 active:opacity-60">
             <SearchIcon className="size-3.5" /> Cari saya
           </Link>
         ) : null}
-        <Button variant="ghost" size="icon-sm" onClick={() => setHidden(true)} aria-label="Tutup">
+        <Button variant="ghost" size="icon-sm" className="hit" onClick={() => setHidden(true)} aria-label="Tutup">
           <XIcon />
         </Button>
       </div>

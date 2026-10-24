@@ -2,10 +2,7 @@
 
 import { useEffect } from "react";
 import { toast } from "sonner";
-import { Button } from "@/components/ui/button";
-import { Field, FieldError, FieldLabel } from "@/components/ui/field";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
+import { FormGroup, FormRow, actionRow, rowInput } from "@/components/form-rows";
 import { updateTreeAction } from "@/lib/actions";
 import { useFormAction } from "@/lib/use-form-action";
 
@@ -15,21 +12,29 @@ export function TreeInfoForm({ treeId, name, description }: { treeId: string; na
     if (state?.ok) toast.success("Info pohon disimpan.");
   }, [state]);
   return (
-    <form onSubmit={onSubmit} className="mt-3 grid gap-4 rounded-xl bg-card p-5">
-      <Field>
-        <FieldLabel htmlFor="s-name">Nama pohon</FieldLabel>
-        <Input id="s-name" name="treeName" defaultValue={name} required maxLength={120} autoComplete="off" />
-      </Field>
-      <Field>
-        <FieldLabel htmlFor="s-desc">Deskripsi</FieldLabel>
-        <Textarea id="s-desc" name="treeDescription" defaultValue={description ?? ""} rows={3} maxLength={1000} />
-      </Field>
-      {state && !state.ok ? <FieldError>{state.error}</FieldError> : null}
-      <div>
-        <Button type="submit" disabled={pending}>
+    <form onSubmit={onSubmit} className="grid gap-6">
+      <FormGroup title="Info pohon" footer={state && !state.ok ? <span className="text-destructive">{state.error}</span> : undefined}>
+        <FormRow label="Nama pohon" htmlFor="s-name">
+          <input id="s-name" name="treeName" defaultValue={name} required maxLength={120} autoComplete="off" placeholder="Wajib diisi" className={rowInput} />
+        </FormRow>
+      </FormGroup>
+      <FormGroup title="Deskripsi">
+        <textarea
+          id="s-desc"
+          name="treeDescription"
+          aria-label="Deskripsi"
+          defaultValue={description ?? ""}
+          rows={3}
+          maxLength={1000}
+          placeholder="Asal daerah, catatan untuk anggota keluarga…"
+          className="block min-h-20 w-full resize-y bg-transparent px-4 py-3 text-[15px] outline-none placeholder:text-muted-foreground/70 focus-visible:bg-accent/40"
+        />
+      </FormGroup>
+      <FormGroup>
+        <button type="submit" disabled={pending} className={actionRow}>
           {pending ? "Menyimpan…" : "Simpan"}
-        </Button>
-      </div>
+        </button>
+      </FormGroup>
     </form>
   );
 }

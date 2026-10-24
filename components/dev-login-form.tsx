@@ -1,8 +1,6 @@
 "use client";
 
-import { Button } from "@/components/ui/button";
-import { Field, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field";
-import { Input } from "@/components/ui/input";
+import { FormGroup, FormRow, actionRow, rowInput } from "@/components/form-rows";
 import { devLogin } from "@/lib/actions";
 import { useFormAction } from "@/lib/use-form-action";
 
@@ -10,23 +8,21 @@ import { useFormAction } from "@/lib/use-form-action";
 export function DevLoginForm({ next }: { next: string }) {
   const [state, onSubmit, pending] = useFormAction(devLogin);
   return (
-    <form onSubmit={onSubmit} className="mt-6 border-t border-dashed pt-5">
+    <form onSubmit={onSubmit} className="mt-8 grid gap-6 text-left">
       <input type="hidden" name="next" value={next} />
-      <FieldGroup className="gap-3">
-        <p className="text-sm font-semibold">Login uji coba (development)</p>
-        <Field>
-          <FieldLabel htmlFor="dev-name">Nama</FieldLabel>
-          <Input id="dev-name" name="name" placeholder="Rina Abdullah…" required autoComplete="name" />
-        </Field>
-        <Field>
-          <FieldLabel htmlFor="dev-email">Email</FieldLabel>
-          <Input id="dev-email" name="email" type="email" placeholder="rina@contoh.id…" required autoComplete="email" spellCheck={false} />
-        </Field>
-        {state && !state.ok ? <FieldError>{state.error}</FieldError> : null}
-        <Button type="submit" variant="secondary" className="h-10 w-full" disabled={pending}>
+      <FormGroup title="Login uji coba (development)" footer={state && !state.ok ? <span className="text-destructive">{state.error}</span> : undefined}>
+        <FormRow label="Nama" htmlFor="dev-name">
+          <input id="dev-name" name="name" placeholder="Rina Abdullah" required autoComplete="name" className={rowInput} />
+        </FormRow>
+        <FormRow label="Email" htmlFor="dev-email">
+          <input id="dev-email" name="email" type="email" placeholder="rina@contoh.id" required autoComplete="email" spellCheck={false} className={rowInput} />
+        </FormRow>
+      </FormGroup>
+      <FormGroup>
+        <button type="submit" disabled={pending} className={actionRow}>
           {pending ? "Memproses…" : "Masuk tanpa Google"}
-        </Button>
-      </FieldGroup>
+        </button>
+      </FormGroup>
     </form>
   );
 }

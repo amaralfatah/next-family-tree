@@ -28,7 +28,7 @@ export function UserMenu({ name, email, image }: { name: string; email: string; 
   const [leaving, startLeaving] = useTransition();
   return (
     <DropdownMenu>
-      <DropdownMenuTrigger className="rounded-full outline-none focus-visible:ring-3 focus-visible:ring-ring/50" aria-label="Menu akun">
+      <DropdownMenuTrigger className="hit rounded-full outline-none focus-visible:ring-3 focus-visible:ring-ring/50" aria-label="Menu akun">
         <Avatar className="size-8">
           {image ? <AvatarImage src={image} alt="" referrerPolicy="no-referrer" /> : null}
           <AvatarFallback className="bg-accent text-xs font-semibold">{initials(name) || "?"}</AvatarFallback>

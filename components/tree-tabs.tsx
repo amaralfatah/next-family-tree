@@ -60,7 +60,7 @@ export function TreeTabs({ treeId }: { treeId: string }) {
         aria-label="Pengaturan pohon"
         title="Pengaturan pohon"
         aria-current={settings.active ? "page" : undefined}
-        className={cn(buttonVariants({ variant: "ghost", size: "icon" }), settings.active && "bg-muted text-foreground")}
+        className={cn(buttonVariants({ variant: "ghost", size: "icon" }), "hit", settings.active && "bg-muted text-foreground")}
       >
         <SettingsIcon />
       </Link>

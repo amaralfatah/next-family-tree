@@ -1,6 +1,6 @@
-import Link from "next/link";
 import { notFound } from "next/navigation";
 import { EditPersonForm } from "@/components/edit-person-form";
+import { Page } from "@/components/page-shell";
 import { loadTreeContext } from "@/lib/tree/context";
 
 export const metadata = { title: "Ubah data" };
@@ -11,12 +11,8 @@ export default async function EditPersonPage({ params }: PageProps<"/pohon/[tree
   const person = data.persons.find((p) => p.id === personId);
   if (!person || !canEdit) notFound();
   return (
-    <main id="konten" className="mx-auto w-full max-w-2xl px-4 py-8">
-      <Link href={`/pohon/${treeId}/orang/${personId}`} className="text-sm text-muted-foreground hover:text-foreground">
-        ← {person.fullName}
-      </Link>
-      <h1 className="mt-2 font-display text-[2.125rem] leading-tight tracking-[-0.02em]">Ubah data</h1>
+    <Page className="pt-4">
       <EditPersonForm treeId={treeId} person={person} />
-    </main>
+    </Page>
   );
 }

@@ -1,12 +1,13 @@
-import { AlertTriangleIcon, MapPinIcon, NetworkIcon, PencilIcon, PlusIcon } from "lucide-react";
+import { AlertTriangleIcon, ChevronRightIcon, NetworkIcon, PencilIcon, PlusIcon } from "lucide-react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { DeletePersonButton } from "@/components/delete-person-button";
+import { addRow } from "@/components/form-row-classes";
+import { FormGroup, InfoRow } from "@/components/form-rows";
+import { BackLink, Page } from "@/components/page-shell";
 import { LinkMeButton } from "@/components/link-me-button";
 import { PersonAvatar } from "@/components/person-avatar";
 import { PhotoUploader } from "@/components/photo-uploader";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { buttonVariants } from "@/components/ui/button";
 import { ChildLinkMenu, UnionEditor } from "@/components/union-editor";
 import { formatPartialDate } from "@/lib/dates";
 import { describeKinship } from "@/lib/kinship";
@@ -15,7 +16,6 @@ import { loadTreeContext } from "@/lib/tree/context";
 import { familyOf } from "@/lib/tree/family";
 import { dateWarnings } from "@/lib/tree/validate";
 import type { Person } from "@/lib/types";
-import { cn } from "@/lib/utils";
 
 export async function generateMetadata({ params }: PageProps<"/pohon/[treeId]/orang/[personId]">) {
   const { treeId, personId } = await params;
@@ -37,246 +37,191 @@ export default async function PersonPage({ params }: PageProps<"/pohon/[treeId]/
   const died = formatPartialDate(person.deathDate, person.deathPrecision);
   const base = `/pohon/${treeId}`;
   const addHref = (rel: string, extra = "") => `${base}/orang/baru?rel=${rel}&dari=${personId}${extra}`;
-  const hasBioParents = parentGroups.some((g) => g.relation === "biological");
 
+  const parentsLabel = (relation: string) => `Orang tua ${relation !== "biological" ? CHILD_RELATION_LABEL[relation as keyof typeof CHILD_RELATION_LABEL].toLowerCase() : "kandung"}`;
+
+  // Laid out like a contact in Contacts: who they are at the top, then grouped rows (facts, family, the
+  // one destructive action last), all on the grouped background with no card inside a card.
   return (
-    <main id="konten" className="mx-auto w-full max-w-5xl px-4 py-8">
-      <nav className="text-sm text-muted-foreground">
-        <Link href={`${base}/daftar`} className="hover:text-foreground">
-          Daftar
-        </Link>{" "}
-        / <span className="text-foreground">{person.fullName}</span>
-      </nav>
+    <Page className="pt-4">
+      <BackLink href={`${base}/daftar`} label="Daftar" />
 
-      <section className="mt-5 grid gap-6 rounded-2xl bg-card p-5 sm:grid-cols-[auto_1fr] sm:p-7">
-        <div className="flex flex-col items-center gap-2 sm:items-start">
-          <PersonAvatar treeId={treeId} person={person} size="lg" />
-          {canEdit ? <PhotoUploader treeId={treeId} personId={personId} hasPhoto={Boolean(person.photoKey)} /> : null}
+      <header className="mt-2 grid justify-items-center gap-3 text-center">
+        <PersonAvatar treeId={treeId} person={person} size="lg" />
+        {canEdit ? <PhotoUploader treeId={treeId} personId={personId} hasPhoto={Boolean(person.photoKey)} /> : null}
+        <div>
+          {deceasedMark(person) ? <p className="text-sm text-muted-foreground">{deceasedMark(person)}</p> : null}
+          <h1 className="font-display text-[2.125rem] leading-tight tracking-[-0.02em] text-balance sm:text-[2.5rem]">{person.fullName}</h1>
+          {person.nickname ? <p className="mt-0.5 text-[17px] text-muted-foreground">“{person.nickname}”</p> : null}
         </div>
-        <div className="min-w-0">
-          <div className="flex flex-wrap items-start justify-between gap-3">
-            <div className="min-w-0">
-              {deceasedMark(person) ? <p className="text-sm text-muted-foreground">{deceasedMark(person)}</p> : null}
-              <h1 className="font-display text-4xl leading-tight text-balance sm:text-5xl">{person.fullName}</h1>
-              {person.nickname ? <p className="mt-1 text-lg text-muted-foreground">“{person.nickname}”</p> : null}
-            </div>
-            <div className="flex flex-wrap gap-2">
-              <Link href={`${base}?pusat=${personId}`} className={buttonVariants({ variant: "outline" })}>
-                <NetworkIcon data-icon="inline-start" /> Lihat di pohon
-              </Link>
-              {canEdit ? (
-                <Link href={`${base}/orang/${personId}/ubah`} className={buttonVariants({ variant: "outline" })}>
-                  <PencilIcon data-icon="inline-start" /> Ubah
-                </Link>
-              ) : null}
-            </div>
-          </div>
+        {/* Quick actions under the name, as the message/call buttons in Contacts. */}
+        <div className="mt-1 flex gap-2">
+          <QuickAction href={`${base}?pusat=${personId}`} icon={NetworkIcon} label="Lihat di pohon" />
+          {canEdit ? <QuickAction href={`${base}/orang/${personId}/ubah`} icon={PencilIcon} label="Ubah" /> : null}
+        </div>
+      </header>
 
-          {person.id === mePersonId ? (
-            <p className="mt-4 inline-flex items-center gap-3 rounded-full bg-accent px-3 py-1 text-sm">
-              <span className="font-medium text-soga-ink">Ini Anda</span>
-              <LinkMeButton treeId={treeId} personId={personId} unlink />
-            </p>
-          ) : kin ? (
-            <div className="mt-4 rounded-xl bg-accent/70 px-4 py-3">
-              <p className="text-sm text-muted-foreground">Hubungan dengan Anda</p>
-              <p className="font-display text-2xl text-soga-ink">{kin.label}</p>
-              <p className="mt-1 text-sm text-muted-foreground">
+      <div className="mt-8 grid gap-6">
+        {person.id === mePersonId ? (
+          <FormGroup footer="Akun Anda tertaut ke orang ini, jadi hubungan dengan setiap kerabat dihitung dari sini.">
+            <InfoRow label="Ini Anda">
+              <span className="font-medium">Akun Anda</span>
+            </InfoRow>
+            <LinkMeButton treeId={treeId} personId={personId} unlink row />
+          </FormGroup>
+        ) : kin ? (
+          <FormGroup>
+            <div className="px-4 py-3">
+              <p className="text-[13px] text-muted-foreground">Hubungan dengan Anda</p>
+              <p className="font-display text-2xl leading-tight">{kin.label}</p>
+              <p className="mt-1 text-[13px] text-muted-foreground">
                 {kin.path.map((id, i) => (
                   <span key={`${id}-${i}`}>
                     {i > 0 ? " → " : null}
-                    {i === 0 ? "Anda" : <Link href={`${base}/orang/${id}`} className="underline-offset-2 hover:underline">{byId.get(id)?.nickname || byId.get(id)?.fullName}</Link>}
+                    {i === 0 ? "Anda" : (
+                      <Link href={`${base}/orang/${id}`} className="text-soga-ink hover:opacity-80">
+                        {byId.get(id)?.nickname || byId.get(id)?.fullName}
+                      </Link>
+                    )}
                   </span>
                 ))}
               </p>
             </div>
-          ) : mePersonId ? (
-            <p className="mt-4 text-sm text-muted-foreground">Belum ditemukan hubungan dengan Anda di pohon ini.</p>
-          ) : (
-            <div className="mt-4 flex flex-wrap items-center gap-3 text-sm text-muted-foreground">
-              Apakah ini Anda? <LinkMeButton treeId={treeId} personId={personId} />
-            </div>
-          )}
+          </FormGroup>
+        ) : mePersonId ? (
+          <p className="px-4 text-[13px] text-muted-foreground">Belum ditemukan hubungan dengan Anda di pohon ini.</p>
+        ) : (
+          <FormGroup footer="Tandai diri Anda agar hubungan dengan setiap kerabat terlihat.">
+            <LinkMeButton treeId={treeId} personId={personId} row />
+          </FormGroup>
+        )}
 
-          <dl className="mt-5 grid gap-x-8 gap-y-3 text-sm sm:grid-cols-2">
-            <Fact label="Jenis kelamin" value={GENDER_LABEL[person.gender]} />
-            <Fact label="Lahir" value={[born ?? "Tidak diketahui", person.birthPlace].filter(Boolean).join(", ")} icon={person.birthPlace ? <MapPinIcon className="size-3.5" /> : null} />
-            <Fact label="Status" value={person.isLiving ? "Masih hidup" : died ? `Wafat ${died}` : "Sudah wafat"} />
-          </dl>
-          {person.notes ? <p className="mt-5 max-w-prose text-sm whitespace-pre-line">{person.notes}</p> : null}
+        <FormGroup>
+          <InfoRow label="Jenis kelamin">{GENDER_LABEL[person.gender]}</InfoRow>
+          <InfoRow label="Tanggal lahir">{born ?? "Tidak diketahui"}</InfoRow>
+          {person.birthPlace ? <InfoRow label="Tempat lahir">{person.birthPlace}</InfoRow> : null}
+          <InfoRow label="Status">{person.isLiving ? "Masih hidup" : died ? `Wafat ${died}` : "Sudah wafat"}</InfoRow>
+        </FormGroup>
 
-          {warnings.length > 0 ? (
-            <Alert variant="warning" className="mt-5">
-              <AlertTriangleIcon />
-              <AlertDescription className="text-foreground">
-                <ul className="flex flex-col gap-1">
-                  {warnings.map((w) => (
-                    <li key={w}>{w}</li>
-                  ))}
-                </ul>
-              </AlertDescription>
-            </Alert>
-          ) : null}
-        </div>
-      </section>
+        {person.notes ? (
+          <FormGroup title="Catatan">
+            <p className="px-4 py-3 text-[15px] whitespace-pre-line">{person.notes}</p>
+          </FormGroup>
+        ) : null}
 
-      <div className="mt-6 grid items-start gap-6 lg:grid-cols-2">
-        <Section
-          title="Orang tua & saudara"
-          action={
-            canEdit ? (
-              <div className="flex flex-wrap gap-1.5">
-                <AddLink href={addHref("parent")}>Ayah/ibu</AddLink>
-                {hasBioParents ? <AddLink href={addHref("sibling")}>Saudara</AddLink> : null}
-              </div>
-            ) : null
-          }
-        >
-          {parentGroups.length === 0 ? (
-            <Empty>Orang tua belum dicatat.</Empty>
-          ) : (
-            parentGroups.map((g) => (
-              <div key={g.union.id} className="flex flex-col gap-3">
-                <div>
-                  <p className="mb-1.5 text-[13px] text-muted-foreground">
-                    Orang tua {g.relation !== "biological" ? CHILD_RELATION_LABEL[g.relation].toLowerCase() : "kandung"}
-                  </p>
-                  <div className="flex flex-col divide-y">
-                    {g.parents.map((p) => (
-                      <PersonRow key={p.id} treeId={treeId} person={p} />
-                    ))}
-                    {g.parents.length < 2 ? (
-                      canEdit ? (
-                        <Link href={addHref("parent", `&rel_anak=${g.relation}`)} className="flex min-h-11 items-center gap-2.5 rounded-md text-sm text-primary outline-none underline-offset-4 hover:underline focus-visible:ring-3 focus-visible:ring-ring/50 active:opacity-70">
-                          <PlusIcon className="size-4" /> Tambah orang tua lain
-                        </Link>
-                      ) : (
-                        <span className="flex min-h-11 items-center text-sm text-muted-foreground">Orang tua lain tidak diketahui</span>
-                      )
-                    ) : null}
-                  </div>
-                </div>
-                {g.siblings.length > 0 ? (
-                  <div>
-                    <p className="mb-1.5 text-[13px] text-muted-foreground">Saudara</p>
-                    <div className="flex flex-col divide-y">
-                      {g.siblings.map((s) => (
-                        <PersonRow key={s.person.id} treeId={treeId} person={s.person} note={s.relation !== "biological" ? CHILD_RELATION_LABEL[s.relation] : undefined} />
-                      ))}
-                    </div>
-                  </div>
-                ) : null}
-              </div>
-            ))
-          )}
-        </Section>
+        {warnings.length > 0 ? (
+          <Alert variant="warning">
+            <AlertTriangleIcon />
+            <AlertDescription className="text-foreground">
+              <ul className="flex flex-col gap-1">
+                {warnings.map((w) => (
+                  <li key={w}>{w}</li>
+                ))}
+              </ul>
+            </AlertDescription>
+          </Alert>
+        ) : null}
 
-        <Section title="Pasangan & anak" action={canEdit ? <AddLink href={addHref("partner")}>Pasangan</AddLink> : null}>
-          {own.length === 0 ? (
-            <Empty>Belum ada pasangan atau anak yang dicatat.</Empty>
-          ) : (
-            own.map((o, i) => (
-              <div key={o.union.id} className={cn("flex flex-col gap-3", i > 0 && "border-t pt-4")}>
-                <div className="flex items-start justify-between gap-2">
-                  <p className="text-[13px] text-muted-foreground">
-                    {own.length > 1 ? `Ikatan ke-${i + 1} · ` : ""}
-                    {UNION_STATUS_LABEL[o.union.status]}
-                    {o.union.startDate ? ` · ${formatPartialDate(o.union.startDate, "day")}` : ""}
-                  </p>
-                  {canEdit ? <UnionEditor treeId={treeId} union={o.union} partnerName={o.partner?.fullName ?? null} /> : null}
-                </div>
-                {o.partner ? (
-                  <PersonRow treeId={treeId} person={o.partner} />
-                ) : (
-                  <p className="text-sm text-muted-foreground">Pasangan tidak diketahui</p>
-                )}
-                <div>
-                  <div className="mb-1.5 flex items-center justify-between">
-                    <p className="text-[13px] text-muted-foreground">Anak ({o.children.length})</p>
-                    {canEdit ? <AddLink href={addHref("child", `&ikatan=${o.union.id}`)}>Anak</AddLink> : null}
-                  </div>
-                  {o.children.length === 0 ? (
-                    <Empty>Belum ada anak dicatat.</Empty>
+        {parentGroups.length === 0 ? (
+          <FormGroup title="Orang tua">
+            <p className="px-4 py-3 text-[15px] text-muted-foreground">Orang tua belum dicatat.</p>
+            {canEdit ? <AddRow href={addHref("parent")}>Tambah orang tua</AddRow> : null}
+          </FormGroup>
+        ) : (
+          parentGroups.map((g) => (
+            <div key={g.union.id} className="grid gap-6">
+              <FormGroup title={parentsLabel(g.relation)}>
+                {g.parents.map((p) => (
+                  <PersonRow key={p.id} treeId={treeId} person={p} />
+                ))}
+                {g.parents.length < 2 ? (
+                  canEdit ? (
+                    <AddRow href={addHref("parent", `&rel_anak=${g.relation}`)}>Tambah orang tua lain</AddRow>
                   ) : (
-                    <div className="flex flex-col divide-y">
-                      {o.children.map((c) => (
-                        <PersonRow
-                          key={c.person.id}
-                          treeId={treeId}
-                          person={c.person}
-                          note={c.relation !== "biological" ? `Anak ${CHILD_RELATION_LABEL[c.relation].toLowerCase()}` : c.birthOrder ? `Anak ke-${c.birthOrder}` : undefined}
-                          menu={canEdit ? <ChildLinkMenu treeId={treeId} unionId={o.union.id} childId={c.person.id} childName={c.person.fullName} relation={c.relation} birthOrder={c.birthOrder} /> : null}
-                        />
-                      ))}
-                    </div>
-                  )}
-                </div>
-              </div>
-            ))
-          )}
-          {canEdit && own.length === 0 ? (
-            <div className="flex flex-wrap gap-2">
-              <AddLink href={addHref("child")}>Anak (pasangan tidak diketahui)</AddLink>
+                    <p className="px-4 py-3 text-[15px] text-muted-foreground">Orang tua lain tidak diketahui</p>
+                  )
+                ) : null}
+              </FormGroup>
+              {g.siblings.length > 0 || (canEdit && g.relation === "biological") ? (
+                <FormGroup title={g.siblings.length > 0 ? `Saudara (${g.siblings.length})` : "Saudara"}>
+                  {g.siblings.map((sib) => (
+                    <PersonRow key={sib.person.id} treeId={treeId} person={sib.person} note={sib.relation !== "biological" ? CHILD_RELATION_LABEL[sib.relation] : undefined} />
+                  ))}
+                  {canEdit && g.relation === "biological" ? <AddRow href={addHref("sibling")}>Tambah saudara</AddRow> : null}
+                </FormGroup>
+              ) : null}
             </div>
-          ) : null}
-        </Section>
+          ))
+        )}
+
+        {own.map((o, i) => (
+          <div key={o.union.id} className="grid gap-6">
+            <FormGroup
+              title={[own.length > 1 ? `Pernikahan ke-${i + 1}` : null, UNION_STATUS_LABEL[o.union.status], o.union.startDate ? formatPartialDate(o.union.startDate, "day") : null].filter(Boolean).join(" · ")}
+            >
+              {o.partner ? <PersonRow treeId={treeId} person={o.partner} /> : <p className="px-4 py-3 text-[15px] text-muted-foreground">Pasangan tidak diketahui</p>}
+              {canEdit ? <UnionEditor treeId={treeId} union={o.union} partnerName={o.partner?.fullName ?? null} row /> : null}
+            </FormGroup>
+            <FormGroup title={`Anak (${o.children.length})`}>
+              {o.children.length === 0 ? <p className="px-4 py-3 text-[15px] text-muted-foreground">Belum ada anak dicatat.</p> : null}
+              {o.children.map((c) => (
+                <PersonRow
+                  key={c.person.id}
+                  treeId={treeId}
+                  person={c.person}
+                  note={c.relation !== "biological" ? `Anak ${CHILD_RELATION_LABEL[c.relation].toLowerCase()}` : c.birthOrder ? `Anak ke-${c.birthOrder}` : undefined}
+                  menu={canEdit ? <ChildLinkMenu treeId={treeId} unionId={o.union.id} childId={c.person.id} childName={c.person.fullName} relation={c.relation} birthOrder={c.birthOrder} /> : null}
+                />
+              ))}
+              {canEdit ? <AddRow href={addHref("child", `&ikatan=${o.union.id}`)}>Tambah anak</AddRow> : null}
+            </FormGroup>
+          </div>
+        ))}
+
+        {own.length === 0 || canEdit ? (
+          <FormGroup title={own.length === 0 ? "Pasangan & anak" : undefined}>
+            {own.length === 0 ? <p className="px-4 py-3 text-[15px] text-muted-foreground">Belum ada pasangan atau anak yang dicatat.</p> : null}
+            {canEdit ? <AddRow href={addHref("partner")}>Tambah pasangan</AddRow> : null}
+            {canEdit && own.length === 0 ? <AddRow href={addHref("child")}>Tambah anak (pasangan tidak diketahui)</AddRow> : null}
+          </FormGroup>
+        ) : null}
+
       </div>
-
-      {canEdit ? (
-        <div className="mt-10 flex justify-end border-t pt-6">
-          <DeletePersonButton treeId={treeId} personId={personId} name={person.fullName} />
-        </div>
-      ) : null}
-    </main>
+    </Page>
   );
 }
 
-function Fact({ label, value, icon }: { label: string; value: string; icon?: React.ReactNode }) {
+/** A square button under the name, icon over label, as the quick actions of a contact. */
+function QuickAction({ href, icon: Icon, label }: { href: string; icon: React.ComponentType<{ className?: string }>; label: string }) {
   return (
-    <div>
-      <dt className="text-muted-foreground">{label}</dt>
-      <dd className="flex items-center gap-1 font-medium">
-        {icon}
-        {value}
-      </dd>
-    </div>
-  );
-}
-
-function Section({ title, action, children }: { title: string; action?: React.ReactNode; children: React.ReactNode }) {
-  return (
-    <section className="flex flex-col gap-4 rounded-2xl bg-card p-5">
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <h2 className="text-lg font-semibold tracking-[-0.01em]">{title}</h2>
-        {action}
-      </div>
-      {children}
-    </section>
-  );
-}
-
-function AddLink({ href, children }: { href: string; children: React.ReactNode }) {
-  return (
-    <Link href={href} className={buttonVariants({ variant: "ghost", size: "sm", className: "text-primary hover:text-primary" })}>
-      <PlusIcon data-icon="inline-start" /> {children}
+    <Link
+      href={href}
+      className="grid min-w-24 justify-items-center gap-1 rounded-xl bg-card px-4 py-2.5 text-[13px] font-medium text-soga-ink outline-none transition-colors duration-150 hover:bg-muted/60 focus-visible:ring-3 focus-visible:ring-ring/50 active:bg-muted active:duration-0"
+    >
+      <Icon className="size-5" />
+      {label}
     </Link>
   );
 }
 
-function Empty({ children }: { children: React.ReactNode }) {
-  return <p className="text-sm text-muted-foreground">{children}</p>;
+function AddRow({ href, children }: { href: string; children: React.ReactNode }) {
+  return (
+    <Link href={href} className={addRow}>
+      <PlusIcon className="size-[18px]" /> {children}
+    </Link>
+  );
 }
 
-/** A plain row; its list draws hairlines between rows, as in an inset grouped list, so people read as content rather than boxes. */
+/** One person in a group: the whole row opens them (a list row on iOS); a menu, when there is one, sits above that. */
 function PersonRow({ treeId, person, note, menu }: { treeId: string; person: Person; note?: string; menu?: React.ReactNode }) {
   return (
-    <div className="flex min-h-14 items-center gap-3 transition-colors hover:bg-muted/50">
+    <div className="relative flex min-h-14 items-center gap-3 px-4 transition-colors duration-150 hover:bg-muted/50 has-[a:active]:bg-muted has-[a:active]:duration-0 has-[a:focus-visible]:bg-accent/40">
       <PersonAvatar treeId={treeId} person={person} size="sm" />
-      <Link href={`/pohon/${treeId}/orang/${person.id}`} className="min-w-0 flex-1 rounded-sm outline-none focus-visible:ring-3 focus-visible:ring-ring/50">
-        <span className="block truncate text-sm font-medium">{person.fullName}</span>
-        <span className="block truncate text-xs text-muted-foreground">{[note, subtitle(person)].filter(Boolean).join(" · ") || "—"}</span>
+      <Link href={`/pohon/${treeId}/orang/${person.id}`} className="min-w-0 flex-1 py-2 outline-none after:absolute after:inset-0 after:content-['']">
+        <span className="block truncate text-[15px] font-medium">{person.fullName}</span>
+        <span className="block truncate text-[13px] text-muted-foreground">{[note, subtitle(person)].filter(Boolean).join(" · ") || "—"}</span>
       </Link>
-      {menu}
+      {menu ? <span className="relative z-10">{menu}</span> : <ChevronRightIcon className="size-4 shrink-0 text-muted-foreground/70" aria-hidden />}
     </div>
   );
 }

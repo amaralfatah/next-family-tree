@@ -1,11 +1,12 @@
 "use client";
 
-import { CameraIcon, Trash2Icon } from "lucide-react";
+import { CameraIcon } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useRef, useState } from "react";
 import { toast } from "sonner";
 import { ConfirmButton } from "@/components/confirm-button";
-import { Button } from "@/components/ui/button";
+import { toolbarAction } from "@/components/form-row-classes";
+import { cn } from "@/lib/utils";
 import { Spinner } from "@/components/ui/spinner";
 
 const MAX_BYTES = 1_048_576;
@@ -60,18 +61,18 @@ export function PhotoUploader({ treeId, personId, hasPhoto }: { treeId: string; 
     return { ok: true };
   }
 
+  // Text actions under the avatar, as "Edit" under a contact's photo: tint to change, red to remove.
   return (
-    <div className="flex gap-1">
+    <div className="flex items-center gap-1">
       <input ref={input} type="file" accept="image/*" className="sr-only" tabIndex={-1} onChange={(e) => e.target.files?.[0] && upload(e.target.files[0])} />
-      <Button variant="ghost" size="sm" disabled={busy} onClick={() => input.current?.click()}>
-        {busy ? <Spinner data-icon="inline-start" /> : <CameraIcon data-icon="inline-start" />} {hasPhoto ? "Ganti" : "Foto"}
-      </Button>
+      <button type="button" disabled={busy} onClick={() => input.current?.click()} className={cn(toolbarAction, "text-[15px] disabled:opacity-50")}>
+        {busy ? <Spinner /> : <CameraIcon className="size-4" />} {hasPhoto ? "Ganti foto" : "Tambah foto"}
+      </button>
       {hasPhoto ? (
         <ConfirmButton
-          label={<Trash2Icon />}
-          ariaLabel="Hapus foto"
+          label="Hapus foto"
           variant="ghost"
-          size="icon-sm"
+          triggerClassName="h-11 px-2 text-[15px] font-normal text-destructive hover:bg-transparent hover:text-destructive hover:opacity-80"
           title="Hapus foto ini?"
           description="Foto dihapus dari pohon dan tidak bisa dikembalikan."
           confirmLabel="Hapus foto"

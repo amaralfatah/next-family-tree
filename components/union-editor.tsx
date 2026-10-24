@@ -1,23 +1,74 @@
 "use client";
 
-import { EllipsisVerticalIcon, PencilIcon } from "lucide-react";
+import { EllipsisIcon, PencilIcon } from "lucide-react";
 import { useState, useTransition } from "react";
 import { toast } from "sonner";
-import { DateParts } from "@/components/person-fields";
+import { ConfirmButton } from "@/components/confirm-button";
+import { barCancel, barConfirm, barTitle, sheetBar } from "@/components/form-row-classes";
+import { FormGroup, FormRow, RowSelect, addRow, rowInput } from "@/components/form-rows";
+import { DateRow } from "@/components/person-fields";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Field, FieldDescription, FieldGroup, FieldLabel } from "@/components/ui/field";
-import { Input } from "@/components/ui/input";
-import { NativeSelect, NativeSelectOption } from "@/components/ui/native-select";
+import { Spinner } from "@/components/ui/spinner";
+import { Dialog, DialogClose, DialogContent, DialogDescription, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { deleteUnionAction, removeChildLinkAction, updateChildLinkAction, updateUnionAction } from "@/lib/actions";
 import { splitDate } from "@/lib/dates";
 import { CHILD_RELATION_LABEL, UNION_STATUS_LABEL } from "@/lib/person";
 import type { ChildRelation, Union, UnionStatus } from "@/lib/types";
 
-export function UnionEditor({ treeId, union, partnerName }: { treeId: string; union: Union; partnerName: string | null }) {
+/**
+ * An editing dialog with the same bar as the chart's form panel: Batal on the left, the title, Simpan on
+ * the right; grouped rows under it on the grouped background.
+ */
+function EditDialog({
+  open,
+  onOpenChange,
+  trigger,
+  title,
+  description,
+  pending,
+  onSave,
+  children,
+}: {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  trigger: React.ReactElement;
+  title: string;
+  description: string;
+  pending: boolean;
+  onSave: (fd: FormData) => void;
+  children: React.ReactNode;
+}) {
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      {trigger}
+      <DialogContent showCloseButton={false} className="gap-0 overflow-hidden bg-grouped p-0">
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            onSave(new FormData(e.currentTarget));
+          }}
+        >
+          <div className={sheetBar}>
+            <DialogClose render={<Button type="button" variant="ghost" className={barCancel} />}>Batal</DialogClose>
+            <DialogTitle className={barTitle}>{title}</DialogTitle>
+            <Button type="submit" variant="ghost" className={barConfirm} disabled={pending}>
+              {pending ? <Spinner /> : "Simpan"}
+            </Button>
+          </div>
+          <div className="grid gap-6 p-4">
+            <DialogDescription className="px-4 text-[13px]">{description}</DialogDescription>
+            {children}
+          </div>
+        </form>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+/** With `row`, the trigger is a row of the profile's marriage group ("Ubah pernikahan") instead of an icon. */
+export function UnionEditor({ treeId, union, partnerName, row = false }: { treeId: string; union: Union; partnerName: string | null; row?: boolean }) {
   const [open, setOpen] = useState(false);
   const [pending, start] = useTransition();
-  const [confirmDelete, setConfirmDelete] = useState(false);
   const start_ = splitDate(union.startDate, union.startDate ? "day" : "unknown");
 
   function save(fd: FormData) {
@@ -30,70 +81,65 @@ export function UnionEditor({ treeId, union, partnerName }: { treeId: string; un
         orderIndex: Number(fd.get("order") ?? 1) - 1,
       });
       if (r.ok) {
-        toast.success("Ikatan diperbarui.");
+        toast.success("Pernikahan diperbarui.");
         setOpen(false);
       } else toast.error(r.error);
     });
   }
 
   return (
-    <Dialog open={open} onOpenChange={(o) => (setOpen(o), setConfirmDelete(false))}>
-      <DialogTrigger render={<Button variant="ghost" size="icon-sm" aria-label="Ubah ikatan" />}>
-        <PencilIcon />
-      </DialogTrigger>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>Ubah ikatan</DialogTitle>
-          <DialogDescription>{partnerName ? `Pernikahan dengan ${partnerName}.` : "Ikatan dengan pasangan yang tidak diketahui."}</DialogDescription>
-        </DialogHeader>
-        <form action={save}>
-          <FieldGroup>
-            <Field>
-              <FieldLabel htmlFor="u-status">Status</FieldLabel>
-              <NativeSelect id="u-status" name="status" defaultValue={union.status} className="w-full">
-                {Object.entries(UNION_STATUS_LABEL).map(([v, l]) => (
-                  <NativeSelectOption key={v} value={v}>
-                    {l}
-                  </NativeSelectOption>
-                ))}
-              </NativeSelect>
-            </Field>
-            <DateParts legend="Tanggal menikah" prefix="start" values={start_} idPrefix="u" />
-            <Field>
-              <FieldLabel htmlFor="u-order">Urutan pernikahan (istri/suami ke-)</FieldLabel>
-              <Input id="u-order" name="order" type="number" min={1} max={50} defaultValue={union.orderIndex + 1} className="w-24" />
-            </Field>
-          </FieldGroup>
-          <DialogFooter className="mt-6 flex-col gap-2 sm:flex-row sm:justify-between">
-            {confirmDelete ? (
-              <Button
-                type="button"
-                variant="destructive"
-                disabled={pending}
-                onClick={() =>
-                  start(async () => {
-                    const r = await deleteUnionAction(treeId, union.id);
-                    if (r.ok) {
-                      toast.success("Ikatan dihapus.");
-                      setOpen(false);
-                    } else toast.error(r.error);
-                  })
-                }
-              >
-                Yakin hapus? Anak kehilangan tautan ke ikatan ini
-              </Button>
-            ) : (
-              <Button type="button" variant="ghost" onClick={() => setConfirmDelete(true)}>
-                Hapus ikatan
-              </Button>
-            )}
-            <Button type="submit" disabled={pending}>
-              {pending ? "Menyimpan…" : "Simpan"}
-            </Button>
-          </DialogFooter>
-        </form>
-      </DialogContent>
-    </Dialog>
+    <EditDialog
+      open={open}
+      onOpenChange={setOpen}
+      title="Ubah pernikahan"
+      description={partnerName ? `Pernikahan dengan ${partnerName}.` : "Pasangannya tidak diketahui."}
+      pending={pending}
+      onSave={save}
+      trigger={
+        row ? (
+          <DialogTrigger render={<button type="button" className={addRow} />}>
+            <PencilIcon className="size-[18px]" /> Ubah pernikahan
+          </DialogTrigger>
+        ) : (
+          <DialogTrigger render={<Button variant="ghost" size="icon" className="hit" aria-label="Ubah pernikahan" />}>
+            <PencilIcon />
+          </DialogTrigger>
+        )
+      }
+    >
+      <FormGroup>
+        <FormRow label="Status" htmlFor="u-status">
+          <RowSelect id="u-status" name="status" defaultValue={union.status}>
+            {Object.entries(UNION_STATUS_LABEL).map(([v, l]) => (
+              <option key={v} value={v}>
+                {l}
+              </option>
+            ))}
+          </RowSelect>
+        </FormRow>
+        <DateRow legend="Tanggal menikah" prefix="start" values={start_} idPrefix="u" />
+        <FormRow label="Pernikahan ke-" htmlFor="u-order">
+          <input id="u-order" name="order" inputMode="numeric" pattern="[0-9]*" maxLength={2} defaultValue={union.orderIndex + 1} autoComplete="off" className={rowInput} />
+        </FormRow>
+      </FormGroup>
+      <FormGroup footer="Anak-anaknya tetap ada di pohon, tetapi tidak lagi tercatat sebagai anak pasangan ini.">
+        <ConfirmButton
+          row
+          label="Hapus pernikahan"
+          title="Hapus pernikahan ini?"
+          description="Anak-anaknya tetap ada di pohon, tetapi tidak lagi tercatat sebagai anak pasangan ini."
+          confirmLabel="Hapus"
+          onConfirm={async () => {
+            const r = await deleteUnionAction(treeId, union.id);
+            if (r.ok) {
+              toast.success("Pernikahan dihapus.");
+              setOpen(false);
+            }
+            return r;
+          }}
+        />
+      </FormGroup>
+    </EditDialog>
   );
 }
 
@@ -114,75 +160,61 @@ export function ChildLinkMenu({
 }) {
   const [open, setOpen] = useState(false);
   const [pending, start] = useTransition();
-  const [confirmUnlink, setConfirmUnlink] = useState(false);
   return (
-    <Dialog open={open} onOpenChange={(o) => (setOpen(o), setConfirmUnlink(false))}>
-      <DialogTrigger render={<Button variant="ghost" size="icon-sm" aria-label={`Atur hubungan ${childName}`} />}>
-        <EllipsisVerticalIcon />
-      </DialogTrigger>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>Hubungan anak</DialogTitle>
-          <DialogDescription>{childName} dalam ikatan ini.</DialogDescription>
-        </DialogHeader>
-        <form
-          action={(fd) =>
-            start(async () => {
-              const order = Number(fd.get("birthOrder"));
-              const r = await updateChildLinkAction(treeId, unionId, childId, fd.get("relation") as ChildRelation, Number.isFinite(order) && order > 0 ? order : null);
-              if (r.ok) {
-                toast.success("Tersimpan.");
-                setOpen(false);
-              } else toast.error(r.error);
-            })
-          }
-        >
-          <FieldGroup>
-            <Field>
-              <FieldLabel htmlFor="c-rel">Jenis hubungan</FieldLabel>
-              <NativeSelect id="c-rel" name="relation" defaultValue={relation} className="w-full">
-                {Object.entries(CHILD_RELATION_LABEL).map(([v, l]) => (
-                  <NativeSelectOption key={v} value={v}>
-                    Anak {l.toLowerCase()}
-                  </NativeSelectOption>
-                ))}
-              </NativeSelect>
-            </Field>
-            <Field>
-              <FieldLabel htmlFor="c-order">Anak ke-</FieldLabel>
-              <Input id="c-order" name="birthOrder" type="number" min={1} max={40} defaultValue={birthOrder ?? ""} className="w-24" />
-              <FieldDescription>Dipakai untuk urutan kakak/adik bila tanggal lahir tidak diketahui.</FieldDescription>
-            </Field>
-          </FieldGroup>
-          <DialogFooter className="mt-6 flex-col gap-2 sm:flex-row sm:justify-between">
-            {confirmUnlink ? (
-              <Button
-                type="button"
-                variant="destructive"
-                disabled={pending}
-                onClick={() =>
-                  start(async () => {
-                    const r = await removeChildLinkAction(treeId, unionId, childId);
-                    if (r.ok) {
-                      toast.success("Tautan dilepas. Orangnya tetap ada di pohon.");
-                      setOpen(false);
-                    } else toast.error(r.error);
-                  })
-                }
-              >
-                Yakin lepas? Orangnya tetap ada di pohon
-              </Button>
-            ) : (
-              <Button type="button" variant="ghost" onClick={() => setConfirmUnlink(true)}>
-                Lepas dari ikatan ini
-              </Button>
-            )}
-            <Button type="submit" disabled={pending}>
-              Simpan
-            </Button>
-          </DialogFooter>
-        </form>
-      </DialogContent>
-    </Dialog>
+    <EditDialog
+      open={open}
+      onOpenChange={setOpen}
+      title="Hubungan anak"
+      description={`${childName} sebagai anak pasangan ini.`}
+      pending={pending}
+      onSave={(fd) =>
+        start(async () => {
+          const order = Number(fd.get("birthOrder"));
+          const r = await updateChildLinkAction(treeId, unionId, childId, fd.get("relation") as ChildRelation, Number.isFinite(order) && order > 0 ? order : null);
+          if (r.ok) {
+            toast.success("Tersimpan.");
+            setOpen(false);
+          } else toast.error(r.error);
+        })
+      }
+      trigger={
+        // The iOS "more" glyph, with a 44px target on touch.
+        <DialogTrigger render={<Button variant="ghost" size="icon" className="hit text-muted-foreground" aria-label={`Atur hubungan ${childName}`} />}>
+          <EllipsisIcon />
+        </DialogTrigger>
+      }
+    >
+      <FormGroup footer="“Anak ke-” dipakai untuk urutan kakak/adik bila tanggal lahir tidak diketahui.">
+        <FormRow label="Hubungan" htmlFor="c-rel">
+          <RowSelect id="c-rel" name="relation" defaultValue={relation}>
+            {Object.entries(CHILD_RELATION_LABEL).map(([v, l]) => (
+              <option key={v} value={v}>
+                Anak {l.toLowerCase()}
+              </option>
+            ))}
+          </RowSelect>
+        </FormRow>
+        <FormRow label="Anak ke-" htmlFor="c-order">
+          <input id="c-order" name="birthOrder" inputMode="numeric" pattern="[0-9]*" maxLength={2} defaultValue={birthOrder ?? ""} autoComplete="off" placeholder="Tidak diketahui" className={rowInput} />
+        </FormRow>
+      </FormGroup>
+      <FormGroup footer="Orangnya tetap ada di pohon, hanya tidak lagi tercatat sebagai anak pasangan ini.">
+        <ConfirmButton
+          row
+          label="Lepas sebagai anak pasangan ini"
+          title={`Lepas ${childName} dari pasangan ini?`}
+          description="Orangnya tetap ada di pohon."
+          confirmLabel="Lepas"
+          onConfirm={async () => {
+            const r = await removeChildLinkAction(treeId, unionId, childId);
+            if (r.ok) {
+              toast.success("Tautan dilepas. Orangnya tetap ada di pohon.");
+              setOpen(false);
+            }
+            return r;
+          }}
+        />
+      </FormGroup>
+    </EditDialog>
   );
 }

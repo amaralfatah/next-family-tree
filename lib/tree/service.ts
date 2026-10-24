@@ -1,4 +1,4 @@
-import { and, asc, count, desc, eq, inArray, lt, or } from "drizzle-orm";
+import { and, asc, count, desc, eq, gte, inArray, lt, or, sql } from "drizzle-orm";
 import { requireRole, type TreeAccess } from "@/lib/access";
 import type { DB } from "@/lib/db";
 import { changeLog, persons, treeMembers, trees, unionChildren, unions, users } from "@/lib/db/schema";
@@ -33,6 +33,8 @@ export interface RelationSpec {
   unionId?: string | null;
   childRelation?: ChildRelation;
   unionStatus?: UnionStatus;
+  /** For "child" and "sibling": the place among the siblings; null = after the last one. */
+  birthOrder?: number | null;
 }
 
 // ---------------------------------------------------------------- mapping
@@ -155,16 +157,18 @@ export function loadTreeDataWith(db: DB, access: TreeAccess): Promise<TreeData> 
   return readTreeData(db, access.treeId);
 }
 
-async function readTreeData(conn: Conn, treeId: string): Promise<TreeData> {
-  // One round-trip: the child links are filtered by a subquery instead of waiting for the union ids.
-  const [personRows, unionRows, childRows] = await Promise.all([
-    conn.select().from(persons).where(eq(persons.treeId, treeId)).orderBy(asc(persons.createdAt)),
-    conn.select().from(unions).where(eq(unions.treeId, treeId)).orderBy(asc(unions.orderIndex)),
-    conn
-      .select()
-      .from(unionChildren)
-      .where(inArray(unionChildren.unionId, conn.select({ id: unions.id }).from(unions).where(eq(unions.treeId, treeId)))),
-  ]);
+/** `inTx`: the conn is a transaction, which holds a single connection that can't run queries concurrently. */
+async function readTreeData(conn: Conn, treeId: string, inTx = false): Promise<TreeData> {
+  const personQuery = conn.select().from(persons).where(eq(persons.treeId, treeId)).orderBy(asc(persons.createdAt));
+  const unionQuery = conn.select().from(unions).where(eq(unions.treeId, treeId)).orderBy(asc(unions.orderIndex));
+  // The child links are filtered by a subquery instead of waiting for the union ids, so all three can run at once.
+  const childQuery = conn
+    .select()
+    .from(unionChildren)
+    .where(inArray(unionChildren.unionId, conn.select({ id: unions.id }).from(unions).where(eq(unions.treeId, treeId))));
+  const [personRows, unionRows, childRows] = inTx
+    ? [await personQuery, await unionQuery, await childQuery]
+    : await Promise.all([personQuery, unionQuery, childQuery]);
   return {
     persons: personRows.map(toPerson),
     unions: unionRows.map(toUnion),
@@ -255,7 +259,7 @@ const KIND_LABEL: Record<RelationKind, string> = {
 };
 
 async function relate(tx: Tx, userId: string, treeId: string, rel: RelationSpec, otherId: string) {
-  const data = await readTreeData(tx, treeId);
+  const data = await readTreeData(tx, treeId, true);
   const childRelation = rel.childRelation ?? "biological";
 
   if (rel.kind === "partner") {
@@ -292,7 +296,7 @@ async function relate(tx: Tx, userId: string, treeId: string, rel: RelationSpec,
       const solo = data.unions.find((u) => u.partnerAId === rel.ofId && u.partnerBId === null);
       unionId = solo?.id ?? (await insertSoloUnion(tx, treeId, rel.ofId, data));
     }
-    await addChild(tx, data, unionId, otherId, childRelation);
+    await addChild(tx, data, unionId, otherId, childRelation, rel.birthOrder);
     return;
   }
 
@@ -320,7 +324,7 @@ async function relate(tx: Tx, userId: string, treeId: string, rel: RelationSpec,
   // sibling: share the biological parents' union of `ofId`.
   const link = data.children.find((c) => c.childId === rel.ofId && c.relation === "biological");
   if (!link) throw new UserError("Tambahkan orang tua terlebih dahulu agar saudara bisa dihubungkan.");
-  await addChild(tx, data, link.unionId, otherId, childRelation);
+  await addChild(tx, data, link.unionId, otherId, childRelation, rel.birthOrder);
 }
 
 const CYCLE = "Relasi ini membuat seseorang menjadi leluhur dirinya sendiri.";
@@ -335,7 +339,7 @@ async function insertSoloUnion(tx: Tx, treeId: string, partnerId: string, data: 
   return u.id;
 }
 
-async function addChild(tx: Tx, data: TreeData, unionId: string, childId: string, relation: ChildRelation) {
+async function addChild(tx: Tx, data: TreeData, unionId: string, childId: string, relation: ChildRelation, birthOrder?: number | null) {
   const u = data.unions.find((x) => x.id === unionId);
   if (!u) throw new UserError("Ikatan tidak ditemukan.");
   const parents = [u.partnerAId, u.partnerBId].filter(Boolean) as string[];
@@ -343,7 +347,14 @@ async function addChild(tx: Tx, data: TreeData, unionId: string, childId: string
   if (data.children.some((c) => c.unionId === unionId && c.childId === childId)) {
     throw new UserError("Anak ini sudah tercatat di ikatan tersebut.");
   }
-  const order = data.children.filter((c) => c.unionId === unionId).length + 1;
+  const order = birthOrder ?? data.children.filter((c) => c.unionId === unionId).length + 1;
+  // A chosen place moves the siblings from there on one down, as inserting into a list would.
+  if (birthOrder) {
+    await tx
+      .update(unionChildren)
+      .set({ birthOrder: sql`${unionChildren.birthOrder} + 1` })
+      .where(and(eq(unionChildren.unionId, unionId), gte(unionChildren.birthOrder, birthOrder)));
+  }
   await tx.insert(unionChildren).values({ unionId, childId, relation, birthOrder: order });
 }
 

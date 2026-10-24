@@ -1,12 +1,12 @@
-import { PlusIcon } from "lucide-react";
+import { ChevronRightIcon, PlusIcon } from "lucide-react";
 import Link from "next/link";
+import { Suspense } from "react";
 import { LinkMeButton } from "@/components/link-me-button";
+import { ListFilters } from "@/components/list-filters";
 import { PersonAvatar } from "@/components/person-avatar";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Button, buttonVariants } from "@/components/ui/button";
+import { Page, PageTitle } from "@/components/page-shell";
+import { toolbarAction } from "@/components/form-row-classes";
 import { Empty, EmptyDescription, EmptyHeader, EmptyTitle } from "@/components/ui/empty";
-import { Input } from "@/components/ui/input";
-import { NativeSelect, NativeSelectOption } from "@/components/ui/native-select";
 import { generations } from "@/lib/graph/build";
 import { createKinshipResolver } from "@/lib/kinship";
 import { subtitle } from "@/lib/person";
@@ -47,54 +47,32 @@ export default async function ListPage({ params, searchParams }: PageProps<"/poh
 
   const kinOf = mePersonId ? createKinshipResolver(data, mePersonId) : null;
   return (
-    <main id="konten" className="mx-auto w-full max-w-6xl px-4 py-8">
-      <div className="flex flex-wrap items-end justify-between gap-4">
-        <div>
-          <h1 className="font-display text-[2.125rem] leading-tight tracking-[-0.02em]">Daftar keluarga</h1>
-          <p className="mt-1 text-sm text-muted-foreground">{data.persons.length} orang tercatat · generasi dihitung dari pusat bawaan pohon</p>
-        </div>
-        {canEdit ? (
-          <Link href={`/pohon/${treeId}/orang/baru`} className={buttonVariants({ variant: "outline" })}>
-            <PlusIcon data-icon="inline-start" /> Orang tanpa relasi
-          </Link>
-        ) : null}
-      </div>
+    <Page wide>
+      <PageTitle
+        title="Daftar keluarga"
+        subtitle={`${data.persons.length} orang tercatat · generasi dihitung dari orang di tampilan awal pohon`}
+        action={
+          canEdit ? (
+            <Link href={`/pohon/${treeId}/orang/baru`} className={toolbarAction}>
+              <PlusIcon className="size-5" /> Tambah orang
+            </Link>
+          ) : null
+        }
+      />
 
       {findMe ? (
-        <Alert className="mt-6">
-          <AlertTitle>Cari nama Anda, lalu pilih &ldquo;Ini saya&rdquo;.</AlertTitle>
-          <AlertDescription>Belum tercatat? Minta editor menambahkan Anda, atau tambahkan sendiri bila Anda editor.</AlertDescription>
-        </Alert>
+        <p className="mt-6 px-4 text-[15px]">
+          <strong className="font-semibold">Cari nama Anda, lalu pilih “Ini saya”.</strong>{" "}
+          <span className="text-muted-foreground">Belum tercatat? Minta editor menambahkan Anda, atau tambahkan sendiri bila Anda editor.</span>
+        </p>
       ) : null}
 
-      <form className="mt-6 flex flex-wrap gap-2" action={`/pohon/${treeId}/daftar`}>
-        {findMe ? <input type="hidden" name="cari-saya" value="1" /> : null}
-        <Input
-          type="search"
-          name="q"
-          defaultValue={q}
-          placeholder="Cari nama, panggilan, atau tempat lahir…"
-          aria-label="Cari"
-          autoComplete="off"
-          // Arrives from "Cari saya": the search is the only thing to do on this page.
-          autoFocus={findMe}
-          className="w-full sm:w-auto sm:max-w-sm sm:flex-1"
-        />
-        <NativeSelect name="gen" defaultValue={gen ?? ""} aria-label="Filter generasi" className="min-w-0 flex-1 sm:flex-none">
-          <NativeSelectOption value="">Semua generasi</NativeSelectOption>
-          {genValues.map((g) => (
-            <NativeSelectOption key={g} value={g}>
-              Generasi {g}
-            </NativeSelectOption>
-          ))}
-        </NativeSelect>
-        <Button type="submit" variant="secondary">
-          Terapkan
-        </Button>
-      </form>
+      <Suspense>
+        <ListFilters q={q} gen={gen} generations={genValues} autoFocus={findMe} />
+      </Suspense>
 
       {rows.length === 0 ? (
-        <Empty className="mt-6 border">
+        <Empty className="mt-6 bg-card">
           <EmptyHeader>
             <EmptyTitle>Tidak ada yang cocok</EmptyTitle>
             <EmptyDescription>Coba nama lain, atau hapus filter generasi.</EmptyDescription>
@@ -105,9 +83,10 @@ export default async function ListPage({ params, searchParams }: PageProps<"/poh
           {rows.map((p) => {
             const kin = kinOf && p.id !== mePersonId ? kinOf(p.id) : null;
             return (
-              <li key={p.id} className="flex items-center gap-3 px-3 py-2.5 sm:px-4">
+              // The whole row opens the profile, as a list row on iOS: it highlights, with a chevron, no underline.
+              <li key={p.id} className="relative flex min-h-14 items-center gap-3 px-3 py-2.5 transition-colors duration-150 hover:bg-muted/50 has-[a:active]:bg-muted has-[a:active]:duration-0 has-[a:focus-visible]:bg-accent/40 sm:px-4">
                 <PersonAvatar treeId={treeId} person={p} size="sm" />
-                <Link href={`/pohon/${treeId}/orang/${p.id}`} className="min-w-0 flex-1 rounded-sm outline-none hover:underline focus-visible:ring-3 focus-visible:ring-ring/50">
+                <Link href={`/pohon/${treeId}/orang/${p.id}`} className="min-w-0 flex-1 outline-none after:absolute after:inset-0 after:content-['']">
                   <span className="block truncate font-medium">
                     {p.fullName}
                     {p.nickname ? <span className="font-normal text-muted-foreground"> “{p.nickname}”</span> : null}
@@ -117,20 +96,26 @@ export default async function ListPage({ params, searchParams }: PageProps<"/poh
                   </span>
                   {/* Phones: the relation column is hidden, so the kinship term joins the name instead. */}
                   {p.id === mePersonId ? (
-                    <span className="block text-sm font-medium text-soga-ink sm:hidden">Saya</span>
+                    <span className="block text-[13px] font-medium sm:hidden">Saya</span>
                   ) : kin ? (
-                    <span className="block truncate text-sm text-soga-ink sm:hidden">{kin.label}</span>
+                    <span className="block truncate text-[13px] text-foreground/80 sm:hidden">{kin.label}</span>
                   ) : null}
                 </Link>
                 <span className="hidden shrink-0 text-right text-sm sm:block">
                   {p.id === mePersonId ? (
-                    <span className="font-medium text-soga-ink">Saya</span>
+                    <span className="font-medium">Saya</span>
                   ) : kin ? (
-                    <span className="text-soga-ink">{kin.label}</span>
+                    <span>{kin.label}</span>
                   ) : null}
                   {genOf.has(p.id) ? <span className="block text-xs text-muted-foreground tabular-nums">Generasi {genOf.get(p.id)}</span> : null}
                 </span>
-                {findMe ? <LinkMeButton treeId={treeId} personId={p.id} /> : null}
+                {findMe ? (
+                  <span className="relative z-10">
+                    <LinkMeButton treeId={treeId} personId={p.id} />
+                  </span>
+                ) : (
+                  <ChevronRightIcon className="size-4 shrink-0 text-muted-foreground/70" aria-hidden />
+                )}
               </li>
             );
           })}
@@ -138,9 +123,9 @@ export default async function ListPage({ params, searchParams }: PageProps<"/poh
       )}
 
       {pages > 1 ? (
-        <nav aria-label="Halaman" className="mt-6 flex items-center justify-center gap-2 text-sm">
+        <nav aria-label="Halaman" className="mt-6 flex items-center justify-center gap-2 text-[15px]">
           {page > 1 ? (
-            <Link href={href({ hal: page - 1 })} className={buttonVariants({ variant: "outline", size: "sm" })}>
+            <Link href={href({ hal: page - 1 })} className={toolbarAction}>
               Sebelumnya
             </Link>
           ) : null}
@@ -148,12 +133,12 @@ export default async function ListPage({ params, searchParams }: PageProps<"/poh
             Halaman {page} dari {pages}
           </span>
           {page < pages ? (
-            <Link href={href({ hal: page + 1 })} className={buttonVariants({ variant: "outline", size: "sm" })}>
+            <Link href={href({ hal: page + 1 })} className={toolbarAction}>
               Berikutnya
             </Link>
           ) : null}
         </nav>
       ) : null}
-    </main>
+    </Page>
   );
 }

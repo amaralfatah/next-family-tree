@@ -28,7 +28,7 @@ export default async function DemoPage() {
           </Link>
           <span className="min-w-0 flex-1 truncate border-l border-border pl-3 font-display text-lg sm:text-xl">{demo.name}</span>
           <ThemeToggle label="Ganti tema terang/gelap" />
-          <Link href="/masuk" className={buttonVariants({ size: "sm" })}>
+          <Link href="/masuk" className={buttonVariants({ className: "hit" })}>
             Buat pohon
           </Link>
         </div>
@@ -41,7 +41,7 @@ export default async function DemoPage() {
               Keluarga fiktif. Anda ditandai sebagai <strong className="font-semibold">{me.fullName}</strong>.
               <span className="max-sm:hidden"> Ketuk siapa pun untuk melihat sebutan hubungannya dengan Anda.</span>
             </p>
-            <Link href="/demo" className={buttonVariants({ variant: "outline", size: "sm", className: "shrink-0" })}>
+            <Link href="/demo" className={buttonVariants({ variant: "outline", className: "hit shrink-0" })}>
               Coba ubah
             </Link>
           </div>

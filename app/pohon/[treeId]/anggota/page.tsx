@@ -1,4 +1,5 @@
 import { InviteManager } from "@/components/invite-manager";
+import { Page, PageTitle } from "@/components/page-shell";
 import { MemberRow } from "@/components/member-row";
 import { listInvitesWith, listMembersWith } from "@/lib/members/service";
 import { loadTreeMeta } from "@/lib/tree/context";
@@ -11,13 +12,10 @@ export default async function MembersPage({ params }: PageProps<"/pohon/[treeId]
   const [memberList, inviteList] = await Promise.all([listMembersWith(db, access), isOwner ? listInvitesWith(db, access) : Promise.resolve([])]);
 
   return (
-    <main id="konten" className="mx-auto w-full max-w-4xl px-4 py-8">
-      <h1 className="font-display text-[2.125rem] leading-tight tracking-[-0.02em]">Anggota</h1>
-      <p className="mt-1 text-sm text-muted-foreground">
-        Pemilik mengelola anggota. Editor bisa menambah dan mengubah orang serta relasi. Pembaca hanya melihat.
-      </p>
+    <Page className="grid gap-8">
+      <PageTitle title="Anggota" subtitle="Pemilik mengelola anggota. Editor bisa menambah dan mengubah orang serta hubungan keluarga. Pembaca hanya melihat." />
 
-      <ul className="mt-6 divide-y overflow-hidden rounded-xl bg-card">
+      <ul className="divide-y divide-border/70 overflow-hidden rounded-xl bg-card">
         {memberList.map((m) => (
           <MemberRow
             key={m.userId}
@@ -40,8 +38,8 @@ export default async function MembersPage({ params }: PageProps<"/pohon/[treeId]
           }))}
         />
       ) : (
-        <p className="mt-6 text-sm text-muted-foreground">Ingin mengundang kerabat lain? Minta pemilik pohon membuat link undangan.</p>
+        <p className="px-4 text-[13px] text-muted-foreground">Ingin mengundang kerabat lain? Minta pemilik pohon membuat link undangan.</p>
       )}
-    </main>
+    </Page>
   );
 }

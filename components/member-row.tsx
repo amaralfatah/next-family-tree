@@ -1,14 +1,18 @@
 "use client";
 
-import { useTransition } from "react";
+import { CheckIcon, ChevronRightIcon } from "lucide-react";
+import { useState, useTransition } from "react";
 import { toast } from "sonner";
 import { ConfirmButton } from "@/components/confirm-button";
+import { FormGroup } from "@/components/form-rows";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { NativeSelect, NativeSelectOption } from "@/components/ui/native-select";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Spinner } from "@/components/ui/spinner";
 import { initials } from "@/components/user-menu";
 import { changeRoleAction, removeMemberAction, transferOwnershipAction } from "@/lib/actions";
 import { ROLE_LABEL } from "@/lib/person";
 import type { Role } from "@/lib/types";
+import { cn } from "@/lib/utils";
 
 interface Member {
   userId: string;
@@ -19,66 +23,125 @@ interface Member {
   personName: string | null;
 }
 
+const ROLE_HINT = { editor: "Menambah dan mengubah orang serta hubungan keluarga", viewer: "Hanya melihat" } as const;
+
+/**
+ * One member as a list row: who they are, their role as the value on the right. For the owner the row
+ * opens the member's settings (role as a checklist, hand over ownership, remove), like a contact's detail.
+ */
 export function MemberRow({ treeId, member, isSelf, canManage }: { treeId: string; member: Member; isSelf: boolean; canManage: boolean }) {
-  const [pending, start] = useTransition();
   const manageable = canManage && !isSelf && member.role !== "owner";
-  return (
-    <li className="flex flex-wrap items-center gap-3 px-4 py-3">
+  const body = (
+    <>
       <Avatar className="size-9">
         {member.image ? <AvatarImage src={member.image} alt="" referrerPolicy="no-referrer" /> : null}
-        <AvatarFallback className="bg-accent text-xs font-semibold">{initials(member.name) || "?"}</AvatarFallback>
+        <AvatarFallback className="bg-muted text-xs font-semibold">{initials(member.name) || "?"}</AvatarFallback>
       </Avatar>
-      <div className="min-w-0 flex-1">
-        <p className="truncate font-medium">
+      <span className="min-w-0 flex-1 text-left">
+        <span className="block truncate text-[15px] font-medium">
           {member.name} {isSelf ? <span className="font-normal text-muted-foreground">(Anda)</span> : null}
-        </p>
-        <p className="truncate text-sm text-muted-foreground">
+        </span>
+        <span className="block truncate text-[13px] text-muted-foreground">
           {member.email}
           {member.personName ? ` · tercatat sebagai ${member.personName}` : ""}
-        </p>
-      </div>
-      {manageable ? (
-        <div className="flex flex-wrap items-center gap-1.5">
-          <NativeSelect size="sm"
-            aria-label={`Peran ${member.name}`}
-            
-            value={member.role}
-            disabled={pending}
-            onChange={(e) =>
-              start(async () => {
-                const r = await changeRoleAction(treeId, member.userId, e.target.value as "editor" | "viewer");
-                if (r.ok) toast.success("Peran diperbarui.");
-                else toast.error(r.error);
-              })
-            }
-          >
-            <NativeSelectOption value="editor">Editor</NativeSelectOption>
-            <NativeSelectOption value="viewer">Pembaca</NativeSelectOption>
-          </NativeSelect>
+        </span>
+      </span>
+      <span className="shrink-0 text-[15px] text-muted-foreground">{ROLE_LABEL[member.role]}</span>
+    </>
+  );
+  const row = "flex min-h-14 w-full items-center gap-3 px-4 py-2";
+  if (!manageable) return <li className={row}>{body}</li>;
+  return (
+    <li>
+      <MemberSettings treeId={treeId} member={member}>
+        <span className={cn(row, "cursor-pointer transition-colors duration-150 hover:bg-muted/50 active:bg-muted active:duration-0")}>
+          {body}
+          <ChevronRightIcon className="size-4 shrink-0 text-muted-foreground/70" aria-hidden />
+        </span>
+      </MemberSettings>
+    </li>
+  );
+}
+
+function MemberSettings({ treeId, member, children }: { treeId: string; member: Member; children: React.ReactNode }) {
+  const [open, setOpen] = useState(false);
+  const [role, setRole] = useState(member.role);
+  const [pending, start] = useTransition();
+
+  // A setting: it applies on tap, with no Save step, and goes back if the server says no.
+  function pick(next: "editor" | "viewer") {
+    if (next === role) return;
+    const before = role;
+    setRole(next);
+    start(async () => {
+      const r = await changeRoleAction(treeId, member.userId, next);
+      if (r.ok) {
+        toast.success("Peran diperbarui.");
+        return;
+      }
+      setRole(before);
+      toast.error(r.error);
+    });
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger render={<button type="button" className="block w-full text-left outline-none focus-visible:bg-accent/40" aria-label={`Atur ${member.name}`} />}>{children}</DialogTrigger>
+      <DialogContent className="gap-6 bg-grouped">
+        <DialogHeader>
+          <DialogTitle>{member.name}</DialogTitle>
+          <DialogDescription>{member.email}</DialogDescription>
+        </DialogHeader>
+        <FormGroup title="Peran">
+          {(["editor", "viewer"] as const).map((r) => (
+            <button
+              key={r}
+              type="button"
+              role="radio"
+              aria-checked={role === r}
+              disabled={pending}
+              onClick={() => pick(r)}
+              className="flex min-h-11 w-full items-center gap-3 px-4 py-2 text-left outline-none transition-colors duration-150 hover:bg-muted/50 focus-visible:bg-accent/40 active:bg-muted active:duration-0"
+            >
+              <span className="min-w-0 flex-1">
+                <span className="block text-[15px]">{ROLE_LABEL[r]}</span>
+                <span className="block text-[13px] text-muted-foreground">{ROLE_HINT[r]}</span>
+              </span>
+              {pending && role === r ? <Spinner className="size-4" /> : <CheckIcon className={cn("size-[18px] text-soga-ink", role === r ? "visible" : "invisible")} aria-hidden />}
+            </button>
+          ))}
+        </FormGroup>
+        <FormGroup footer="Anda akan menjadi editor. Pemilik baru bisa mengelola anggota dan menghapus pohon.">
           <ConfirmButton
+            row="action"
             label="Jadikan pemilik"
-            variant="ghost"
-            size="sm"
             title={`Serahkan kepemilikan ke ${member.name}?`}
             description="Anda akan menjadi editor. Pemilik baru bisa mengelola anggota dan menghapus pohon."
             confirmLabel="Serahkan"
             successMessage="Kepemilikan diserahkan."
-            onConfirm={() => transferOwnershipAction(treeId, member.userId)}
+            onConfirm={async () => {
+              const r = await transferOwnershipAction(treeId, member.userId);
+              if (r.ok) setOpen(false);
+              return r;
+            }}
           />
+        </FormGroup>
+        <FormGroup footer="Ia tidak bisa lagi membuka pohon ini. Data yang sudah ia isi tetap ada.">
           <ConfirmButton
-            label="Keluarkan"
-            variant="ghost"
-            size="sm"
+            row
+            label="Keluarkan dari pohon"
             title={`Keluarkan ${member.name}?`}
             description="Ia tidak bisa lagi membuka pohon ini. Data yang sudah ia isi tetap ada."
             confirmLabel="Keluarkan"
             successMessage="Anggota dikeluarkan."
-            onConfirm={() => removeMemberAction(treeId, member.userId)}
+            onConfirm={async () => {
+              const r = await removeMemberAction(treeId, member.userId);
+              if (r.ok) setOpen(false);
+              return r;
+            }}
           />
-        </div>
-      ) : (
-        <span className="rounded-full bg-muted px-2.5 py-0.5 text-xs">{ROLE_LABEL[member.role]}</span>
-      )}
-    </li>
+        </FormGroup>
+      </DialogContent>
+    </Dialog>
   );
 }

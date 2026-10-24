@@ -1,11 +1,10 @@
 "use client";
 
 import { useState } from "react";
-import { Alert, AlertDescription } from "@/components/ui/alert";
 import { authClient } from "@/lib/auth/client";
 
 /** Google sign-in through Neon Auth; returns to `next` on success and to /masuk?error=google on failure. */
-export function GoogleSignInButton({ next }: { next: string }) {
+export function GoogleSignInButton({ next, failed: failedBefore = false }: { next: string; failed?: boolean }) {
   const [pending, setPending] = useState(false);
   const [failed, setFailed] = useState(false);
 
@@ -27,11 +26,6 @@ export function GoogleSignInButton({ next }: { next: string }) {
 
   return (
     <>
-      {failed ? (
-        <Alert variant="destructive" className="mt-4">
-          <AlertDescription>Login Google gagal atau dibatalkan. Silakan coba lagi.</AlertDescription>
-        </Alert>
-      ) : null}
       <button
         type="button"
         onClick={signIn}
@@ -40,6 +34,8 @@ export function GoogleSignInButton({ next }: { next: string }) {
       >
         <GoogleIcon /> {pending ? "Menghubungkan…" : "Lanjutkan dengan Google"}
       </button>
+      {/* Errors sit under the button they belong to, as a red footnote, not a box above it. */}
+      {failed || failedBefore ? <p className="mt-2 px-4 text-[13px] text-destructive">Login Google gagal atau dibatalkan. Silakan coba lagi.</p> : null}
     </>
   );
 }

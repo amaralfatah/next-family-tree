@@ -4,7 +4,7 @@ import { AccessError } from "@/lib/access";
 import { requireUser } from "@/lib/auth/session";
 import { getDb, type DB } from "@/lib/db";
 import { UserError } from "@/lib/errors";
-export { parsePerson } from "@/lib/person-form";
+export { parseBirthOrders, parsePerson, parseRelation } from "@/lib/person-form";
 
 export type ActionResult<T = unknown> = { ok: true; data: T } | { ok: false; error: string; conflict?: boolean };
 

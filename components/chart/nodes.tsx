@@ -15,13 +15,15 @@ export interface PersonNodeData extends Record<string, unknown> {
   /** On the highlighted kinship path between me and the selected person. */
   onPath: boolean;
   isSelected: boolean;
+  /** The card of someone being added, drawn before they are saved. */
+  draft: boolean;
 }
 
 export type PersonFlowNode = Node<PersonNodeData, "person">;
 
 const hidden = "!pointer-events-none !size-px !min-h-0 !min-w-0 !border-0 !bg-transparent";
 
-function initialsOf(name: string) {
+export function initialsOf(name: string) {
   return name
     .replace(/^(H|Hj|Dr|Ir|Drs|Prof)\.?\s+/i, "")
     .split(/\s+/)
@@ -31,7 +33,7 @@ function initialsOf(name: string) {
 }
 
 export const PersonNode = memo(function PersonNode({ data }: NodeProps<PersonFlowNode>) {
-  const { person, photo, focus, isMe, onPath, isSelected: selected } = data;
+  const { person, photo, focus, isMe, onPath, isSelected: selected, draft } = data;
   // Pedigree convention instead of a colour code: circle for women, square for men.
   const avatarShape = person.gender === "male" ? "rounded-[5px]" : person.gender === "female" ? "rounded-full" : "rounded-lg";
   return (
@@ -43,6 +45,7 @@ export const PersonNode = memo(function PersonNode({ data }: NodeProps<PersonFlo
         focus && "border-soga/70 ring-2 ring-soga/25",
         onPath && "border-soga bg-[color-mix(in_oklch,var(--soga)_12%,var(--card))] ring-2 ring-soga/30",
         selected && "border-foreground/70 shadow-md",
+        draft && "draft-in cursor-default border-2 border-dashed border-soga bg-accent hover:border-soga active:scale-100",
       )}
     >
       <Handle type="target" position={Position.Top} className={hidden} isConnectable={false} />
@@ -59,8 +62,10 @@ export const PersonNode = memo(function PersonNode({ data }: NodeProps<PersonFlo
         {person.nickname ? <span className="block truncate text-[12.5px] leading-tight text-muted-foreground">“{person.nickname}”</span> : null}
         <span className="mt-0.5 block truncate text-[12.5px] leading-tight text-muted-foreground">{subtitle(person) || " "}</span>
       </span>
-      {isMe ? (
-        <span className="absolute -top-2.5 right-2 rounded-full bg-primary px-2 py-px text-[10px] font-semibold text-primary-foreground">Saya</span>
+      {draft ? (
+        <span className="absolute -top-2.5 right-2 rounded-full bg-soga px-2 py-px text-xs font-semibold text-white">Belum disimpan</span>
+      ) : isMe ? (
+        <span className="absolute -top-2.5 right-2 rounded-full bg-primary px-2 py-px text-xs font-semibold text-primary-foreground">Saya</span>
       ) : null}
       <Handle type="source" position={Position.Bottom} className={hidden} isConnectable={false} />
     </div>
@@ -102,7 +107,7 @@ export const UnionNode = memo(function UnionNode({ data }: NodeProps<UnionFlowNo
           aria-expanded={!data.collapsed}
           aria-label={`${data.collapsed ? "Tampilkan" : "Sembunyikan"} anak-anak ${data.owner}`}
           title={data.collapsed ? "Tampilkan anak-anak" : "Sembunyikan anak-anak"}
-          className="nodrag nopan pointer-events-auto group/dot relative grid size-full cursor-pointer place-items-center rounded-full outline-none after:absolute after:-inset-3 after:content-[''] focus-visible:ring-3 focus-visible:ring-ring/50"
+          className="nodrag nopan pointer-events-auto group/dot relative grid size-full cursor-pointer place-items-center rounded-full outline-none after:absolute after:-inset-[15px] after:content-[''] focus-visible:ring-3 focus-visible:ring-ring/50"
         >
           <span className={cn(dot, "group-hover/dot:scale-150 group-active/dot:scale-110 group-active/dot:duration-0")} />
         </button>
@@ -120,7 +125,7 @@ export const UnknownNode = memo(function UnknownNode() {
   return (
     <div
       style={{ width: UNKNOWN_W, height: UNKNOWN_H }}
-      className="grid place-items-center rounded-xl border border-dashed bg-transparent text-[11.5px] text-muted-foreground"
+      className="grid place-items-center rounded-xl border border-dashed bg-transparent text-xs text-muted-foreground"
     >
       <Handle type="target" position={Position.Top} className={hidden} isConnectable={false} />
       Tidak diketahui

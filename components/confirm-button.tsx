@@ -13,6 +13,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import { addRow, destructiveRow } from "@/components/form-rows";
 import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
 
@@ -30,6 +31,9 @@ export function ConfirmButton({
   variant = "destructive",
   size = "default",
   ariaLabel,
+  row = false,
+  confirmDisabled = false,
+  triggerClassName,
   children,
 }: {
   label: React.ReactNode;
@@ -42,13 +46,21 @@ export function ConfirmButton({
   size?: "default" | "sm" | "lg" | "icon-sm";
   /** Needed when `label` is only an icon. */
   ariaLabel?: string;
+  /** Render the trigger as a row inside a form group instead of a button: red, or tinted for `"action"`. */
+  row?: boolean | "action";
+  /** Extra classes for a button trigger (a red "Cabut" at the end of a row). */
+  triggerClassName?: string;
+  /** Keeps the confirm action off until the alert's own field is right (typing the tree's name). */
+  confirmDisabled?: boolean;
   children?: React.ReactNode;
 }) {
   const [open, setOpen] = useState(false);
   const [pending, start] = useTransition();
   return (
     <AlertDialog open={open} onOpenChange={setOpen}>
-      <AlertDialogTrigger render={<Button variant={variant} size={size} aria-label={ariaLabel} />}>{label}</AlertDialogTrigger>
+      <AlertDialogTrigger render={row ? <button type="button" className={row === "action" ? addRow : destructiveRow} aria-label={ariaLabel} /> : <Button variant={variant} size={size} aria-label={ariaLabel} className={triggerClassName} />}>
+        {label}
+      </AlertDialogTrigger>
       <AlertDialogContent>
         <AlertDialogHeader>
           <AlertDialogTitle>{title}</AlertDialogTitle>
@@ -59,7 +71,7 @@ export function ConfirmButton({
           <AlertDialogCancel>Batal</AlertDialogCancel>
           <AlertDialogAction
             variant="destructive"
-            disabled={pending}
+            disabled={pending || confirmDisabled}
             onClick={() =>
               start(async () => {
                 const r = await onConfirm();

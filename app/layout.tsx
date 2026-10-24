@@ -1,6 +1,6 @@
 import type { Metadata, Viewport } from "next";
-import { Toaster } from "sonner";
 import { ThemeScript } from "@/components/theme-script";
+import { Toaster } from "@/components/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { fontVariables } from "@/lib/fonts";
 import "./globals.css";
@@ -38,7 +38,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
           Langsung ke konten
         </a>
         <TooltipProvider>{children}</TooltipProvider>
-        <Toaster position="top-center" richColors closeButton />
+        <Toaster />
       </body>
     </html>
   );

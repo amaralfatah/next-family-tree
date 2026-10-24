@@ -19,30 +19,31 @@ export default async function InvitePage({ params }: PageProps<"/undangan/[token
 
   return (
     <main id="konten" className="grid min-h-dvh place-items-center bg-grouped px-4 py-10">
-      <div className="w-full max-w-md rounded-2xl bg-card p-6 text-center shadow-[0_1px_2px_rgb(0_0_0/0.04),0_8px_24px_-12px_rgb(0_0_0/0.12)] sm:p-8">
+      {/* The same plain column as the sign-in page: no card around the content. */}
+      <div className="w-full max-w-md text-center">
         <Wordmark full className="justify-center" />
         {state.status === "valid" ? (
           <>
-            <p className="mt-6 text-sm text-muted-foreground">Anda diundang bergabung ke</p>
-            <h1 className="mt-1 font-display text-4xl leading-tight">{state.treeName}</h1>
-            <p className="mt-3 text-sm text-muted-foreground">
+            <p className="mt-6 text-[15px] text-muted-foreground">Anda diundang bergabung ke</p>
+            <h1 className="mt-1 font-display text-[2.125rem] leading-tight tracking-[-0.02em] text-balance">{state.treeName}</h1>
+            <p className="mt-3 text-[15px] text-muted-foreground">
               sebagai <strong className="text-foreground">{ROLE_LABEL[state.role].toLowerCase()}</strong>
               {state.role === "editor" ? ". Anda bisa menambah dan mengubah data keluarga." : ". Anda bisa melihat pohon keluarga dan profil."}
             </p>
-            <p className="mt-2 text-xs text-muted-foreground">Masuk sebagai {user.email}</p>
+            <p className="mt-2 text-[13px] text-muted-foreground">Masuk sebagai {user.email}</p>
             <AcceptInviteButton token={token} />
           </>
         ) : (
           <>
-            <h1 className="mt-6 font-display text-3xl">
+            <h1 className="mt-6 font-display text-[1.75rem] leading-tight tracking-[-0.015em] text-balance">
               {state.status === "invalid" ? "Link undangan tidak dikenal" : state.status === "expired" ? "Link undangan kedaluwarsa" : "Link undangan sudah dicabut"}
             </h1>
-            <p className="mt-3 text-sm text-muted-foreground">
+            <p className="mt-3 text-[15px] text-muted-foreground">
               {state.status === "invalid"
                 ? "Periksa kembali link yang Anda terima; mungkin terpotong saat disalin."
                 : `Minta link baru kepada pemilik pohon “${state.treeName}”.`}
             </p>
-            <Link href="/pohon" className={buttonVariants({ variant: "outline", className: "mt-6" })}>
+            <Link href="/pohon" className={buttonVariants({ size: "lg", className: "mt-6 w-full" })}>
               Ke pohon saya
             </Link>
           </>

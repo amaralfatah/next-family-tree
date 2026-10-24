@@ -12,7 +12,7 @@ import * as members from "@/lib/members/service";
 import { deletePhotos } from "@/lib/storage";
 import * as tree from "@/lib/tree/service";
 import type { ChildRelation, Role, UnionStatus } from "@/lib/types";
-import { formValue as get, parsePerson, run, type ActionResult } from "./shared";
+import { formValue as get, parseBirthOrders, parsePerson, parseRelation, run, type ActionResult } from "./shared";
 
 const treePath = (treeId: string) => `/pohon/${treeId}`;
 /** Only the tree's own chart is a valid place to return to after adding someone. */
@@ -88,25 +88,6 @@ export async function deleteTreeAction(treeId: string, confirmName: string): Pro
 
 // ---------------------------------------------------------------- persons
 
-const relationSchema = z.object({
-  kind: z.enum(["parent", "partner", "child", "sibling"]),
-  ofId: z.uuid(),
-  unionId: z.uuid().nullable(),
-  childRelation: z.enum(["biological", "adopted", "step"]),
-  unionStatus: z.enum(["married", "divorced", "widowed", "unknown"]),
-});
-
-function parseRelation(fd: FormData): tree.RelationSpec | undefined {
-  if (!get(fd, "relKind")) return undefined;
-  return relationSchema.parse({
-    kind: get(fd, "relKind"),
-    ofId: get(fd, "relOf"),
-    unionId: get(fd, "relUnion") || null,
-    childRelation: get(fd, "childRelation") || "biological",
-    unionStatus: get(fd, "unionStatus") || "married",
-  });
-}
-
 export async function createPersonAction(treeId: string, _: ActionResult | null, fd: FormData): Promise<ActionResult> {
   const r = await run(async (db, u) => {
     const relation = parseRelation(fd);
@@ -136,12 +117,47 @@ export async function updatePersonAction(
   _: ActionResult | null,
   fd: FormData,
 ): Promise<ActionResult> {
-  const r = await run((db, u) =>
-    tree.updatePerson(db, u, treeId, personId, parsePerson(fd), {
+  const r = await savePersonAction(treeId, personId, fd);
+  if (!r.ok) return r;
+  redirect(`${treePath(treeId)}/orang/${personId}`);
+}
+
+export async function deletePersonAction(treeId: string, personId: string): Promise<ActionResult> {
+  const r = await removePersonAction(treeId, personId);
+  if (!r.ok) return r;
+  redirect(`${treePath(treeId)}/daftar`);
+}
+
+// The chart's own dialog: same work as the forms above, but no redirect, so the chart stays where it was.
+
+export async function getPersonAction(treeId: string, personId: string) {
+  return run((db, u) => tree.getPerson(db, u, treeId, personId));
+}
+
+/** Returns the id of the person added (or linked, with `existingId`) so the chart can select them. */
+export async function addRelativeAction(treeId: string, fd: FormData): Promise<ActionResult<string>> {
+  const r = await run(async (db, u) => {
+    const relation = parseRelation(fd);
+    const existing = get(fd, "existingId");
+    if (!relation || !existing) return tree.createPerson(db, u, treeId, parsePerson(fd), relation);
+    const otherId = z.uuid().parse(existing);
+    await tree.linkExisting(db, u, treeId, relation, otherId);
+    return otherId;
+  });
+  if (r.ok) refreshTree(treeId);
+  return r;
+}
+
+export async function savePersonAction(treeId: string, personId: string, fd: FormData): Promise<ActionResult> {
+  const r = await run(async (db, u) => {
+    const orders = parseBirthOrders(fd);
+    const saved = await tree.updatePerson(db, u, treeId, personId, parsePerson(fd), {
       expectedUpdatedAt: get(fd, "updatedAt") || undefined,
       force: get(fd, "force") === "1",
-    }),
-  );
+    });
+    if (!saved.conflict) for (const o of orders) await tree.updateChildLink(db, u, treeId, o.unionId, personId, o);
+    return saved;
+  });
   if (!r.ok) return r;
   if (r.data.conflict) {
     return {
@@ -151,17 +167,16 @@ export async function updatePersonAction(
     };
   }
   refreshTree(treeId);
-  redirect(`${treePath(treeId)}/orang/${personId}`);
+  return r;
 }
 
-export async function deletePersonAction(treeId: string, personId: string): Promise<ActionResult> {
+export async function removePersonAction(treeId: string, personId: string): Promise<ActionResult> {
   const r = await run(async (db, u) => {
     const photo = await tree.deletePerson(db, u, treeId, personId);
     if (photo) after(() => deletePhotos([photo]));
   });
-  if (!r.ok) return r;
-  refreshTree(treeId);
-  redirect(`${treePath(treeId)}/daftar`);
+  if (r.ok) refreshTree(treeId);
+  return r;
 }
 
 // ---------------------------------------------------------------- unions & child links
