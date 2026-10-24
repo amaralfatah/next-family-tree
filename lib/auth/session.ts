@@ -48,11 +48,17 @@ async function neonAuthUser(): Promise<CurrentUser | null> {
   const auth = neonAuth();
   if (!auth) return null;
   if (!(await cookies()).has(NEON_AUTH_SESSION_COOKIE)) return null;
-  // Once the 5-minute session cache lapses, getSession() asks Neon Auth over the network. A failed call
-  // is not a signed-out user: retry once, then throw so the error page offers a retry instead of /masuk.
+  // Once the 5-minute session cache lapses, getSession() asks Neon Auth over the network. A network or
+  // server failure (the SDK reports transport errors as 502) is not a signed-out user: retry once, then
+  // throw so the error page offers a retry instead of /masuk. A 4xx is Neon Auth's answer that the cookie's
+  // session is gone (expired, revoked, signed out elsewhere): that user is signed out, and throwing would
+  // lock them out on every page until they cleared their cookies.
   let { data, error } = await auth.getSession();
-  if (error) ({ data, error } = await auth.getSession());
-  if (error) throw new Error(`Neon Auth session check failed: ${error.status ?? ""} ${error.message ?? ""}`.trim());
+  if (error && !isRejected(error.status)) ({ data, error } = await auth.getSession());
+  if (error) {
+    if (isRejected(error.status)) return null;
+    throw new Error(`Neon Auth session check failed: ${error.status ?? ""} ${error.message ?? ""}`.trim());
+  }
   const authUser = data?.user;
   if (!authUser?.email) return null;
   const db = await getDb();
@@ -63,6 +69,9 @@ async function neonAuthUser(): Promise<CurrentUser | null> {
   const [user] = await db.select().from(users).where(eq(users.id, id));
   return { id: user.id, name: user.name, email: user.email, image: user.image };
 }
+
+/** Neon Auth answered and said no: the session doesn't exist any more. */
+const isRejected = (status: number | undefined) => typeof status === "number" && status >= 400 && status < 500;
 
 async function testLoginUser(): Promise<CurrentUser | null> {
   const jar = await cookies();
