@@ -88,7 +88,9 @@ export function DateRow({ legend, prefix, values, idPrefix, defaultOpen }: { leg
         <input id={id("day")} name={`${prefix}Day`} inputMode="numeric" pattern="[0-9]*" maxLength={2} autoComplete="off" placeholder={t("dayPlaceholder")} value={day} onChange={(e) => setDay(e.target.value)} className={rowInput} />
       </FormRow>
       <FormRow label={t("month")} htmlFor={id("month")}>
-        <RowSelect id={id("month")} name={`${prefix}Month`} value={month} onChange={(e) => setMonth(e.target.value)}>
+        {/* Uncontrolled: the form re-renders on the `input` a pick fires, and a controlled select would be put
+            back to the old month before its `change` arrives. */}
+        <RowSelect id={id("month")} name={`${prefix}Month`} defaultValue={values.month} onChange={(e) => setMonth(e.target.value)}>
           <option value="">{tu("unknown")}</option>
           {months.map((m, i) => (
             <option key={m} value={i + 1}>
