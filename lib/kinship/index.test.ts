@@ -156,6 +156,81 @@ const cases: [me: string, target: string, label: string | null, blood?: boolean]
   ["me", "stranger", null],
 ];
 
+const casesEn: [me: string, target: string, label: string][] = [
+  ["me", "me", "Myself"],
+  ["me", "father", "Father"],
+  ["me", "mother", "Mother"],
+  ["me", "gf", "Grandfather"],
+  ["me", "gm", "Grandmother"],
+  ["me", "ggf", "Great-grandfather"],
+  ["me", "ggm", "Great-grandmother"],
+  ["me", "sisOld", "Older sister"],
+  ["me", "broYoung", "Younger brother"],
+  ["me", "sibUnknown", "Sibling"],
+  ["x2", "x1", "Older sister"],
+  ["x1", "x2", "Younger brother"],
+  ["me", "halfBro", "Half-brother (same father)"],
+  ["me", "uncleOld", "Uncle (father's older brother)"],
+  ["me", "auntYoung", "Aunt (father's younger sister)"],
+  ["me", "motherSis", "Aunt (mother's younger sister)"],
+  ["me", "cousin", "First cousin"],
+  ["me", "ggSib", "Great-uncle (grandfather's brother)"],
+  ["me", "ggSibKid", "First cousin once removed (father's cousin)"],
+  ["me", "ggSibGrand", "Second cousin"],
+  ["me", "cousinKid", "First cousin once removed (cousin's child)"],
+  ["me", "niece", "Niece (child of older sister)"],
+  ["me", "nieceKid", "Grandnephew"],
+  ["uncleOld", "me", "Nephew (child of younger brother)"],
+  ["me", "son", "Child"],
+  ["me", "grandson", "Grandchild"],
+  ["me", "ggrandson", "Great-grandchild"],
+  ["ggrandson", "me", "Great-grandfather"],
+  ["me", "adoptedDaughter", "Adopted child"],
+  ["adoptedDaughter", "me", "Adoptive father"],
+  ["me", "wife", "Wife"],
+  ["wife", "me", "Husband"],
+  ["me", "exWife", "Ex-wife"],
+  ["me", "wifeFather", "Father-in-law"],
+  ["me", "wifeMother", "Mother-in-law"],
+  ["wifeFather", "me", "Son-in-law"],
+  ["me", "dil", "Daughter-in-law"],
+  ["me", "dilFather", "Co-parent-in-law (parent of child's spouse)"],
+  ["me", "sisHusband", "Brother-in-law (older)"],
+  ["sisHusband", "me", "Brother-in-law (younger)"],
+  ["me", "wifeBro", "Brother-in-law (younger)"],
+  ["me", "ex", "Stepmother"],
+  ["stepKid", "me", "Stepfather"],
+  ["me", "stepKid", "Stepchild"],
+  ["me", "uncleWife", "Wife of uncle (father's older brother)"],
+  ["me", "wifeUncle", "Uncle (father's brother) of wife"],
+];
+
+describe("describeKinship in English", () => {
+  it.each(casesEn)("%s -> %s = %s", (me, target, label) => {
+    expect(describeKinship(t, me, target, "en")?.label).toBe(label);
+  });
+
+  it("uses neutral terms when gender is unknown", () => {
+    const d = tree()
+      .p("a", "u").p("b", "u").p("c", "u", "1950").p("d", "u", "1940").p("me", "u", "1980")
+      .u("a", "b", ["c", "d"])
+      .u("c", null, ["me"]).data;
+    expect(describeKinship(d, "me", "c", "en")?.label).toBe("Parent");
+    expect(describeKinship(d, "me", "a", "en")?.label).toBe("Grandparent");
+    expect(describeKinship(d, "me", "d", "en")?.label).toBe("Uncle/aunt (parent's older sibling)");
+  });
+
+  it("labels deep generations and returns null for strangers", () => {
+    const b = tree();
+    for (let i = 0; i <= 7; i++) b.p(`g${i}`, "m");
+    for (let i = 0; i < 7; i++) b.u(`g${i}`, null, [`g${i + 1}`]);
+    expect(describeKinship(b.data, "g7", "g3", "en")?.label).toBe("Great-great-grandfather");
+    expect(describeKinship(b.data, "g7", "g0", "en")?.label).toBe("Ancestor (7 generations up)");
+    expect(describeKinship(b.data, "g0", "g6", "en")?.label).toBe("Descendant (6 generations down)");
+    expect(describeKinship(t, "me", "stranger", "en")).toBeNull();
+  });
+});
+
 describe("describeKinship", () => {
   it.each(cases)("%s -> %s = %s", (me, target, label, blood) => {
     const r = describeKinship(t, me, target);

@@ -1,0 +1,74 @@
+{
+  "mode": {
+    "label": "Arah pohon",
+    "all": "Semua",
+    "descendants": "Keturunan",
+    "ancestors": "Leluhur"
+  },
+  "expandAll": "Buka semua ({count})",
+  "expandAllHint": "Pohon ini besar, jadi sebagian cabang dilipat agar cepat tampil.",
+  "me": "Saya",
+  "flowLabel": {
+    "all": "Pohon seluruh keluarga",
+    "descendants": "Pohon keturunan {name}",
+    "ancestors": "Pohon leluhur {name}"
+  },
+  "flow": {
+    "nodeHint": "Tekan Enter atau Spasi untuk membuka ringkasan orang ini.",
+    "controls": "Kontrol tampilan pohon",
+    "zoomIn": "Perbesar",
+    "zoomOut": "Perkecil",
+    "fitView": "Sesuaikan ke layar"
+  },
+  "layouting": "Menyusun pohon…",
+  "relayout": "Menyusun ulang…",
+  "empty": {
+    "title": "Belum ada orang di pohon ini",
+    "description": "Mulai dari leluhur tertua yang Anda ketahui, atau dari diri sendiri.",
+    "addFirst": "Tambah orang pertama"
+  },
+  "search": {
+    "placeholder": "Cari nama…",
+    "label": "Cari orang untuk dilihat di pohon",
+    "empty": "Tidak ada yang cocok."
+  },
+  "quickAdd": {
+    "parent": "Orang tua",
+    "partner": "Pasangan",
+    "child": "Anak",
+    "sibling": "Saudara"
+  },
+  "addRelatives": "Tambah kerabat {name}",
+  "addRelativesGeneric": "Tambah kerabat",
+  "summary": {
+    "aria": "Ringkasan {name}",
+    "you": "Ini Anda",
+    "unknownDates": "Tanggal tidak diketahui",
+    "edit": "Ubah",
+    "close": "Tutup",
+    "relationToYou": "Hubungan dengan Anda",
+    "markYourself": "Tandai diri Anda di pohon untuk melihat hubungan dengan setiap kerabat.",
+    "view": {
+      "all": "Lihat keluarga {name}",
+      "descendants": "Lihat keturunan {name}",
+      "ancestors": "Lihat leluhur {name}"
+    },
+    "openProfile": "Buka profil",
+    "createYourTree": "Buat pohon Anda"
+  },
+  "starter": {
+    "title": "Lanjutkan dari {name}",
+    "body": "Tambahkan kerabat terdekatnya. Setiap orang baru langsung tersambung di pohon."
+  },
+  "node": {
+    "unsaved": "Belum disimpan",
+    "me": "Saya",
+    "divorced": "Bercerai",
+    "hideChildren": "Sembunyikan anak-anak",
+    "showChildren": "Tampilkan anak-anak",
+    "hideChildrenOf": "Sembunyikan anak-anak {owner}",
+    "showChildrenOf": "Tampilkan anak-anak {owner}",
+    "unknown": "Tidak diketahui"
+  },
+  "deleteNote": "Data dan fotonya dihapus. Anak-anaknya tetap ada dan tetap terhubung dengan orang tua lainnya. Penghapusan tercatat di riwayat."
+}

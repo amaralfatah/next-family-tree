@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { useMemo, useState } from "react";
 import { FamilyChart, type EditActions } from "@/components/chart/family-chart";
 import { ConflictError, PersonDialog, type Editing, type PersonStore } from "@/components/person-dialog";
@@ -17,6 +18,7 @@ function unwrap<T>(r: ActionResult<T>): T {
 /** A real tree's chart: editors add, edit and delete people in its inspector, without leaving it. */
 export function TreeChart(props: { treeId: string; data: TreeData; rootPersonId: string | null; mePersonId: string | null; canEdit: boolean }) {
   const { treeId, data, canEdit } = props;
+  const t = useTranslations("chart");
   const [editing, setEditing] = useState<Editing>(null);
   const [draft, setDraft] = useState<Draft | null>(null);
 
@@ -31,9 +33,9 @@ export function TreeChart(props: { treeId: string; data: TreeData; rootPersonId:
       remove: async (personId) => {
         unwrap(await removePersonAction(treeId, personId));
       },
-      deleteNote: "Data dan fotonya dihapus. Anak-anaknya tetap ada dan tetap terhubung dengan orang tua lainnya. Penghapusan tercatat di riwayat.",
+      deleteNote: t("deleteNote"),
     }),
-    [treeId],
+    [treeId, t],
   );
 
   const actions: EditActions | undefined = canEdit

@@ -1,10 +1,10 @@
 "use client";
 
 import { Trash2Icon } from "lucide-react";
-import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
+import { usePathname, useRouter } from "@/i18n/navigation";
 import { useEffect, useId, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
-import { z } from "zod";
 import { barCancel, barConfirm, sheetBar } from "@/components/form-row-classes";
 import { FormGroup, FormRow, PersonPicker, RowSelect, SegmentedControl, destructiveRow, rowInput } from "@/components/form-rows";
 import { PersonFields } from "@/components/person-fields";
@@ -15,6 +15,7 @@ import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { Spinner } from "@/components/ui/spinner";
 import { AccessError } from "@/lib/access";
 import { UserError } from "@/lib/errors";
+import { translateError, translateKey } from "@/lib/error-message";
 import type { Draft } from "@/lib/tree/draft";
 import type { RelationKind, RelationSpec } from "@/lib/tree/service";
 import type { ChildRelation, Gender, Person, TreeData, UnionStatus } from "@/lib/types";
@@ -43,13 +44,10 @@ export interface PersonStore {
   onSaved?: () => Promise<void>;
 }
 
-const RELATION_TITLE: Record<RelationKind, string> = { parent: "orang tua", partner: "pasangan", child: "anak", sibling: "saudara" };
-
 /** Same rule as the server actions: only known errors carry a message meant for the user. */
-function message(e: unknown) {
-  if (e instanceof UserError || e instanceof AccessError) return e.message;
-  if (e instanceof z.ZodError) return e.issues[0]?.message ?? "Data tidak valid.";
-  return "Terjadi kesalahan.";
+function message(t: Parameters<typeof translateError>[0], e: unknown) {
+  if (e instanceof AccessError) return translateKey(t, e.message);
+  return translateError(t, e);
 }
 
 const text = (fd: FormData, k: string) => (fd.get(k) ?? "").toString().trim();
@@ -72,7 +70,10 @@ export function PersonDialog({
   onEditingChange: (next: Editing) => void;
   onDraft?: (draft: Draft | null) => void;
 }) {
+  const t = useTranslations("person");
+  const tErr = useTranslations("errors");
   const router = useRouter();
+  const pathname = usePathname();
   const isWide = useWide();
   const titleId = useId();
   const titleRef = useRef<HTMLHeadingElement>(null);
@@ -109,12 +110,12 @@ export function PersonDialog({
     let live = true;
     store.load(loadId).then(
       (p) => live && setLoaded(p),
-      (e) => live && setError(message(e)),
+      (e) => live && setError(message(tErr, e)),
     );
     return () => {
       live = false;
     };
-  }, [loadId, store]);
+  }, [loadId, store, tErr]);
   const editDefaults = store.load ? (loaded?.id === personId ? loaded : null) : person;
 
   // What the person already has, for the choices and warnings the add form shows.
@@ -163,9 +164,9 @@ export function PersonDialog({
     else relation.childRelation = (text(fd, "childRelation") || "biological") as ChildRelation;
     const order = Number(text(fd, "birthOrder"));
     if (Number.isInteger(order) && order > 0) relation.birthOrder = order;
-    const name = text(fd, "fullName") || `${RELATION_TITLE[editing.relation][0].toUpperCase()}${RELATION_TITLE[editing.relation].slice(1)} ${short}`;
+    const name = text(fd, "fullName") || t(`relation.draftName.${editing.relation}`, { name: short });
     onDraft({ kind: "add", relation, name, gender: gender as Gender, existingId: source === "existing" ? picked : null });
-  }, [onDraft, form, open, editing, person, short, source, picked, typed, editDefaults]);
+  }, [onDraft, form, open, editing, person, short, source, picked, typed, editDefaults, t]);
 
   function reset() {
     setError(null);
@@ -189,17 +190,17 @@ export function PersonDialog({
       const addedId = await work();
       await store.onSaved?.();
       if (addedId) {
-        // `ditambah` makes the chart select the person and re-centre if the view can't show them. Read at
+        // `added` makes the chart select the person and re-centre if the view can't show them. Read at
         // save time: the chart owns the query (focus, direction) and may have changed it since render.
         const sp = new URLSearchParams(window.location.search);
-        sp.set("ditambah", addedId);
-        router.replace(`${window.location.pathname}?${sp}`, { scroll: false });
+        sp.set("added", addedId);
+        router.replace(`${pathname}?${sp}`, { scroll: false });
       }
       toast.success(done);
       close();
     } catch (e) {
       if (e instanceof ConflictError) setConflict(true);
-      setError(message(e));
+      setError(message(tErr, e));
     } finally {
       setPending(false);
     }
@@ -210,10 +211,10 @@ export function PersonDialog({
     if (!editing || !person) return;
     const fd = new FormData(e.currentTarget);
     const name = text(fd, "fullName");
-    if (editing.kind === "delete") void save(() => store.remove(person.id), `${person.fullName} dihapus.`);
-    else if (editing.kind === "edit") void save(() => store.update(person.id, fd), `${name} disimpan.`);
-    else if (source === "existing") void save(() => store.add(fd), `${nameOf(picked)} dihubungkan dengan ${person.fullName}.`);
-    else void save(() => store.add(fd), `${name} ditambahkan.`);
+    if (editing.kind === "delete") void save(() => store.remove(person.id), t("dialog.deleted", { name: person.fullName }));
+    else if (editing.kind === "edit") void save(() => store.update(person.id, fd), t("dialog.saved", { name }));
+    else if (source === "existing") void save(() => store.add(fd), t("dialog.linked", { name: nameOf(picked) ?? "", other: person.fullName }));
+    else void save(() => store.add(fd), t("dialog.added", { name }));
   }
 
   // The sidebar is not a dialog, so nothing moves focus into it: do it here, once per opening.
@@ -234,15 +235,15 @@ export function PersonDialog({
         <AlertDialogContent>
           <form onSubmit={submit} className="contents">
             <AlertDialogHeader>
-              <AlertDialogTitle>Hapus {person?.fullName}?</AlertDialogTitle>
+              <AlertDialogTitle>{t("dialog.deleteTitle", { name: person?.fullName ?? "" })}</AlertDialogTitle>
               <AlertDialogDescription>{store.deleteNote}</AlertDialogDescription>
             </AlertDialogHeader>
             {errorAlert}
             <AlertDialogFooter>
-              <AlertDialogCancel>Batal</AlertDialogCancel>
+              <AlertDialogCancel>{t("actions.cancel")}</AlertDialogCancel>
               <AlertDialogAction type="submit" variant="destructive" disabled={pending}>
                 {pending ? <Spinner data-icon="inline-start" /> : null}
-                Hapus
+                {t("actions.delete")}
               </AlertDialogAction>
             </AlertDialogFooter>
           </form>
@@ -252,7 +253,7 @@ export function PersonDialog({
   }
 
   const adding = editing?.kind === "add" ? editing : null;
-  const title = adding ? `Tambah ${RELATION_TITLE[adding.relation]} ${short}` : `Ubah ${short}`;
+  const title = adding ? t(`relation.addTitle.${adding.relation}`, { name: short }) : t("edit.dialogTitle", { name: short });
   const ordered = adding && (adding.relation === "child" || adding.relation === "sibling");
 
   const body = (
@@ -268,9 +269,9 @@ export function PersonDialog({
       {/* An iOS sheet's bar: Cancel on the left, the one action on the right, the title between. */}
       <div className={cn("panel-bar material sticky top-0 z-10", sheetBar)}>
         <Button type="button" variant="ghost" className={barCancel} onClick={close}>
-          Batal
+          {t("actions.cancel")}
         </Button>
-        {/* Focus starts on the title, not on Batal: nothing is pre-selected, and screen readers hear where they are. */}
+        {/* Focus starts on the title, not on Cancel: nothing is pre-selected, and screen readers hear where they are. */}
         <h2 ref={titleRef} id={titleId} tabIndex={-1} className="max-w-[14rem] truncate text-center text-[17px] font-semibold tracking-[-0.01em] outline-none">
           {title}
         </h2>
@@ -280,7 +281,7 @@ export function PersonDialog({
           className={barConfirm}
           disabled={pending || noParents || (editing?.kind === "edit" && !editDefaults) || (source === "existing" && !picked)}
         >
-          {pending ? <Spinner /> : conflict ? "Timpa" : source === "existing" ? "Hubungkan" : "Simpan"}
+          {pending ? <Spinner /> : conflict ? t("actions.overwrite") : source === "existing" ? t("actions.link") : t("actions.save")}
         </Button>
       </div>
 
@@ -296,62 +297,62 @@ export function PersonDialog({
 
         {noParents ? (
           <Alert>
-            <AlertDescription>Orang tua {short} belum tercatat. Tambahkan orang tuanya dulu, lalu saudaranya bisa dihubungkan.</AlertDescription>
+            <AlertDescription>{t("dialog.noParents", { name: short })}</AlertDescription>
           </Alert>
         ) : null}
 
         {/* How the new person hangs off this one comes first, then who they are. */}
         {adding && !noParents ? (
           <FormGroup
-            title="Hubungan"
+            title={t("dialog.relationship")}
             footer={
               adding.relation === "parent" && twoBioParents
-                ? `${short} sudah punya dua orang tua kandung, jadi orang tua ini dicatat sebagai orang tua kedua (angkat atau tiri).`
+                ? t("dialog.twoBioParents", { name: short })
                 : ordered
-                  ? "Kosongkan “Anak ke-” bila ia paling bungsu. Saudara sesudahnya ikut bergeser."
+                  ? t("dialog.orderedFooter")
                   : undefined
             }
           >
             {adding.relation === "child" && unions.length > 0 ? (
-              <FormRow label="Orang tua lain" htmlFor="dialog-relUnion">
+              <FormRow label={t("new.otherParent")} htmlFor="dialog-relUnion">
                 <RowSelect id="dialog-relUnion" name="relUnion" defaultValue={unions[0].id}>
                   {unions.map((u) => {
                     const partner = nameOf(u.partnerAId === person?.id ? u.partnerBId : u.partnerAId);
                     return (
                       <option key={u.id} value={u.id}>
-                        {partner ?? "Tidak diketahui"}
+                        {partner ?? t("common.unknown")}
                       </option>
                     );
                   })}
-                  {unions.every((u) => u.partnerBId) ? <option value="">Tidak diketahui</option> : null}
+                  {unions.every((u) => u.partnerBId) ? <option value="">{t("common.unknown")}</option> : null}
                 </RowSelect>
               </FormRow>
             ) : null}
 
             {adding.relation === "partner" ? (
-              <FormRow label="Status" htmlFor="dialog-unionStatus">
+              <FormRow label={t("new.status")} htmlFor="dialog-unionStatus">
                 <RowSelect id="dialog-unionStatus" name="unionStatus" defaultValue="married">
-                  <option value="married">Menikah</option>
-                  <option value="divorced">Bercerai (mantan)</option>
-                  <option value="widowed">Salah satu wafat</option>
-                  <option value="unknown">Tidak diketahui</option>
+                  <option value="married">{t("labels.unionStatusAdd.married")}</option>
+                  <option value="divorced">{t("labels.unionStatusAdd.divorced")}</option>
+                  <option value="widowed">{t("labels.unionStatusAdd.widowed")}</option>
+                  <option value="unknown">{t("labels.unionStatusAdd.unknown")}</option>
                 </RowSelect>
               </FormRow>
             ) : (
-              <FormRow label={adding.relation === "parent" ? "Sebagai orang tua" : "Hubungan anak"} htmlFor="dialog-childRelation">
+              <FormRow label={adding.relation === "parent" ? t("new.asParent") : t("new.childRelationship")} htmlFor="dialog-childRelation">
                 <RowSelect id="dialog-childRelation" name="childRelation" defaultValue={adding.relation === "parent" && twoBioParents ? "adopted" : "biological"}>
                   <option value="biological" disabled={adding.relation === "parent" && twoBioParents}>
-                    Kandung
+                    {t("labels.childRelation.biological")}
                   </option>
-                  <option value="adopted">Angkat</option>
-                  <option value="step">Tiri</option>
+                  <option value="adopted">{t("labels.childRelation.adopted")}</option>
+                  <option value="step">{t("labels.childRelation.step")}</option>
                 </RowSelect>
               </FormRow>
             )}
 
             {ordered ? (
-              <FormRow label="Anak ke-" htmlFor="dialog-birthOrder">
-                <input id="dialog-birthOrder" name="birthOrder" inputMode="numeric" pattern="[0-9]*" maxLength={2} autoComplete="off" placeholder="Paling bungsu" className={rowInput} />
+              <FormRow label={t("labels.childNumber")} htmlFor="dialog-birthOrder">
+                <input id="dialog-birthOrder" name="birthOrder" inputMode="numeric" pattern="[0-9]*" maxLength={2} autoComplete="off" placeholder={t("dialog.youngest")} className={rowInput} />
               </FormRow>
             ) : null}
           </FormGroup>
@@ -359,12 +360,12 @@ export function PersonDialog({
 
         {adding && !noParents ? (
           <SegmentedControl
-            label="Siapa yang ditambahkan"
+            label={t("new.whoIsAdded")}
             value={source}
             onChange={setSource}
             options={[
-              ["new", "Orang baru"],
-              ["existing", "Sudah ada di pohon"],
+              ["new", t("new.newPerson")],
+              ["existing", t("new.existingPerson")],
             ]}
           />
         ) : null}
@@ -388,9 +389,9 @@ export function PersonDialog({
               {conflict ? <input type="hidden" name="force" value="1" /> : null}
               <PersonFields idPrefix="dialog-edit" defaults={editDefaults} />
               {parentLinks.length > 0 ? (
-                <FormGroup title="Urutan lahir">
+                <FormGroup title={t("dialog.birthOrder")}>
                   {parentLinks.map((link) => (
-                    <FormRow key={link.unionId} label={parentLinks.length > 1 ? `Anak ke- (${linkLabel(link.unionId)})` : "Anak ke-"} htmlFor={`dialog-order-${link.unionId}`}>
+                    <FormRow key={link.unionId} label={parentLinks.length > 1 ? t("dialog.childNumberOf", { union: linkLabel(link.unionId) }) : t("labels.childNumber")} htmlFor={`dialog-order-${link.unionId}`}>
                       <input type="hidden" name={`orderRel:${link.unionId}`} value={link.relation} />
                       <input type="hidden" name={`orderWas:${link.unionId}`} value={link.birthOrder ?? ""} />
                       <input
@@ -401,7 +402,7 @@ export function PersonDialog({
                         pattern="[0-9]*"
                         maxLength={2}
                         autoComplete="off"
-                        placeholder="Tidak diketahui"
+                        placeholder={t("common.unknown")}
                         className={rowInput}
                       />
                     </FormRow>
@@ -411,7 +412,7 @@ export function PersonDialog({
             </>
           ) : !error ? (
             <p role="status" className="flex items-center justify-center gap-2 py-10 text-sm text-muted-foreground">
-              <Spinner /> Memuat data…
+              <Spinner /> {t("common.loading")}
             </p>
           ) : null
         ) : null}
@@ -423,7 +424,7 @@ export function PersonDialog({
         {editing?.kind === "edit" && person && editDefaults ? (
           <FormGroup>
             <button type="button" onClick={() => (setError(null), setConflict(false), onEditingChange({ kind: "delete", personId: person.id }))} className={destructiveRow}>
-              <Trash2Icon className="size-[18px]" /> Hapus
+              <Trash2Icon className="size-[18px]" /> {t("actions.delete")}
             </button>
           </FormGroup>
         ) : null}

@@ -2,39 +2,33 @@
 
 import { revalidatePath } from "next/cache";
 import { after } from "next/server";
-import { redirect } from "next/navigation";
 import { z } from "zod";
-import { createSession, destroySession, devLoginEnabled, findOrCreateUser, requireUser, safeNext } from "@/lib/auth/session";
+import { getTranslations } from "next-intl/server";
+import { destroySession, requireUser } from "@/lib/auth/session";
 import { getDb } from "@/lib/db";
-import { composeDate } from "@/lib/dates";
+import { routing } from "@/i18n/routing";
+import { redirectTo } from "@/i18n/server";
 import { UserError } from "@/lib/errors";
+import { checkedDate } from "@/lib/person-form";
 import * as members from "@/lib/members/service";
 import { deletePhotos } from "@/lib/storage";
 import * as tree from "@/lib/tree/service";
 import type { ChildRelation, Role, UnionStatus } from "@/lib/types";
 import { formValue as get, parseBirthOrders, parsePerson, parseRelation, run, type ActionResult } from "./shared";
 
-const treePath = (treeId: string) => `/pohon/${treeId}`;
+const treePath = (treeId: string) => `/trees/${treeId}`;
 /** Only the tree's own chart is a valid place to return to after adding someone. */
 const chartReturn = (treeId: string, v: string | undefined) => (v && (v === treePath(treeId) || v.startsWith(`${treePath(treeId)}?`)) ? v : null);
-const refreshTree = (treeId: string) => revalidatePath(treePath(treeId), "layout");
+/** The tree exists under every locale prefix, so each one is refreshed. */
+const refreshTree = (treeId: string) => {
+  for (const locale of routing.locales) revalidatePath(`/${locale}/trees/${treeId}`, "layout");
+};
 
 // ---------------------------------------------------------------- auth
 
-export async function devLogin(_: ActionResult | null, fd: FormData): Promise<ActionResult> {
-  if (!devLoginEnabled()) return { ok: false, error: "Login uji coba tidak aktif." };
-  const parsed = z
-    .object({ name: z.string().trim().min(1, "Isi nama."), email: z.email("Email tidak valid.") })
-    .safeParse({ name: get(fd, "name"), email: get(fd, "email").trim() });
-  if (!parsed.success) return { ok: false, error: parsed.error.issues[0].message };
-  const userId = await findOrCreateUser(parsed.data);
-  await createSession(userId);
-  redirect(safeNext(get(fd, "next")));
-}
-
 /**
  * No redirect here: rendering the next page in this same request would still read the old Neon Auth
- * cookies from the request headers and bounce back to /pohon. The client does a full page load instead.
+ * cookies from the request headers and bounce back to /trees. The client does a full page load instead.
  */
 export async function logout() {
   await destroySession();
@@ -44,8 +38,8 @@ export async function logout() {
 
 export async function createTreeAction(_: ActionResult | null, fd: FormData): Promise<ActionResult> {
   const name = get(fd, "treeName").trim();
-  if (!name) return { ok: false, error: "Nama pohon wajib diisi." };
-  if (name.length > 120) return { ok: false, error: "Nama pohon terlalu panjang." };
+  if (!name) return { ok: false, error: (await getTranslations("errors"))("treeNameRequired") };
+  if (name.length > 120) return { ok: false, error: (await getTranslations("errors"))("treeNameTooLong") };
   const result = await run((db, userId) =>
     tree.createTree(db, userId, {
       name,
@@ -55,12 +49,12 @@ export async function createTreeAction(_: ActionResult | null, fd: FormData): Pr
     }),
   );
   if (!result.ok) return result;
-  redirect(treePath(result.data));
+  return redirectTo(treePath(result.data));
 }
 
 export async function updateTreeAction(treeId: string, _: ActionResult | null, fd: FormData): Promise<ActionResult> {
   const name = get(fd, "treeName").trim();
-  if (!name) return { ok: false, error: "Nama pohon wajib diisi." };
+  if (!name) return { ok: false, error: (await getTranslations("errors"))("treeNameRequired") };
   const r = await run((db, u) => tree.updateTree(db, u, treeId, { name: name.slice(0, 120), description: get(fd, "treeDescription").trim() || null }));
   if (r.ok) refreshTree(treeId);
   return r;
@@ -77,13 +71,13 @@ export async function deleteTreeAction(treeId: string, confirmName: string): Pro
   const db = await getDb();
   const r = await run(async () => {
     const { tree: t } = await tree.getTree(db, user.id, treeId);
-    if (confirmName.trim() !== t.name) throw new UserError("Nama pohon yang diketik tidak cocok.");
+    if (confirmName.trim() !== t.name) throw new UserError("treeNameMismatch");
     const photos = await tree.deleteTree(db, user.id, treeId);
     after(() => deletePhotos(photos));
   });
   if (!r.ok) return r;
-  revalidatePath("/pohon");
-  redirect("/pohon");
+  revalidatePath("/[locale]/trees", "page");
+  return redirectTo("/trees");
 }
 
 // ---------------------------------------------------------------- persons
@@ -102,13 +96,13 @@ export async function createPersonAction(treeId: string, _: ActionResult | null,
   });
   if (!r.ok) return r;
   refreshTree(treeId);
-  // Back on the chart, `ditambah` lets it select the person and re-centre if the view can't show them yet.
-  const chart = chartReturn(treeId, get(fd, "kembali"));
-  if (!chart) redirect(`${treePath(treeId)}/orang/${r.data.profile}`);
+  // Back on the chart, `added` lets it select the person and re-centre if the view can't show them yet.
+  const chart = chartReturn(treeId, get(fd, "back"));
+  if (!chart) return redirectTo(`${treePath(treeId)}/people/${r.data.profile}`);
   const [path, query] = chart.split("?");
   const sp = new URLSearchParams(query);
-  sp.set("ditambah", r.data.added);
-  redirect(`${path}?${sp}`);
+  sp.set("added", r.data.added);
+  return redirectTo(`${path}?${sp}`);
 }
 
 export async function updatePersonAction(
@@ -119,13 +113,13 @@ export async function updatePersonAction(
 ): Promise<ActionResult> {
   const r = await savePersonAction(treeId, personId, fd);
   if (!r.ok) return r;
-  redirect(`${treePath(treeId)}/orang/${personId}`);
+  return redirectTo(`${treePath(treeId)}/people/${personId}`);
 }
 
 export async function deletePersonAction(treeId: string, personId: string): Promise<ActionResult> {
   const r = await removePersonAction(treeId, personId);
   if (!r.ok) return r;
-  redirect(`${treePath(treeId)}/daftar`);
+  return redirectTo(`${treePath(treeId)}/list`);
 }
 
 // The chart's own dialog: same work as the forms above, but no redirect, so the chart stays where it was.
@@ -163,7 +157,7 @@ export async function savePersonAction(treeId: string, personId: string, fd: For
     return {
       ok: false,
       conflict: true,
-      error: "Data orang ini sudah diubah anggota lain sejak Anda membukanya. Simpan lagi untuk menimpa, atau muat ulang untuk melihat perubahan.",
+      error: (await getTranslations("errors"))("personConflict"),
     };
   }
   refreshTree(treeId);
@@ -186,11 +180,10 @@ export async function updateUnionAction(
   unionId: string,
   input: { status: UnionStatus; startYear: string; startMonth: string; startDay: string; orderIndex: number },
 ) {
-  const start = composeDate(input.startYear, input.startMonth, input.startDay);
   const r = await run((db, u) =>
     tree.updateUnion(db, u, treeId, unionId, {
       status: z.enum(["married", "divorced", "widowed", "unknown"]).parse(input.status),
-      startDate: start.date,
+      startDate: checkedDate(input.startYear, input.startMonth, input.startDay, "start").date,
       orderIndex: Math.max(0, Math.min(50, Math.trunc(input.orderIndex) || 0)),
     }),
   );
@@ -238,8 +231,8 @@ export async function revokeInviteAction(treeId: string, inviteId: string) {
 export async function acceptInviteAction(token: string) {
   const r = await run((db, u) => members.acceptInvite(db, u, token));
   if (!r.ok) return r;
-  revalidatePath("/pohon");
-  redirect(`${treePath(r.data)}?baru=1`);
+  revalidatePath("/[locale]/trees", "page");
+  return redirectTo(`${treePath(r.data)}?welcome=1`);
 }
 
 export async function changeRoleAction(treeId: string, memberId: string, role: Exclude<Role, "owner">) {
@@ -263,8 +256,8 @@ export async function transferOwnershipAction(treeId: string, memberId: string) 
 export async function leaveTreeAction(treeId: string): Promise<ActionResult> {
   const r = await run((db, u) => members.leaveTree(db, u, treeId));
   if (!r.ok) return r;
-  revalidatePath("/pohon");
-  redirect("/pohon");
+  revalidatePath("/[locale]/trees", "page");
+  return redirectTo("/trees");
 }
 
 export async function linkMeAction(treeId: string, personId: string | null) {

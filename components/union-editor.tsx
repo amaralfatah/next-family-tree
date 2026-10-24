@@ -1,6 +1,7 @@
 "use client";
 
 import { EllipsisIcon, PencilIcon } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { useState, useTransition } from "react";
 import { toast } from "sonner";
 import { ConfirmButton } from "@/components/confirm-button";
@@ -12,11 +13,10 @@ import { Spinner } from "@/components/ui/spinner";
 import { Dialog, DialogClose, DialogContent, DialogDescription, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { deleteUnionAction, removeChildLinkAction, updateChildLinkAction, updateUnionAction } from "@/lib/actions";
 import { splitDate } from "@/lib/dates";
-import { CHILD_RELATION_LABEL, UNION_STATUS_LABEL } from "@/lib/person";
 import type { ChildRelation, Union, UnionStatus } from "@/lib/types";
 
 /**
- * An editing dialog with the same bar as the chart's form panel: Batal on the left, the title, Simpan on
+ * An editing dialog with the same bar as the chart's form panel: Cancel on the left, the title, Save on
  * the right; grouped rows under it on the grouped background.
  */
 function EditDialog({
@@ -38,6 +38,7 @@ function EditDialog({
   onSave: (fd: FormData) => void;
   children: React.ReactNode;
 }) {
+  const t = useTranslations("person.actions");
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       {trigger}
@@ -49,10 +50,10 @@ function EditDialog({
           }}
         >
           <div className={sheetBar}>
-            <DialogClose render={<Button type="button" variant="ghost" className={barCancel} />}>Batal</DialogClose>
+            <DialogClose render={<Button type="button" variant="ghost" className={barCancel} />}>{t("cancel")}</DialogClose>
             <DialogTitle className={barTitle}>{title}</DialogTitle>
             <Button type="submit" variant="ghost" className={barConfirm} disabled={pending}>
-              {pending ? <Spinner /> : "Simpan"}
+              {pending ? <Spinner /> : t("save")}
             </Button>
           </div>
           <div className="grid gap-6 p-4">
@@ -67,6 +68,7 @@ function EditDialog({
 
 /** With `row`, the trigger is a row of the profile's marriage group ("Ubah pernikahan") instead of an icon. */
 export function UnionEditor({ treeId, union, partnerName, row = false }: { treeId: string; union: Union; partnerName: string | null; row?: boolean }) {
+  const t = useTranslations("person");
   const [open, setOpen] = useState(false);
   const [pending, start] = useTransition();
   const start_ = splitDate(union.startDate, union.startDate ? "day" : "unknown");
@@ -81,7 +83,7 @@ export function UnionEditor({ treeId, union, partnerName, row = false }: { treeI
         orderIndex: Number(fd.get("order") ?? 1) - 1,
       });
       if (r.ok) {
-        toast.success("Pernikahan diperbarui.");
+        toast.success(t("union.updated"));
         setOpen(false);
       } else toast.error(r.error);
     });
@@ -91,48 +93,48 @@ export function UnionEditor({ treeId, union, partnerName, row = false }: { treeI
     <EditDialog
       open={open}
       onOpenChange={setOpen}
-      title="Ubah pernikahan"
-      description={partnerName ? `Pernikahan dengan ${partnerName}.` : "Pasangannya tidak diketahui."}
+      title={t("union.editTitle")}
+      description={partnerName ? t("union.withPartner", { name: partnerName }) : t("union.partnerUnknown")}
       pending={pending}
       onSave={save}
       trigger={
         row ? (
           <DialogTrigger render={<button type="button" className={addRow} />}>
-            <PencilIcon className="size-[18px]" /> Ubah pernikahan
+            <PencilIcon className="size-[18px]" /> {t("union.editTitle")}
           </DialogTrigger>
         ) : (
-          <DialogTrigger render={<Button variant="ghost" size="icon" className="hit" aria-label="Ubah pernikahan" />}>
+          <DialogTrigger render={<Button variant="ghost" size="icon" className="hit" aria-label={t("union.editTitle")} />}>
             <PencilIcon />
           </DialogTrigger>
         )
       }
     >
       <FormGroup>
-        <FormRow label="Status" htmlFor="u-status">
+        <FormRow label={t("union.status")} htmlFor="u-status">
           <RowSelect id="u-status" name="status" defaultValue={union.status}>
-            {Object.entries(UNION_STATUS_LABEL).map(([v, l]) => (
+            {(["married", "divorced", "widowed", "unknown"] as const).map((v) => (
               <option key={v} value={v}>
-                {l}
+                {t(`labels.unionStatus.${v}`)}
               </option>
             ))}
           </RowSelect>
         </FormRow>
-        <DateRow legend="Tanggal menikah" prefix="start" values={start_} idPrefix="u" />
-        <FormRow label="Pernikahan ke-" htmlFor="u-order">
+        <DateRow legend={t("union.startDate")} prefix="start" values={start_} idPrefix="u" />
+        <FormRow label={t("union.marriageNumber")} htmlFor="u-order">
           <input id="u-order" name="order" inputMode="numeric" pattern="[0-9]*" maxLength={2} defaultValue={union.orderIndex + 1} autoComplete="off" className={rowInput} />
         </FormRow>
       </FormGroup>
-      <FormGroup footer="Anak-anaknya tetap ada di pohon, tetapi tidak lagi tercatat sebagai anak pasangan ini.">
+      <FormGroup footer={t("union.deleteFooter")}>
         <ConfirmButton
           row
-          label="Hapus pernikahan"
-          title="Hapus pernikahan ini?"
-          description="Anak-anaknya tetap ada di pohon, tetapi tidak lagi tercatat sebagai anak pasangan ini."
-          confirmLabel="Hapus"
+          label={t("union.delete")}
+          title={t("union.deleteTitle")}
+          description={t("union.deleteFooter")}
+          confirmLabel={t("union.deleteConfirm")}
           onConfirm={async () => {
             const r = await deleteUnionAction(treeId, union.id);
             if (r.ok) {
-              toast.success("Pernikahan dihapus.");
+              toast.success(t("union.deleted"));
               setOpen(false);
             }
             return r;
@@ -158,57 +160,58 @@ export function ChildLinkMenu({
   relation: ChildRelation;
   birthOrder: number | null;
 }) {
+  const t = useTranslations("person");
   const [open, setOpen] = useState(false);
   const [pending, start] = useTransition();
   return (
     <EditDialog
       open={open}
       onOpenChange={setOpen}
-      title="Hubungan anak"
-      description={`${childName} sebagai anak pasangan ini.`}
+      title={t("union.childLinkTitle")}
+      description={t("union.childLinkDescription", { name: childName })}
       pending={pending}
       onSave={(fd) =>
         start(async () => {
           const order = Number(fd.get("birthOrder"));
           const r = await updateChildLinkAction(treeId, unionId, childId, fd.get("relation") as ChildRelation, Number.isFinite(order) && order > 0 ? order : null);
           if (r.ok) {
-            toast.success("Tersimpan.");
+            toast.success(t("union.saved"));
             setOpen(false);
           } else toast.error(r.error);
         })
       }
       trigger={
         // The iOS "more" glyph, with a 44px target on touch.
-        <DialogTrigger render={<Button variant="ghost" size="icon" className="hit text-muted-foreground" aria-label={`Atur hubungan ${childName}`} />}>
+        <DialogTrigger render={<Button variant="ghost" size="icon" className="hit text-muted-foreground" aria-label={t("union.childLinkMenu", { name: childName })} />}>
           <EllipsisIcon />
         </DialogTrigger>
       }
     >
-      <FormGroup footer="“Anak ke-” dipakai untuk urutan kakak/adik bila tanggal lahir tidak diketahui.">
-        <FormRow label="Hubungan" htmlFor="c-rel">
+      <FormGroup footer={t("union.childOrderFooter")}>
+        <FormRow label={t("union.relation")} htmlFor="c-rel">
           <RowSelect id="c-rel" name="relation" defaultValue={relation}>
-            {Object.entries(CHILD_RELATION_LABEL).map(([v, l]) => (
+            {(["biological", "adopted", "step"] as const).map((v) => (
               <option key={v} value={v}>
-                Anak {l.toLowerCase()}
+                {t(`labels.childOf.${v}`)}
               </option>
             ))}
           </RowSelect>
         </FormRow>
-        <FormRow label="Anak ke-" htmlFor="c-order">
-          <input id="c-order" name="birthOrder" inputMode="numeric" pattern="[0-9]*" maxLength={2} defaultValue={birthOrder ?? ""} autoComplete="off" placeholder="Tidak diketahui" className={rowInput} />
+        <FormRow label={t("labels.childNumber")} htmlFor="c-order">
+          <input id="c-order" name="birthOrder" inputMode="numeric" pattern="[0-9]*" maxLength={2} defaultValue={birthOrder ?? ""} autoComplete="off" placeholder={t("union.childOrderPlaceholder")} className={rowInput} />
         </FormRow>
       </FormGroup>
-      <FormGroup footer="Orangnya tetap ada di pohon, hanya tidak lagi tercatat sebagai anak pasangan ini.">
+      <FormGroup footer={t("union.unlinkFooter")}>
         <ConfirmButton
           row
-          label="Lepas sebagai anak pasangan ini"
-          title={`Lepas ${childName} dari pasangan ini?`}
-          description="Orangnya tetap ada di pohon."
-          confirmLabel="Lepas"
+          label={t("union.unlink")}
+          title={t("union.unlinkTitle", { name: childName })}
+          description={t("union.unlinkDescription")}
+          confirmLabel={t("union.unlinkConfirm")}
           onConfirm={async () => {
             const r = await removeChildLinkAction(treeId, unionId, childId);
             if (r.ok) {
-              toast.success("Tautan dilepas. Orangnya tetap ada di pohon.");
+              toast.success(t("union.unlinked"));
               setOpen(false);
             }
             return r;

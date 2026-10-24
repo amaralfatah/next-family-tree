@@ -1,5 +1,5 @@
 // "Hubungan dengan saya": finds how a target person is related to "me" and
-// describes it in standard Indonesian kinship terms. Pure, no I/O.
+// describes it in standard kinship terms (Indonesian or English, see lexicon.ts). Pure, no I/O.
 //
 // Strategy:
 //   1. self / direct spouse
@@ -13,9 +13,12 @@
 // trees with thousands of people.
 
 import type { ChildRelation, Gender, Person, TreeData, Union } from "../types";
+import { lexiconFor, type KinshipLocale, type Lexicon } from "./lexicon";
+
+export type { KinshipLocale } from "./lexicon";
 
 export interface KinshipResult {
-  /** What TARGET is to ME, Indonesian, first letter capitalized. */
+  /** What TARGET is to ME, in the requested language (Indonesian by default), first letter capitalized. */
   label: string;
   /** Person ids from me to target inclusive. */
   path: string[];
@@ -35,6 +38,7 @@ interface SpouseLink {
 }
 
 interface Graph {
+  lex: Lexicon;
   persons: Map<string, Person>;
   unions: Map<string, Union>;
   /** childId -> parent links (all relations). */
@@ -67,7 +71,7 @@ function push<K, V>(map: Map<K, V[]>, key: K, value: V) {
   else map.set(key, [value]);
 }
 
-function buildGraph(data: TreeData): Graph {
+function buildGraph(data: TreeData, locale: KinshipLocale): Graph {
   const persons = new Map(data.persons.map((p) => [p.id, p]));
   const unions = new Map(data.unions.map((u) => [u.id, u]));
   const parentLinks = new Map<string, ParentLink[]>();
@@ -93,7 +97,7 @@ function buildGraph(data: TreeData): Graph {
       push(childLinks, pid, { childId: c.childId, relation: c.relation });
     }
   }
-  return { persons, unions, parentLinks, childLinks, spouses, birthOrders };
+  return { lex: lexiconFor(locale), persons, unions, parentLinks, childLinks, spouses, birthOrders };
 }
 
 /** Blood parents (biological or adopted), deduplicated. */
@@ -170,11 +174,6 @@ function gender(g: Graph, id: string): Gender {
   return g.persons.get(id)?.gender ?? "unknown";
 }
 
-function byGender(g: Graph, id: string, male: string, female: string, neutral: string) {
-  const s = gender(g, id);
-  return s === "male" ? male : s === "female" ? female : neutral;
-}
-
 function capitalize(s: string) {
   return s.charAt(0).toUpperCase() + s.slice(1);
 }
@@ -217,19 +216,8 @@ function compareAge(g: Graph, a: string, b: string): -1 | 0 | 1 {
   return 0;
 }
 
-/** "kakak" / "adik" / "saudara": what `sib` is relative to `ref`. */
-function siblingWord(g: Graph, sib: string, ref: string) {
-  const c = compareAge(g, sib, ref);
-  return c < 0 ? "kakak" : c > 0 ? "adik" : "saudara";
-}
-
-function parentWord(g: Graph, id: string) {
-  return byGender(g, id, "ayah", "ibu", "orang tua");
-}
-
 function spouseWord(g: Graph, id: string, union: Union) {
-  const w = byGender(g, id, "suami", "istri", "pasangan");
-  return union.status === "divorced" ? `mantan ${w}` : w;
+  return g.lex.spouse(gender(g, id), union.status === "divorced");
 }
 
 /** Union linking a and b as partners; prefers a non-divorced one. */
@@ -263,87 +251,36 @@ function childSharesUnion(g: Graph, a: string, b: string) {
 // ---------------------------------------------------------------------------
 // Blood labels
 
-function ancestorLabel(g: Graph, me: string, target: string, n: number): string {
-  switch (n) {
-    case 1: {
-      const base = byGender(g, target, "Ayah", "Ibu", "Orang tua");
-      return isAdoptedLink(g, me, target) ? `${base} angkat` : base;
-    }
-    case 2:
-      return byGender(g, target, "Kakek", "Nenek", "Kakek/nenek");
-    case 3:
-      return byGender(g, target, "Kakek buyut", "Nenek buyut", "Buyut");
-    case 4:
-      return "Canggah";
-    case 5:
-      return "Wareng";
-    default:
-      return `Leluhur generasi ke-${n}`;
-  }
-}
-
-function descendantLabel(g: Graph, me: string, target: string, n: number): string {
-  switch (n) {
-    case 1:
-      return isAdoptedLink(g, target, me) ? "Anak angkat" : "Anak";
-    case 2:
-      return "Cucu";
-    case 3:
-      return "Cicit";
-    case 4:
-      return "Piut";
-    default:
-      return `Keturunan generasi ke-${n}`;
-  }
-}
-
 function siblingLabel(g: Graph, me: string, target: string): string {
   const mine = bloodParents(g, me);
   const theirs = bloodParents(g, target);
   const shared = mine.filter((p) => theirs.includes(p));
   const full = shared.length >= 2 || (shared.length === 1 && childSharesUnion(g, me, target));
-  if (!full) {
-    const p = shared[0];
-    return p
-      ? byGender(g, p, "Saudara seayah", "Saudara seibu", "Saudara satu orang tua")
-      : "Saudara";
-  }
-  const c = compareAge(g, target, me);
-  if (c === 0) return "Saudara kandung";
-  const base = c < 0 ? "Kakak" : "Adik";
-  return base + byGender(g, target, " laki-laki", " perempuan", "");
-}
-
-function cousinLabel(n: number): string {
-  // n = generations up (= down) to the common ancestor, n >= 2
-  if (n === 2) return "Sepupu";
-  const times = ["", "", "", "dua", "tiga", "empat", "lima"][n] ?? String(n - 1);
-  return `Sepupu ${times} kali`;
+  if (!full) return g.lex.halfSibling(gender(g, target), shared[0] ? gender(g, shared[0]) : null);
+  return g.lex.sibling(gender(g, target), compareAge(g, target, me));
 }
 
 function bloodLabel(g: Graph, me: string, target: string, rel: Blood): string {
   const { up, down, path } = rel;
-  if (up === 0 && down === 0) return "Diri sendiri";
-  if (down === 0) return ancestorLabel(g, me, target, up);
-  if (up === 0) return descendantLabel(g, me, target, down);
+  const lex = g.lex;
+  if (up === 0 && down === 0) return lex.self;
+  if (down === 0) return lex.ancestor(up, gender(g, target), up === 1 && isAdoptedLink(g, me, target));
+  if (up === 0) return lex.descendant(down, down === 1 && isAdoptedLink(g, target, me));
   if (up === 1 && down === 1) return siblingLabel(g, me, target);
-  if (up === down) return cousinLabel(up);
+  if (up === down) return lex.cousin(up);
   if (up === 2 && down === 1) {
     const parent = path[1];
-    const base = byGender(g, target, "Paman", "Bibi", "Paman/bibi");
-    return `${base} (${siblingWord(g, target, parent)} ${parentWord(g, parent)})`;
+    return lex.uncleAunt(gender(g, target), compareAge(g, target, parent), gender(g, parent));
   }
   if (up === 1 && down === 2) {
     const sibling = path[2];
-    return `Keponakan (anak ${siblingWord(g, sibling, me)})`;
+    return lex.nephewNiece(gender(g, target), compareAge(g, sibling, me), gender(g, sibling));
   }
-  if (up === 3 && down === 1) {
-    return "Saudara " + byGender(g, path[2], "kakek", "nenek", "kakek/nenek");
-  }
-  if (up === 1 && down === 3) return "Cucu saudara";
-  if (up === 3 && down === 2) return `Sepupu ${parentWord(g, path[1])}`;
-  if (up === 2 && down === 3) return "Anak sepupu";
-  return `Kerabat sedarah (${up} generasi ke atas, ${down} ke bawah)`;
+  if (up === 3 && down === 1) return lex.grandUncleAunt(gender(g, target), gender(g, path[2]));
+  if (up === 1 && down === 3) return lex.grandNephewNiece(gender(g, target));
+  if (up === 3 && down === 2) return lex.parentsCousin(gender(g, path[1]));
+  if (up === 2 && down === 3) return lex.cousinsChild;
+  return lex.distantBlood(up, down);
 }
 
 // ---------------------------------------------------------------------------
@@ -368,13 +305,13 @@ function namedAffinal(g: Graph, me: string, target: string): KinshipResult | nul
   const sp = stepParent(g, me, target);
   if (sp) {
     return {
-      label: byGender(g, target, "Ayah tiri", "Ibu tiri", "Orang tua tiri"),
+      label: g.lex.stepParent(gender(g, target)),
       path: sp,
       blood: false,
     };
   }
   const sc = stepParent(g, target, me);
-  if (sc) return { label: "Anak tiri", path: [...sc].reverse(), blood: false };
+  if (sc) return { label: g.lex.stepChild, path: [...sc].reverse(), blood: false };
 
   const mySpouses = (g.spouses.get(me) ?? []).map((s) => s.spouseId);
   const targetSpouses = (g.spouses.get(target) ?? []).map((s) => s.spouseId);
@@ -383,7 +320,7 @@ function namedAffinal(g: Graph, me: string, target: string): KinshipResult | nul
   for (const s of mySpouses) {
     if (bloodParents(g, s).includes(target)) {
       return {
-        label: byGender(g, target, "Ayah mertua", "Ibu mertua", "Mertua"),
+        label: g.lex.parentInLaw(gender(g, target)),
         path: [me, s, target],
         blood: false,
       };
@@ -391,14 +328,14 @@ function namedAffinal(g: Graph, me: string, target: string): KinshipResult | nul
   }
   // Menantu: spouse of my child
   for (const c of bloodChildren(g, me)) {
-    if (targetSpouses.includes(c)) return { label: "Menantu", path: [me, c, target], blood: false };
+    if (targetSpouses.includes(c)) return { label: g.lex.childInLaw(gender(g, target)), path: [me, c, target], blood: false };
   }
   // Ipar: spouse of my sibling
   const myParents = bloodParents(g, me);
   for (const s of targetSpouses) {
     const shared = bloodParents(g, s).find((p) => myParents.includes(p));
     if (shared && s !== me) {
-      return { label: iparLabel(g, s, me), path: [me, shared, s, target], blood: false };
+      return { label: iparLabel(g, s, me, target), path: [me, shared, s, target], blood: false };
     }
   }
   // Ipar: sibling of my spouse
@@ -406,24 +343,23 @@ function namedAffinal(g: Graph, me: string, target: string): KinshipResult | nul
   for (const s of mySpouses) {
     const shared = bloodParents(g, s).find((p) => targetParents.includes(p));
     if (shared && s !== target) {
-      return { label: iparLabel(g, target, s), path: [me, s, shared, target], blood: false };
+      return { label: iparLabel(g, target, s, target), path: [me, s, shared, target], blood: false };
     }
   }
   // Besan: parent of my child's spouse
   for (const c of bloodChildren(g, me)) {
     for (const cs of g.spouses.get(c) ?? []) {
       if (bloodParents(g, cs.spouseId).includes(target)) {
-        return { label: "Besan", path: [me, c, cs.spouseId, target], blood: false };
+        return { label: g.lex.coParentInLaw, path: [me, c, cs.spouseId, target], blood: false };
       }
     }
   }
   return null;
 }
 
-/** sib is the sibling in the sibling relation, ref the other side. */
-function iparLabel(g: Graph, sib: string, ref: string) {
-  const c = compareAge(g, sib, ref);
-  return c < 0 ? "Kakak ipar" : c > 0 ? "Adik ipar" : "Ipar";
+/** sib is the sibling in the sibling relation, ref the other side, target the in-law being described. */
+function iparLabel(g: Graph, sib: string, ref: string, target: string) {
+  return g.lex.siblingInLaw(gender(g, target), compareAge(g, sib, ref));
 }
 
 function genericAffinal(
@@ -440,7 +376,7 @@ function genericAffinal(
     if (!rel) continue;
     const score = rel.up + rel.down;
     if (best && best.score <= score) continue;
-    const label = `${capitalize(spouseWord(g, target, union))} dari ${lowerFirst(bloodLabel(g, me, x, rel))}`;
+    const label = `${capitalize(spouseWord(g, target, union))} ${g.lex.of} ${lowerFirst(bloodLabel(g, me, x, rel))}`;
     best = { score, result: { label, path: [...rel.path, target], blood: false } };
   }
   // Target is a blood relative of my spouse Y.
@@ -450,7 +386,7 @@ function genericAffinal(
     if (!rel) continue;
     const score = rel.up + rel.down;
     if (best && best.score <= score) continue;
-    const label = `${bloodLabel(g, y, target, rel)} dari ${spouseWord(g, y, union)}`;
+    const label = `${bloodLabel(g, y, target, rel)} ${g.lex.of} ${spouseWord(g, y, union)}`;
     best = { score, result: { label, path: [me, ...rel.path], blood: false } };
   }
   return best?.result ?? null;
@@ -486,23 +422,24 @@ export function describeKinship(
   data: TreeData,
   meId: string,
   targetId: string,
+  locale: KinshipLocale = "id",
 ): KinshipResult | null {
-  return createKinshipResolver(data, meId)(targetId);
+  return createKinshipResolver(data, meId, locale)(targetId);
 }
 
 /**
  * describeKinship for many targets: the graph and the ancestry memo (which only depends on the
  * person, not on the target) are built once. Use it for lists.
  */
-export function createKinshipResolver(data: TreeData, meId: string): (targetId: string) => KinshipResult | null {
-  const g = buildGraph(data);
+export function createKinshipResolver(data: TreeData, meId: string, locale: KinshipLocale = "id"): (targetId: string) => KinshipResult | null {
+  const g = buildGraph(data, locale);
   const cache = new Map<string, Ancestry>();
   return (targetId) => resolve(g, meId, targetId, cache);
 }
 
 function resolve(g: Graph, meId: string, targetId: string, cache: Map<string, Ancestry>): KinshipResult | null {
   if (!g.persons.has(meId) || !g.persons.has(targetId)) return null;
-  if (meId === targetId) return { label: "Diri sendiri", path: [meId], blood: true };
+  if (meId === targetId) return { label: g.lex.self, path: [meId], blood: true };
 
   const union = spouseUnion(g, meId, targetId);
   if (union) {
@@ -523,6 +460,6 @@ function resolve(g: Graph, meId: string, targetId: string, cache: Map<string, An
   if (generic) return generic;
 
   const path = anyPath(g, meId, targetId);
-  if (path) return { label: "Kerabat jauh (melalui pernikahan)", path, blood: false };
+  if (path) return { label: g.lex.distantByMarriage, path, blood: false };
   return null;
 }

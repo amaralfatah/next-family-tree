@@ -1,0 +1,74 @@
+{
+  "mode": {
+    "label": "Tree direction",
+    "all": "All",
+    "descendants": "Descendants",
+    "ancestors": "Ancestors"
+  },
+  "expandAll": "Expand all ({count})",
+  "expandAllHint": "This tree is large, so some branches are folded to keep it fast.",
+  "me": "Me",
+  "flowLabel": {
+    "all": "Whole family tree",
+    "descendants": "Descendants of {name}",
+    "ancestors": "Ancestors of {name}"
+  },
+  "flow": {
+    "nodeHint": "Press Enter or Space to open this person's summary.",
+    "controls": "Tree view controls",
+    "zoomIn": "Zoom in",
+    "zoomOut": "Zoom out",
+    "fitView": "Fit to screen"
+  },
+  "layouting": "Laying out the tree…",
+  "relayout": "Rearranging…",
+  "empty": {
+    "title": "No one in this tree yet",
+    "description": "Start with the oldest ancestor you know, or with yourself.",
+    "addFirst": "Add the first person"
+  },
+  "search": {
+    "placeholder": "Search by name…",
+    "label": "Find a person to show in the tree",
+    "empty": "No matches."
+  },
+  "quickAdd": {
+    "parent": "Parent",
+    "partner": "Partner",
+    "child": "Child",
+    "sibling": "Sibling"
+  },
+  "addRelatives": "Add relatives of {name}",
+  "addRelativesGeneric": "Add relatives",
+  "summary": {
+    "aria": "Summary of {name}",
+    "you": "This is you",
+    "unknownDates": "Dates unknown",
+    "edit": "Edit",
+    "close": "Close",
+    "relationToYou": "Relationship to you",
+    "markYourself": "Mark yourself in the tree to see how you are related to each relative.",
+    "view": {
+      "all": "View {name}'s family",
+      "descendants": "View {name}'s descendants",
+      "ancestors": "View {name}'s ancestors"
+    },
+    "openProfile": "Open profile",
+    "createYourTree": "Create your tree"
+  },
+  "starter": {
+    "title": "Continue from {name}",
+    "body": "Add their closest relatives. Everyone you add is linked into the tree right away."
+  },
+  "node": {
+    "unsaved": "Unsaved",
+    "me": "Me",
+    "divorced": "Divorced",
+    "hideChildren": "Hide children",
+    "showChildren": "Show children",
+    "hideChildrenOf": "Hide the children of {owner}",
+    "showChildrenOf": "Show the children of {owner}",
+    "unknown": "Unknown"
+  },
+  "deleteNote": "Their details and photo are deleted. Their children remain and stay linked to their other parent. The deletion is recorded in the history."
+}

@@ -1,0 +1,130 @@
+{
+  "landing": {
+    "metaTitle": "Sararia Family Tree · Family history",
+    "metaDescription": "Build your family tree together, explore the whole clan, and see how you are related to each relative.",
+    "homeLabel": "Sararia Family Tree, home",
+    "toggleTheme": "Switch light/dark theme",
+    "signIn": "Sign in",
+    "heroTitle": "At the family reunion, never call anyone the wrong name again.",
+    "heroBody": "Build your extended family tree together with your relatives, and learn the right term for each one.",
+    "createTree": "Create a family tree",
+    "seeExample": "See an example",
+    "chartAlt": "A sample family tree in Sararia Family Tree, with a panel showing how the selected relative is related to you",
+    "tileTermsTitle": "The right term for every relative.",
+    "tileTermsBody": "Tap anyone in the tree. From uncles and aunts to in-laws and second cousins, the term is worked out from the family tree.",
+    "sheetAlt": "Relative panel for Rizky Nurdin, showing their relationship to the selected person",
+    "tileTogetherTitle": "Filled in together by the family.",
+    "tileTogetherBody": "Invite relatives with a link. Each family adds its own branch, right from their phone.",
+    "addAlt": "Add child form",
+    "promisesTitle": "Family data stays with the family.",
+    "promises": {
+      "invitedOnly": {
+        "title": "Invited people only",
+        "body": "Family trees and photos can't be found by anyone else on the internet."
+      },
+      "history": {
+        "title": "Every change is recorded",
+        "body": "The history keeps track of who changed what. Relatives who only want to look can be invited as viewers."
+      },
+      "deletable": {
+        "title": "Delete anytime",
+        "body": "The tree's owner can permanently delete everyone, photos, and history from Settings."
+      }
+    },
+    "readPrivacy": "Read about privacy",
+    "closingTitle": "While the elders can still be asked.",
+    "footerNote": "Sararia Family Tree, part of the Sararia family of apps.",
+    "privacy": "Privacy"
+  },
+  "example": {
+    "metaTitle": "Sample family tree",
+    "metaDescription": "Try a fictional four-generation family tree without signing in, complete with relationship terms like uncle, cousin, and in-law.",
+    "homeLabel": "Sararia Family Tree, go to home",
+    "toggleTheme": "Switch light/dark theme",
+    "createTree": "Create a tree",
+    "heading": "Sample tree {name}",
+    "banner": "A fictional family. You are marked as <strong>{name}</strong>.",
+    "bannerHint": "Tap anyone to see how they are related to you.",
+    "tryEditing": "Try editing"
+  },
+  "demo": {
+    "metaTitle": "Try editing a family tree",
+    "metaDescription": "Add, edit, and delete members of a fictional family without signing in. All changes stay in your browser."
+  },
+  "demoSandbox": {
+    "visitor": "Visitor",
+    "deleteNote": "Marriages and child links that involve only this person are deleted too. This only affects the sample tree.",
+    "homeLabel": "Sararia Family Tree, go to home",
+    "fallbackName": "Sample tree",
+    "toggleTheme": "Switch light/dark theme",
+    "createTree": "Create a tree",
+    "heading": "Try editing the sample family tree",
+    "mode": "Trial mode.",
+    "modeHint": "Tap anyone to add a relative, edit, or delete them.",
+    "modeNote": "Changes are lost when the page is closed.",
+    "restart": "Start over",
+    "failed": "The sample tree failed to load.",
+    "retry": "Try again",
+    "loading": "Setting up the sample family in your browser…"
+  },
+  "privacy": {
+    "title": "Privacy and family data",
+    "intro": "A summary of how Sararia Family Tree handles your family's data.",
+    "filledTitle": "Data is entered by family members",
+    "filledBody": "Names, dates, photos, and notes in each tree are entered by that tree's members, not by Sararia. The tree's owner is responsible for who is invited.",
+    "privateTitle": "Private by default",
+    "privateBody": "There are no public pages. Each tree can only be opened by members who have signed in with their account. Photos are stored without public access and are only served after membership is checked.",
+    "rightsTitle": "Rights of people recorded (Indonesia's PDP Law No. 27/2022)",
+    "rightsBody": "If you are recorded in a tree and want your data changed or deleted, contact that tree's owner. If that doesn't work, send a request to <email>hello@caanglabs.com</email> with the name of the tree; we will follow up.",
+    "deletionTitle": "Deletion",
+    "deletionBody": "The owner can permanently delete the tree together with all people, relationships, photos, invitations, and history from the Settings page."
+  },
+  "invite": {
+    "metaTitle": "Invitation",
+    "invitedTo": "You are invited to join",
+    "role": {
+      "owner": "owner",
+      "editor": "editor",
+      "viewer": "viewer"
+    },
+    "asEditor": "as an <strong>{role}</strong>. You can add and edit family data.",
+    "asViewer": "as a <strong>{role}</strong>. You can view the family tree and profiles.",
+    "signedInAs": "Signed in as {email}",
+    "problem": {
+      "invalid": {
+        "title": "Invitation link not recognized",
+        "body": "Check the link you received again; it may have been cut off when copied."
+      },
+      "expired": {
+        "title": "Invitation link expired",
+        "body": "Ask the owner of the tree “{name}” for a new link."
+      },
+      "revoked": {
+        "title": "Invitation link was revoked",
+        "body": "Ask the owner of the tree “{name}” for a new link."
+      }
+    },
+    "toMyTrees": "Go to my trees",
+    "join": "Join the tree",
+    "joining": "Joining…"
+  },
+  "login": {
+    "title": "Sign in",
+    "titleInvite": "Sign in to join",
+    "body": "Family trees are private. Sign in to create or open your family tree.",
+    "bodyInvite": "You have been invited to a family tree. Sign in first so the family's data stays protected.",
+    "googleUnavailable": "Google sign-in isn't available here yet.",
+    "consent": "By signing in, you agree that the family data you enter is only visible to the tree's members.",
+    "privacyPolicy": "Privacy policy",
+    "connecting": "Connecting…",
+    "continueWithGoogle": "Continue with Google",
+    "googleFailed": "Google sign-in failed or was cancelled. Please try again."
+  },
+  "welcome": {
+    "joined": "Welcome aboard!",
+    "linkedHint": "Tap anyone in the tree to see how they are related to you.",
+    "unlinkedHint": "Mark yourself in the tree to see how you are related to each relative.",
+    "findMe": "Find me",
+    "close": "Close"
+  }
+}

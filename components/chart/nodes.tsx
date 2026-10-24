@@ -1,6 +1,7 @@
 "use client";
 
 import { Handle, Position, type Node, type NodeProps } from "@xyflow/react";
+import { useTranslations } from "next-intl";
 import { memo } from "react";
 import { PERSON_H, PERSON_W, UNION_SIZE, UNKNOWN_H, UNKNOWN_W } from "@/lib/graph/layout";
 import { subtitle } from "@/lib/person";
@@ -33,6 +34,7 @@ export function initialsOf(name: string) {
 }
 
 export const PersonNode = memo(function PersonNode({ data }: NodeProps<PersonFlowNode>) {
+  const t = useTranslations("chart.node");
   const { person, photo, focus, isMe, onPath, isSelected: selected, draft } = data;
   // Pedigree convention instead of a colour code: circle for women, square for men.
   const avatarShape = person.gender === "male" ? "rounded-[5px]" : person.gender === "female" ? "rounded-full" : "rounded-lg";
@@ -63,9 +65,9 @@ export const PersonNode = memo(function PersonNode({ data }: NodeProps<PersonFlo
         <span className="mt-0.5 block truncate text-[12.5px] leading-tight text-muted-foreground">{subtitle(person) || " "}</span>
       </span>
       {draft ? (
-        <span className="absolute -top-2.5 right-2 rounded-full bg-soga px-2 py-px text-xs font-semibold text-white">Belum disimpan</span>
+        <span className="absolute -top-2.5 right-2 rounded-full bg-soga px-2 py-px text-xs font-semibold text-white">{t("unsaved")}</span>
       ) : isMe ? (
-        <span className="absolute -top-2.5 right-2 rounded-full bg-primary px-2 py-px text-xs font-semibold text-primary-foreground">Saya</span>
+        <span className="absolute -top-2.5 right-2 rounded-full bg-primary px-2 py-px text-xs font-semibold text-primary-foreground">{t("me")}</span>
       ) : null}
       <Handle type="source" position={Position.Bottom} className={hidden} isConnectable={false} />
     </div>
@@ -87,6 +89,7 @@ export interface UnionNodeData extends Record<string, unknown> {
 export type UnionFlowNode = Node<UnionNodeData, "union">;
 
 export const UnionNode = memo(function UnionNode({ data }: NodeProps<UnionFlowNode>) {
+  const t = useTranslations("chart.node");
   const dot = cn(
     "rounded-full transition-[scale,background-color,box-shadow] duration-150",
     data.status === "divorced" ? "border-2 border-nila/70 bg-background" : "bg-nila",
@@ -95,7 +98,7 @@ export const UnionNode = memo(function UnionNode({ data }: NodeProps<UnionFlowNo
     data.onPath && "scale-125 border-soga bg-soga",
   );
   return (
-    <div style={{ width: UNION_SIZE, height: UNION_SIZE }} className="grid place-items-center" title={data.status === "divorced" ? "Bercerai" : undefined}>
+    <div style={{ width: UNION_SIZE, height: UNION_SIZE }} className="grid place-items-center" title={data.status === "divorced" ? t("divorced") : undefined}>
       <Handle type="target" position={Position.Top} className={hidden} isConnectable={false} />
       {data.collapsible ? (
         <button
@@ -105,8 +108,8 @@ export const UnionNode = memo(function UnionNode({ data }: NodeProps<UnionFlowNo
             data.onToggle(data.unionId);
           }}
           aria-expanded={!data.collapsed}
-          aria-label={`${data.collapsed ? "Tampilkan" : "Sembunyikan"} anak-anak ${data.owner}`}
-          title={data.collapsed ? "Tampilkan anak-anak" : "Sembunyikan anak-anak"}
+          aria-label={t(data.collapsed ? "showChildrenOf" : "hideChildrenOf", { owner: data.owner })}
+          title={t(data.collapsed ? "showChildren" : "hideChildren")}
           className="nodrag nopan pointer-events-auto group/dot relative grid size-full cursor-pointer place-items-center rounded-full outline-none after:absolute after:-inset-[15px] after:content-[''] focus-visible:ring-3 focus-visible:ring-ring/50"
         >
           <span className={cn(dot, "group-hover/dot:scale-150 group-active/dot:scale-110 group-active/dot:duration-0")} />
@@ -122,13 +125,14 @@ export const UnionNode = memo(function UnionNode({ data }: NodeProps<UnionFlowNo
 export type UnknownFlowNode = Node<Record<string, never>, "unknown">;
 
 export const UnknownNode = memo(function UnknownNode() {
+  const t = useTranslations("chart.node");
   return (
     <div
       style={{ width: UNKNOWN_W, height: UNKNOWN_H }}
       className="grid place-items-center rounded-xl border border-dashed bg-transparent text-xs text-muted-foreground"
     >
       <Handle type="target" position={Position.Top} className={hidden} isConnectable={false} />
-      Tidak diketahui
+      {t("unknown")}
       <Handle type="source" position={Position.Bottom} className={hidden} isConnectable={false} />
     </div>
   );

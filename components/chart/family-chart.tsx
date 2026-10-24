@@ -25,8 +25,10 @@ import {
   NetworkIcon,
   XIcon,
 } from "lucide-react";
-import Link from "next/link";
-import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { useLocale, useTranslations } from "next-intl";
+import { Link } from "@/i18n/navigation";
+import { useSearchParams } from "next/navigation";
+import { usePathname, useRouter } from "@/i18n/navigation";
 import { useCallback, useEffect, useImperativeHandle, useMemo, useRef, useState } from "react";
 import { barCancel, barConfirm, sheetBar } from "@/components/form-row-classes";
 import { Button, buttonVariants } from "@/components/ui/button";
@@ -37,7 +39,7 @@ import { Spinner } from "@/components/ui/spinner";
 import { autoCollapse, buildAncestorGraph, buildDescendantGraph, buildFamilyGraph, familyRoots, indexTree, revealFocus, type FamilyGraph } from "@/lib/graph/build";
 import { PERSON_H, PERSON_W, toElk } from "@/lib/graph/layout";
 import { useElkLayout } from "@/lib/graph/use-layout";
-import { createKinshipResolver } from "@/lib/kinship";
+import { createKinshipResolver, type KinshipLocale } from "@/lib/kinship";
 import { DRAFT_ID, withDraft, type Draft } from "@/lib/tree/draft";
 import { useWide } from "@/lib/use-wide";
 import { photoUrl, subtitle } from "@/lib/person";
@@ -46,7 +48,7 @@ import { cn } from "@/lib/utils";
 import { initialsOf, nodeTypes, type PersonNodeData, type UnionNodeData } from "./nodes";
 import { reducedMotion, useSheetMotion } from "./sheet-motion";
 
-type Mode = "semua" | "keturunan" | "leluhur";
+type Mode = "all" | "descendants" | "ancestors";
 
 /** How long the chart glides to a card; Reduce Motion jumps straight there. */
 const pan = () => (reducedMotion() ? 0 : 280);
@@ -66,7 +68,7 @@ interface Props {
   rootPersonId: string | null;
   mePersonId: string | null;
   canEdit: boolean;
-  /** Public sample on /contoh: read-only, no profile links, and the sheet invites the visitor to sign up. */
+  /** Public sample on /example: read-only, no profile links, and the sheet invites the visitor to sign up. */
   demo?: boolean;
   /** Person whose sheet is open on first render. */
   initialSelectedId?: string;
@@ -91,6 +93,8 @@ export function FamilyChart({ data, draft, ...props }: Props) {
 }
 
 function Chart({ treeId, data, rootPersonId, mePersonId, canEdit, demo = false, initialSelectedId, actions, draft, panel, panelOpen = false }: Props) {
+  const t = useTranslations("chart");
+  const locale = useLocale() as KinshipLocale;
   const wide = useWide();
   const router = useRouter();
   const pathname = usePathname();
@@ -99,18 +103,18 @@ function Chart({ treeId, data, rootPersonId, mePersonId, canEdit, demo = false, 
   const unionById = useMemo(() => new Map(data.unions.map((u) => [u.id, u])), [data.unions]);
 
   const fallbackFocus = rootPersonId && byId.has(rootPersonId) ? rootPersonId : (data.persons[0]?.id ?? null);
-  const paramFocus = searchParams.get("pusat");
+  const paramFocus = searchParams.get("focus");
   const focusId = paramFocus && byId.has(paramFocus) ? paramFocus : fallbackFocus;
   // The whole family by default, so siblings and cousins show without re-centring on a parent first.
-  const arah = searchParams.get("arah");
-  const mode: Mode = arah === "leluhur" || arah === "keturunan" ? arah : "semua";
+  const view = searchParams.get("view");
+  const mode: Mode = view === "ancestors" || view === "descendants" ? view : "all";
 
   const setView = useCallback(
     (next: { focus?: string; mode?: Mode }) => {
       const sp = new URLSearchParams(searchParams.toString());
-      sp.delete("ditambah");
-      if (next.focus) sp.set("pusat", next.focus);
-      if (next.mode) sp.set("arah", next.mode);
+      sp.delete("added");
+      if (next.focus) sp.set("focus", next.focus);
+      if (next.mode) sp.set("view", next.mode);
       router.replace(`${pathname}?${sp.toString()}`, { scroll: false });
     },
     [pathname, router, searchParams],
@@ -122,8 +126,8 @@ function Chart({ treeId, data, rootPersonId, mePersonId, canEdit, demo = false, 
   const viewKey = `${mode}:${focusId}`;
   const [folds, setFolds] = useState<Record<string, ReadonlySet<string>>>({});
   const autoFolded = useMemo(() => {
-    if (!focusId || mode === "leluhur") return new Set<string>();
-    return autoCollapse(data, mode === "semua" ? familyRoots(indexTree(data), focusId) : focusId);
+    if (!focusId || mode === "ancestors") return new Set<string>();
+    return autoCollapse(data, mode === "all" ? familyRoots(indexTree(data), focusId) : focusId);
   }, [data, focusId, mode]);
   const collapsed = folds[viewKey] ?? autoFolded;
   // Functional update: toggle keeps its identity across folds, so memoised nodes don't all re-render.
@@ -141,8 +145,8 @@ function Chart({ treeId, data, rootPersonId, mePersonId, canEdit, demo = false, 
 
   const graph: FamilyGraph = useMemo(() => {
     if (!focusId) return { nodes: [], edges: [] };
-    if (mode === "semua") return buildFamilyGraph(data, focusId, collapsed);
-    return mode === "keturunan" ? buildDescendantGraph(data, focusId, collapsed) : buildAncestorGraph(data, focusId, collapsed);
+    if (mode === "all") return buildFamilyGraph(data, focusId, collapsed);
+    return mode === "descendants" ? buildDescendantGraph(data, focusId, collapsed) : buildAncestorGraph(data, focusId, collapsed);
   }, [data, focusId, mode, collapsed]);
 
   // The graph's own shape, in order: a new birth order, a re-sorted sibling or a moved child changes it even
@@ -154,9 +158,9 @@ function Chart({ treeId, data, rootPersonId, mePersonId, canEdit, demo = false, 
   const [selectedId, setSelectedId] = useState<string | null>(initialSelectedId ?? null);
   const sheetRef = useRef<SheetHandle>(null);
 
-  // `?ditambah=<id>`: someone was just added from the chart. Select them, and if the current view can't show
+  // `?added=<id>`: someone was just added from the chart. Select them, and if the current view can't show
   // them (a new parent in the descendant chart, a sibling of the focus), re-centre the descendant chart so it does.
-  const addedId = searchParams.get("ditambah");
+  const addedId = searchParams.get("added");
   const [revealId, setRevealId] = useState<string | null>(null);
   if (addedId && addedId !== revealId && byId.has(addedId)) {
     setRevealId(addedId);
@@ -165,14 +169,14 @@ function Chart({ treeId, data, rootPersonId, mePersonId, canEdit, demo = false, 
   useEffect(() => {
     if (!revealId) return;
     const shown = graph.nodes.some((n) => n.id === `p:${revealId}`);
-    setView(shown ? {} : { focus: revealFocus(data, revealId), mode: "keturunan" });
+    setView(shown ? {} : { focus: revealFocus(data, revealId), mode: "descendants" });
     // Once per added person; the graph and data it reads are the ones that already include them.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [revealId]);
   const revealedFor = useRef<string | null>(null);
 
   const selected = selectedId ? byId.get(selectedId) : undefined;
-  const kinOf = useMemo(() => (mePersonId ? createKinshipResolver(data, mePersonId) : null), [data, mePersonId]);
+  const kinOf = useMemo(() => (mePersonId ? createKinshipResolver(data, mePersonId, locale) : null), [data, mePersonId, locale]);
   const kinship = useMemo(() => (selected && kinOf && selected.id !== mePersonId ? kinOf(selected.id) : null), [selected, kinOf, mePersonId]);
 
   // Wide screens: one inspector on the right, the trailing side (HIG), for whatever is selected: the
@@ -188,8 +192,8 @@ function Chart({ treeId, data, rootPersonId, mePersonId, canEdit, demo = false, 
   // Backstop for when no animationend comes (animations turned off): never leave an empty panel taking room.
   useEffect(() => {
     if (inspectorOpen || !inspectorMounted) return;
-    const t = setTimeout(() => setInspectorMounted(false), 400);
-    return () => clearTimeout(t);
+    const timer = setTimeout(() => setInspectorMounted(false), 400);
+    return () => clearTimeout(timer);
   }, [inspectorOpen, inspectorMounted]);
 
   const childrenOfUnion = useMemo(() => {
@@ -316,7 +320,7 @@ function Chart({ treeId, data, rootPersonId, mePersonId, canEdit, demo = false, 
     const top = box.top + (toolbarRef.current?.offsetHeight ?? 0);
     const a = flowToScreenPosition({ x: at.x, y: at.y });
     const b = flowToScreenPosition({ x: at.x + PERSON_W, y: at.y + PERSON_H });
-    // With some room to spare, so the card and its "Belum disimpan" label don't touch the edge.
+    // With some room to spare, so the card and its "Unsaved" label don't touch the edge.
     const m = 24;
     if (a.x >= box.left + m && b.x <= box.right - m && a.y >= top + m && b.y <= bottom - m) return;
     const zoom = Math.max(getZoom(), 0.85);
@@ -346,7 +350,7 @@ function Chart({ treeId, data, rootPersonId, mePersonId, canEdit, demo = false, 
       const narrow = window.innerWidth < 640;
       const p = focusId ? positions[`p:${focusId}`] : undefined;
       // A relative is already selected (the public example, a shared link): frame the whole route from
-      // "Saya" to them, between the two cards, at a zoom (0.6 to 0.9) that fits both (196 wide) in the
+      // "Me" to them, between the two cards, at a zoom (0.6 to 0.9) that fits both (196 wide) in the
       // chart's width; the inspector beside it already took its own room.
       const me = mePersonId ? positions[`p:${mePersonId}`] : undefined;
       const them = selectedId ? positions[`p:${selectedId}`] : undefined;
@@ -359,7 +363,7 @@ function Chart({ treeId, data, rootPersonId, mePersonId, canEdit, demo = false, 
         setCenter(p.x + 98, p.y + (narrow ? 200 : 180), { zoom: narrow ? 0.95 : 0.85, duration: 0 });
       } else {
         fitView({ padding: 0.15, maxZoom: 1.1, duration: 0 }).then(() => {
-          // A wide branch fitted to the screen is too small to read: show "Saya" (or the focus) at a readable zoom instead.
+          // A wide branch fitted to the screen is too small to read: show "Me" (or the focus) at a readable zoom instead.
           const target = (mePersonId && positions[`p:${mePersonId}`]) || p;
           if (target && getZoom() < 0.7) setCenter(target.x + 98, target.y + 36, { zoom: 0.85, duration: 0 });
         });
@@ -368,7 +372,7 @@ function Chart({ treeId, data, rootPersonId, mePersonId, canEdit, demo = false, 
   }, [positions, stale, viewKey, fitView, setCenter, getZoom, graph.nodes.length, focusId, mePersonId, selectedId, path, revealId, wide]);
 
 
-  // Folded families in the current chart, for the "Buka semua" button.
+  // Folded families in the current chart, for the "Expand all" button.
   const foldedCount = graph.nodes.filter((n) => n.kind === "union" && collapsed.has(n.unionId)).length;
 
   const flowRef = useRef<HTMLDivElement>(null);
@@ -378,13 +382,13 @@ function Chart({ treeId, data, rootPersonId, mePersonId, canEdit, demo = false, 
     return (
       <Empty className="m-4 bg-card">
         <EmptyHeader>
-          <EmptyTitle>Belum ada orang di pohon ini</EmptyTitle>
-          <EmptyDescription>Mulai dari leluhur tertua yang Anda ketahui, atau dari diri sendiri.</EmptyDescription>
+          <EmptyTitle>{t("empty.title")}</EmptyTitle>
+          <EmptyDescription>{t("empty.description")}</EmptyDescription>
         </EmptyHeader>
         {canEdit && !demo ? (
           <EmptyContent>
-            <Link href={`/pohon/${treeId}/orang/baru`} className={buttonVariants()}>
-              <UserRoundPlusIcon data-icon="inline-start" /> Tambah orang pertama
+            <Link href={`/trees/${treeId}/people/new`} className={buttonVariants()}>
+              <UserRoundPlusIcon data-icon="inline-start" /> {t("empty.addFirst")}
             </Link>
           </EmptyContent>
         ) : null}
@@ -412,12 +416,12 @@ function Chart({ treeId, data, rootPersonId, mePersonId, canEdit, demo = false, 
       {/* Controls float over the chart on their own material, with no bar behind them, so the family runs
           edge to edge (HIG: defer to content). Phones get two rows: direction and actions, then search. */}
       <div ref={toolbarRef} className="no-print pointer-events-none absolute inset-x-0 top-0 z-10 flex flex-wrap items-center gap-2 p-3 *:pointer-events-auto">
-        <div className="material flex rounded-[10px] bg-muted/85 p-0.5 shadow-[0_1px_2px_rgb(0_0_0/0.06)] backdrop-blur-xl" role="group" aria-label="Arah pohon">
+        <div className="material flex rounded-[10px] bg-muted/85 p-0.5 shadow-[0_1px_2px_rgb(0_0_0/0.06)] backdrop-blur-xl" role="group" aria-label={t("mode.label")}>
           {(
             [
-              ["semua", "Semua", NetworkIcon],
-              ["keturunan", "Keturunan", ArrowDownFromLineIcon],
-              ["leluhur", "Leluhur", ArrowUpFromLineIcon],
+              ["all", t("mode.all"), NetworkIcon],
+              ["descendants", t("mode.descendants"), ArrowDownFromLineIcon],
+              ["ancestors", t("mode.ancestors"), ArrowUpFromLineIcon],
             ] as const
           ).map(([value, label, Icon]) => (
             <button
@@ -440,24 +444,24 @@ function Chart({ treeId, data, rootPersonId, mePersonId, canEdit, demo = false, 
             size="sm"
             className="hit material border-transparent bg-card/85 shadow-[0_1px_2px_rgb(0_0_0/0.06)] backdrop-blur-xl"
             onClick={unfoldAll}
-            title={folds[viewKey] ? undefined : "Pohon ini besar, jadi sebagian cabang dilipat agar cepat tampil."}
+            title={folds[viewKey] ? undefined : t("expandAllHint")}
           >
-            <ChevronsUpDownIcon data-icon="inline-start" /> Buka semua ({foldedCount})
+            <ChevronsUpDownIcon data-icon="inline-start" /> {t("expandAll", { count: foldedCount })}
           </Button>
         ) : null}
         <FocusSearch data={data} onPick={(id) => setView({ focus: id })} />
         {mePersonId && mePersonId !== focusId ? (
           <Button variant="outline" size="sm" className="hit material border-transparent bg-card/85 shadow-[0_1px_2px_rgb(0_0_0/0.06)] backdrop-blur-xl max-sm:px-2.5" onClick={() => setView({ focus: mePersonId })}>
-            <CrosshairIcon data-icon="inline-start" /> <span className="max-sm:sr-only">Saya</span>
+            <CrosshairIcon data-icon="inline-start" /> <span className="max-sm:sr-only">{t("me")}</span>
           </Button>
         ) : null}
       </div>
 
-      <div ref={flowRef} className="relative min-h-[60dvh] flex-1" aria-label={mode === "semua" ? "Pohon seluruh keluarga" : `Pohon ${mode} ${byId.get(focusId)?.fullName ?? ""}`}>
+      <div ref={flowRef} className="relative min-h-[60dvh] flex-1" aria-label={mode === "all" ? t("flowLabel.all") : t(`flowLabel.${mode}`, { name: byId.get(focusId)?.fullName ?? "" })}>
         {!positions ? (
           <div className="absolute inset-0 grid place-items-center text-sm text-muted-foreground">
             <span role="status" className="flex items-center gap-2">
-              <Spinner /> Menyusun pohon…
+              <Spinner /> {t("layouting")}
             </span>
           </div>
         ) : null}
@@ -474,6 +478,13 @@ function Chart({ treeId, data, rootPersonId, mePersonId, canEdit, demo = false, 
           }}
         >
         <ReactFlow
+          ariaLabelConfig={{
+            "node.a11yDescription.default": t("flow.nodeHint"),
+            "controls.ariaLabel": t("flow.controls"),
+            "controls.zoomIn.ariaLabel": t("flow.zoomIn"),
+            "controls.zoomOut.ariaLabel": t("flow.zoomOut"),
+            "controls.fitView.ariaLabel": t("flow.fitView"),
+          }}
           nodes={nodes}
           edges={edges}
           nodeTypes={nodeTypes}
@@ -490,7 +501,7 @@ function Chart({ treeId, data, rootPersonId, mePersonId, canEdit, demo = false, 
         </ReactFlow>
         </div>
         {stale && positions ? (
-          <span role="status" className="absolute top-16 left-1/2 -translate-x-1/2 rounded-full bg-card px-3 py-1 text-xs text-muted-foreground shadow">Menyusun ulang…</span>
+          <span role="status" className="absolute top-16 left-1/2 -translate-x-1/2 rounded-full bg-card px-3 py-1 text-xs text-muted-foreground shadow">{t("relayout")}</span>
         ) : null}
       </div>
 
@@ -503,7 +514,7 @@ function Chart({ treeId, data, rootPersonId, mePersonId, canEdit, demo = false, 
 
     {wide && inspectorMounted ? (
       <aside
-        aria-label={formInInspector ? undefined : shownPerson ? `Ringkasan ${shownPerson.fullName}` : undefined}
+        aria-label={formInInspector ? undefined : shownPerson ? t("summary.aria", { name: shownPerson.fullName }) : undefined}
         inert={!inspectorOpen}
         onKeyDown={(e) => (e.key === "Escape" && !formInInspector ? setSelectedId(null) : null)}
         onAnimationEnd={(e) => (e.target === e.currentTarget && !inspectorOpen ? setInspectorMounted(false) : null)}
@@ -521,6 +532,7 @@ function Chart({ treeId, data, rootPersonId, mePersonId, canEdit, demo = false, 
 
 /** Arrow keys move through the matches, Enter or a click makes the person the chart's centre. */
 function FocusSearch({ data, onPick }: { data: TreeData; onPick: (id: string) => void }) {
+  const t = useTranslations("chart");
   const [q, setQ] = useState("");
   return (
     <Combobox<Person>
@@ -546,8 +558,8 @@ function FocusSearch({ data, onPick }: { data: TreeData; onPick: (id: string) =>
         showTrigger={false}
         name="chartSearch"
         autoComplete="off"
-        placeholder="Cari nama…"
-        aria-label="Cari orang untuk dilihat di pohon"
+        placeholder={t("search.placeholder")}
+        aria-label={t("search.label")}
         className="material order-last w-full border-transparent bg-card/85 shadow-[0_1px_2px_rgb(0_0_0/0.06)] backdrop-blur-xl sm:order-none sm:w-56"
       >
         <InputGroupAddon align="inline-start">
@@ -555,7 +567,7 @@ function FocusSearch({ data, onPick }: { data: TreeData; onPick: (id: string) =>
         </InputGroupAddon>
       </ComboboxInput>
       <ComboboxContent className="sm:min-w-72">
-        <ComboboxEmpty>Tidak ada yang cocok.</ComboboxEmpty>
+        <ComboboxEmpty>{t("search.empty")}</ComboboxEmpty>
         <ComboboxList>
           {(p: Person) => (
             <ComboboxItem key={p.id} value={p}>
@@ -570,17 +582,18 @@ function FocusSearch({ data, onPick }: { data: TreeData; onPick: (id: string) =>
 }
 
 const QUICK_ADD = [
-  { rel: "parent", label: "Orang tua", icon: UserRoundPlusIcon },
-  { rel: "partner", label: "Pasangan", icon: HeartIcon },
-  { rel: "child", label: "Anak", icon: BabyIcon },
-  { rel: "sibling", label: "Saudara", icon: UsersRoundIcon },
+  { rel: "parent", icon: UserRoundPlusIcon },
+  { rel: "partner", icon: HeartIcon },
+  { rel: "child", icon: BabyIcon },
+  { rel: "sibling", icon: UsersRoundIcon },
 ] as const;
 
 /**
- * "Tambah kerabat …", opening the form in place (or the page, without actions): one row per relation in the
+ * "Add relatives of …", opening the form in place (or the page, without actions): one row per relation in the
  * inspector; on the phone sheet, where height is short, a row of quick-action tiles like a contact's.
  */
 function AddRows({ treeId, person, onAdd, title, tiles = false }: { treeId: string; person: Person; onAdd?: EditActions["onAdd"]; title: string; tiles?: boolean }) {
+  const t = useTranslations("chart");
   // Saving returns here with the same focus and direction instead of opening the new profile.
   const pathname = usePathname();
   const query = useSearchParams().toString();
@@ -596,12 +609,12 @@ function AddRows({ treeId, person, onAdd, title, tiles = false }: { treeId: stri
             onAdd ? (
               <button key={a.rel} type="button" onClick={() => onAdd(a.rel, person.id)} className={tile}>
                 <a.icon className="size-5" />
-                {a.label}
+                {t(`quickAdd.${a.rel}`)}
               </button>
             ) : (
-              <Link key={a.rel} href={`/pohon/${treeId}/orang/baru?rel=${a.rel}&dari=${person.id}&kembali=${back}`} className={tile}>
+              <Link key={a.rel} href={`/trees/${treeId}/people/new?rel=${a.rel}&from=${person.id}&back=${back}`} className={tile}>
                 <a.icon className="size-5" />
-                {a.label}
+                {t(`quickAdd.${a.rel}`)}
               </Link>
             ),
           )}
@@ -612,8 +625,8 @@ function AddRows({ treeId, person, onAdd, title, tiles = false }: { treeId: stri
   return (
     <Rows title={title}>
       {QUICK_ADD.map((a) => (
-        <Row key={a.rel} icon={a.icon} onClick={onAdd ? () => onAdd(a.rel, person.id) : undefined} href={onAdd ? undefined : `/pohon/${treeId}/orang/baru?rel=${a.rel}&dari=${person.id}&kembali=${back}`}>
-          {a.label}
+        <Row key={a.rel} icon={a.icon} onClick={onAdd ? () => onAdd(a.rel, person.id) : undefined} href={onAdd ? undefined : `/trees/${treeId}/people/new?rel=${a.rel}&from=${person.id}&back=${back}`}>
+          {t(`quickAdd.${a.rel}`)}
         </Row>
       ))}
     </Rows>
@@ -657,18 +670,19 @@ function Avatar({ treeId, person, size }: { treeId: string; person: Person; size
 
 /**
  * Phones and narrow windows: the summary as a bottom sheet (drag down or tap outside to close), with the
- * same grouped rows as the inspector and a compact header: who it is on the left, Ubah and close on the right.
+ * same grouped rows as the inspector and a compact header: who it is on the left, Edit and close on the right.
  */
 function PersonSheet({ onClose, ref, ...props }: SummaryProps & { onClose: () => void; ref?: React.Ref<SheetHandle> }) {
   const { ref: sheetEl, dismiss, handlers } = useSheetMotion<HTMLElement>(onClose);
   useImperativeHandle(ref, () => ({ dismiss }), [dismiss]);
+  const t = useTranslations("chart");
   const { treeId, person, isMe, actions } = props;
   return (
     <aside
       ref={sheetEl}
       {...handlers}
       className="no-print absolute inset-x-0 bottom-0 z-20 mx-auto max-w-lg touch-none will-change-transform rounded-t-3xl border-t bg-grouped px-4 pt-2 pb-[calc(1rem+env(safe-area-inset-bottom))] shadow-[0_-8px_30px_rgb(0_0_0/0.12)] sm:border-x"
-      aria-label={`Ringkasan ${person.fullName}`}
+      aria-label={t("summary.aria", { name: person.fullName })}
     >
       <div className="mx-auto mb-2 h-1 w-10 rounded-full bg-border" aria-hidden />
       <header className="flex items-center gap-3">
@@ -676,16 +690,16 @@ function PersonSheet({ onClose, ref, ...props }: SummaryProps & { onClose: () =>
         <div className="min-w-0 flex-1">
           <p className="truncate font-display text-[1.375rem] leading-tight tracking-[-0.01em]">{person.fullName}</p>
           <p className="truncate text-[13px] text-muted-foreground">
-            {isMe ? "Ini Anda · " : ""}
-            {subtitle(person) || "Tanggal tidak diketahui"}
+            {isMe ? `${t("summary.you")} · ` : ""}
+            {subtitle(person) || t("summary.unknownDates")}
           </p>
         </div>
         {actions ? (
           <Button type="button" variant="ghost" className="h-11 px-2 text-[17px] font-semibold text-soga-ink" onClick={() => actions.onEdit(person.id)}>
-            Ubah
+            {t("summary.edit")}
           </Button>
         ) : null}
-        <button type="button" onClick={dismiss} className={closeButton} aria-label="Tutup">
+        <button type="button" onClick={dismiss} className={closeButton} aria-label={t("summary.close")}>
           <XIcon className="size-4" />
         </button>
       </header>
@@ -698,21 +712,22 @@ function PersonSheet({ onClose, ref, ...props }: SummaryProps & { onClose: () =>
 
 /**
  * Wide screens: the summary in the inspector, laid out like a contact in Contacts. The bar matches the form
- * that replaces it (Tutup where Batal is, Ubah where Simpan is), and the rest is grouped rows straight on
+ * that replaces it (Close where Cancel is, Edit where Save is), and the rest is grouped rows straight on
  * the panel, with no card inside the card.
  */
 function InspectorSummary({ onClose, ...props }: SummaryProps & { onClose: () => void }) {
+  const t = useTranslations("chart");
   const { treeId, person, isMe, actions } = props;
   return (
     <div className="panel-scroll min-h-0 flex-1 overflow-y-auto overscroll-contain">
       <div className={cn("panel-bar material sticky top-0 z-10", sheetBar)}>
         <Button type="button" variant="ghost" className={barCancel} onClick={onClose}>
-          Tutup
+          {t("summary.close")}
         </Button>
         <span />
         {actions ? (
           <Button type="button" variant="ghost" className={barConfirm} onClick={() => actions.onEdit(person.id)}>
-            Ubah
+            {t("summary.edit")}
           </Button>
         ) : (
           <span />
@@ -725,9 +740,9 @@ function InspectorSummary({ onClose, ...props }: SummaryProps & { onClose: () =>
           <div>
             <h2 className="font-display text-[1.75rem] leading-tight tracking-[-0.015em] text-balance">{person.fullName}</h2>
             {person.nickname ? <p className="text-[15px] text-muted-foreground">“{person.nickname}”</p> : null}
-            <p className="mt-0.5 text-[15px] text-muted-foreground">{subtitle(person) || "Tanggal tidak diketahui"}</p>
+            <p className="mt-0.5 text-[15px] text-muted-foreground">{subtitle(person) || t("summary.unknownDates")}</p>
           </div>
-          {isMe ? <p className="rounded-full bg-muted px-3 py-1 text-[13px] font-medium">Ini Anda</p> : null}
+          {isMe ? <p className="rounded-full bg-muted px-3 py-1 text-[13px] font-medium">{t("summary.you")}</p> : null}
         </header>
         <SummaryBody {...props} />
       </div>
@@ -737,18 +752,19 @@ function InspectorSummary({ onClose, ...props }: SummaryProps & { onClose: () =>
 
 /** Who the person is to me and what can be done from here: the same groups in the sheet and the inspector. */
 function SummaryBody({ treeId, person, isMe, kinshipLabel, meLinked, demo, isFocus, mode, canEdit, actions, onFocus, compact = false }: SummaryProps & { compact?: boolean }) {
+  const t = useTranslations("chart");
   const firstName = person.nickname || person.fullName.split(" ")[0];
   return (
     <>
       {!isMe && kinshipLabel ? (
         <Rows>
           <div className="px-4 py-3">
-            <p className="text-[13px] text-muted-foreground">Hubungan dengan Anda</p>
+            <p className="text-[13px] text-muted-foreground">{t("summary.relationToYou")}</p>
             <p className="font-display text-xl leading-tight">{kinshipLabel}</p>
           </div>
         </Rows>
       ) : !isMe && !meLinked ? (
-        <p className="px-4 text-[13px] text-muted-foreground">Tandai diri Anda di pohon untuk melihat hubungan dengan setiap kerabat.</p>
+        <p className="px-4 text-[13px] text-muted-foreground">{t("summary.markYourself")}</p>
       ) : null}
 
       {/* Says what the chart will show, instead of the internal "focus" idea. */}
@@ -756,22 +772,22 @@ function SummaryBody({ treeId, person, isMe, kinshipLabel, meLinked, demo, isFoc
         <Rows>
           {!isFocus ? (
             <Row icon={CrosshairIcon} onClick={onFocus}>
-              {mode === "keturunan" ? "Lihat keturunan" : mode === "leluhur" ? "Lihat leluhur" : "Lihat keluarga"} {firstName}
+              {t(`summary.view.${mode}`, { name: firstName })}
             </Row>
           ) : null}
           {!demo ? (
-            <Row icon={ExternalLinkIcon} href={`/pohon/${treeId}/orang/${person.id}`}>
-              Buka profil
+            <Row icon={ExternalLinkIcon} href={`/trees/${treeId}/people/${person.id}`}>
+              {t("summary.openProfile")}
             </Row>
           ) : !actions ? (
-            <Row icon={UserRoundPlusIcon} href="/masuk">
-              Buat pohon Anda
+            <Row icon={UserRoundPlusIcon} href="/login">
+              {t("summary.createYourTree")}
             </Row>
           ) : null}
         </Rows>
       ) : null}
 
-      {canEdit ? <AddRows treeId={treeId} person={person} onAdd={actions?.onAdd} title={`Tambah kerabat ${firstName}`} tiles={compact} /> : null}
+      {canEdit ? <AddRows treeId={treeId} person={person} onAdd={actions?.onAdd} title={t("addRelatives", { name: firstName })} tiles={compact} /> : null}
     </>
   );
 }
@@ -813,13 +829,14 @@ const closeButton =
 
 /** Shown on a near-empty tree: the next step is always one tap away, as rows on a floating material card. */
 function StarterGuide({ treeId, person, onAdd }: { treeId: string; person: Person; onAdd?: EditActions["onAdd"] }) {
+  const t = useTranslations("chart");
   return (
     <aside className="sheet-in no-print material absolute inset-x-3 bottom-3 z-10 mx-auto grid max-w-md gap-3 rounded-2xl bg-grouped/90 p-4 shadow-lg backdrop-blur-xl sm:right-3 sm:left-auto sm:w-96">
       <div className="px-1">
-        <p className="font-display text-xl leading-tight tracking-[-0.01em]">Lanjutkan dari {person.nickname || person.fullName}</p>
-        <p className="mt-1 text-[13px] text-muted-foreground">Tambahkan kerabat terdekatnya. Setiap orang baru langsung tersambung di pohon.</p>
+        <p className="font-display text-xl leading-tight tracking-[-0.01em]">{t("starter.title", { name: person.nickname || person.fullName })}</p>
+        <p className="mt-1 text-[13px] text-muted-foreground">{t("starter.body")}</p>
       </div>
-      <AddRows treeId={treeId} person={person} onAdd={onAdd} title="Tambah kerabat" tiles />
+      <AddRows treeId={treeId} person={person} onAdd={onAdd} title={t("addRelativesGeneric")} tiles />
     </aside>
   );
 }

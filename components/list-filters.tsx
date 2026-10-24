@@ -1,15 +1,18 @@
 "use client";
 
 import { ChevronsUpDownIcon, SearchIcon } from "lucide-react";
-import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { useTranslations } from "next-intl";
+import { useSearchParams } from "next/navigation";
+import { usePathname, useRouter } from "@/i18n/navigation";
 import { useEffect, useRef, useState, useTransition } from "react";
 import { Spinner } from "@/components/ui/spinner";
 
 /**
  * The list's search field and generation filter. Like a search bar on iOS they apply as you type or pick,
- * with no "Terapkan" step; the query string stays the source of truth so results can be linked.
+ * with no "Apply" step; the query string stays the source of truth so results can be linked.
  */
 export function ListFilters({ q, gen, generations, autoFocus }: { q: string; gen: number | null; generations: number[]; autoFocus?: boolean }) {
+  const t = useTranslations("trees.filters");
   const router = useRouter();
   const pathname = usePathname();
   const params = useSearchParams();
@@ -19,7 +22,7 @@ export function ListFilters({ q, gen, generations, autoFocus }: { q: string; gen
 
   function go(next: { q?: string; gen?: string }) {
     const sp = new URLSearchParams(params.toString());
-    sp.delete("hal");
+    sp.delete("page");
     for (const [k, v] of Object.entries(next)) {
       if (v) sp.set(k, v);
       else sp.delete(k);
@@ -47,10 +50,10 @@ export function ListFilters({ q, gen, generations, autoFocus }: { q: string; gen
             typed.current = true;
             setText(e.target.value);
           }}
-          placeholder="Cari nama, panggilan, atau tempat lahir"
-          aria-label="Cari"
+          placeholder={t("placeholder")}
+          aria-label={t("searchAria")}
           autoComplete="off"
-          // Arrives from "Cari saya": the search is the only thing to do on this page.
+          // Arrives from "find me": the search is the only thing to do on this page.
           autoFocus={autoFocus}
           className="h-full min-w-0 flex-1 bg-transparent text-[15px] outline-none placeholder:text-muted-foreground [&::-webkit-search-cancel-button]:cursor-pointer"
         />
@@ -59,13 +62,13 @@ export function ListFilters({ q, gen, generations, autoFocus }: { q: string; gen
         <select
           value={gen ?? ""}
           onChange={(e) => go({ gen: e.target.value })}
-          aria-label="Filter generasi"
+          aria-label={t("generationAria")}
           className="h-full cursor-pointer appearance-none bg-transparent pr-8 pl-3 text-[15px] outline-none"
         >
-          <option value="">Semua generasi</option>
+          <option value="">{t("allGenerations")}</option>
           {generations.map((g) => (
             <option key={g} value={g}>
-              Generasi {g}
+              {t("generation", { n: g })}
             </option>
           ))}
         </select>

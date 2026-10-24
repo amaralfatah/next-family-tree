@@ -1,21 +1,20 @@
 import { lifespan } from "@/lib/dates";
 import type { Person } from "@/lib/types";
 
-/** "Alm." / "Almh." — how Indonesian families mark the deceased. */
-export function deceasedMark(p: Pick<Person, "isLiving" | "gender">): string | null {
+/** "Alm." / "Almh." marks the deceased in Indonesian families; English says "Deceased". */
+export function deceasedMark(p: Pick<Person, "isLiving" | "gender">, locale = "id"): string | null {
   if (p.isLiving) return null;
+  if (locale === "en") return "Deceased";
   return p.gender === "female" ? "Almh." : "Alm.";
 }
 
-export function subtitle(p: Person): string {
-  return [deceasedMark(p), lifespan(p)].filter(Boolean).join(" · ");
+export function subtitle(p: Person, locale = "id"): string {
+  return [deceasedMark(p, locale), lifespan(p, locale)].filter(Boolean).join(" · ");
 }
 
-export const GENDER_LABEL = { male: "Laki-laki", female: "Perempuan", unknown: "Tidak diketahui" } as const;
-export const UNION_STATUS_LABEL = { married: "Menikah", divorced: "Bercerai", widowed: "Salah satu wafat", unknown: "Tidak diketahui" } as const;
-export const CHILD_RELATION_LABEL = { biological: "Kandung", adopted: "Angkat", step: "Tiri" } as const;
+/** @deprecated Indonesian only. Use `useTranslations("person")` / `getTranslations("person")` and `labels.role.<role>`. */
 export const ROLE_LABEL = { owner: "Pemilik", editor: "Editor", viewer: "Pembaca" } as const;
 
 export function photoUrl(treeId: string, p: Pick<Person, "id" | "photoKey">): string | null {
-  return p.photoKey ? `/api/foto/${treeId}/${p.id}?v=${encodeURIComponent(p.photoKey.slice(-12))}` : null;
+  return p.photoKey ? `/api/photos/${treeId}/${p.id}?v=${encodeURIComponent(p.photoKey.slice(-12))}` : null;
 }

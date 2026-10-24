@@ -142,8 +142,8 @@ describe("relations", () => {
     const a = await createPerson(db, editor, treeId, person("Kakek"));
     const b = await createPerson(db, editor, treeId, person("Bapak"), { kind: "child", ofId: a });
     const c = await createPerson(db, editor, treeId, person("Cucu"), { kind: "child", ofId: b });
-    await expect(linkExisting(db, editor, treeId, { kind: "child", ofId: c }, a)).rejects.toThrow(/leluhur/);
-    await expect(linkExisting(db, editor, treeId, { kind: "parent", ofId: a }, c)).rejects.toThrow(/leluhur/);
+    await expect(linkExisting(db, editor, treeId, { kind: "child", ofId: c }, a)).rejects.toThrow("cycle");
+    await expect(linkExisting(db, editor, treeId, { kind: "parent", ofId: a }, c)).rejects.toThrow("cycle");
     await expect(linkExisting(db, editor, treeId, { kind: "partner", ofId: a }, a)).rejects.toBeInstanceOf(UserError);
     await expect(linkExisting(db, editor, treeId, { kind: "partner", ofId: a }, c)).rejects.toBeInstanceOf(UserError);
   });

@@ -1,0 +1,130 @@
+{
+  "landing": {
+    "metaTitle": "Sararia Family Tree · Silsilah keluarga",
+    "metaDescription": "Catat silsilah keluarga bersama-sama, lihat pohon bani, dan temukan hubungan Anda dengan kerabat.",
+    "homeLabel": "Sararia Family Tree, beranda",
+    "toggleTheme": "Ganti tema terang/gelap",
+    "signIn": "Masuk",
+    "heroTitle": "Saat kumpul keluarga, tak perlu lagi salah panggil.",
+    "heroBody": "Susun silsilah keluarga besar bersama saudara, dan ketahui sebutan yang tepat untuk setiap kerabat.",
+    "createTree": "Buat pohon keluarga",
+    "seeExample": "Lihat contoh",
+    "chartAlt": "Pohon keluarga contoh di Sararia Family Tree, dengan panel sebutan untuk kerabat yang dipilih",
+    "tileTermsTitle": "Sebutan yang tepat untuk setiap kerabat.",
+    "tileTermsBody": "Ketuk siapa pun di pohon. Dari paman dan bibi sampai besan dan sepupu dua kali, sebutannya dihitung dari silsilah.",
+    "sheetAlt": "Panel kerabat: Rizky Nurdin, Paman (kakak ayah)",
+    "tileTogetherTitle": "Dilengkapi bersama keluarga.",
+    "tileTogetherBody": "Undang saudara lewat link. Tiap keluarga menambahkan cabangnya sendiri, langsung dari ponsel.",
+    "addAlt": "Form tambah anak",
+    "promisesTitle": "Data keluarga tetap milik keluarga.",
+    "promises": {
+      "invitedOnly": {
+        "title": "Hanya untuk yang diundang",
+        "body": "Pohon dan foto keluarga tidak bisa ditemukan orang lain di internet."
+      },
+      "history": {
+        "title": "Setiap perubahan tercatat",
+        "body": "Riwayat menyimpan siapa mengubah apa. Saudara yang cukup ingin melihat bisa diundang sebagai pembaca."
+      },
+      "deletable": {
+        "title": "Bisa dihapus kapan saja",
+        "body": "Pemilik pohon bisa menghapus semua orang, foto, dan riwayatnya secara permanen dari Pengaturan."
+      }
+    },
+    "readPrivacy": "Baca soal privasi",
+    "closingTitle": "Mumpung para sesepuh masih bisa ditanya.",
+    "footerNote": "Sararia Family Tree, bagian dari keluarga aplikasi Sararia.",
+    "privacy": "Privasi"
+  },
+  "example": {
+    "metaTitle": "Contoh pohon keluarga",
+    "metaDescription": "Coba pohon keluarga fiktif empat generasi tanpa masuk, lengkap dengan sebutan hubungan seperti paman, sepupu, dan besan.",
+    "homeLabel": "Sararia Family Tree, ke beranda",
+    "toggleTheme": "Ganti tema terang/gelap",
+    "createTree": "Buat pohon",
+    "heading": "Contoh pohon {name}",
+    "banner": "Keluarga fiktif. Anda ditandai sebagai <strong>{name}</strong>.",
+    "bannerHint": "Ketuk siapa pun untuk melihat sebutan hubungannya dengan Anda.",
+    "tryEditing": "Coba ubah"
+  },
+  "demo": {
+    "metaTitle": "Coba ubah pohon keluarga",
+    "metaDescription": "Tambah, ubah, dan hapus anggota keluarga fiktif tanpa masuk. Semua perubahan hanya ada di browser Anda."
+  },
+  "demoSandbox": {
+    "visitor": "Pengunjung",
+    "deleteNote": "Pernikahan dan hubungan anak yang hanya melibatkan dia ikut terhapus. Ini hanya di pohon contoh.",
+    "homeLabel": "Sararia Family Tree, ke beranda",
+    "fallbackName": "Pohon contoh",
+    "toggleTheme": "Ganti tema terang/gelap",
+    "createTree": "Buat pohon",
+    "heading": "Coba ubah pohon keluarga contoh",
+    "mode": "Mode coba.",
+    "modeHint": "Ketuk siapa pun untuk menambah kerabat, mengubah, atau menghapusnya.",
+    "modeNote": "Perubahan hilang saat halaman ditutup.",
+    "restart": "Mulai ulang",
+    "failed": "Pohon contoh gagal dimuat.",
+    "retry": "Coba lagi",
+    "loading": "Menyiapkan keluarga contoh di browser Anda…"
+  },
+  "privacy": {
+    "title": "Privasi dan data keluarga",
+    "intro": "Ringkasan cara Sararia Family Tree menangani data keluarga Anda.",
+    "filledTitle": "Data diisi oleh anggota keluarga",
+    "filledBody": "Nama, tanggal, foto, dan catatan di setiap pohon diisi oleh anggota pohon tersebut, bukan oleh Sararia. Pemilik pohon bertanggung jawab atas siapa saja yang diundang.",
+    "privateTitle": "Privat secara bawaan",
+    "privateBody": "Tidak ada halaman publik. Setiap pohon hanya bisa dibuka oleh anggota yang sudah masuk dengan akunnya. Foto disimpan tanpa akses publik dan hanya disajikan setelah keanggotaan diperiksa.",
+    "rightsTitle": "Hak orang yang tercatat (UU PDP No. 27/2022)",
+    "rightsBody": "Bila Anda tercatat di sebuah pohon dan ingin data Anda diubah atau dihapus, hubungi pemilik pohon tersebut. Bila tidak berhasil, kirim permintaan ke <email>hello@caanglabs.com</email> dengan menyebutkan nama pohon; kami akan menindaklanjuti.",
+    "deletionTitle": "Penghapusan",
+    "deletionBody": "Pemilik bisa menghapus pohon beserta semua orang, relasi, foto, undangan, dan riwayatnya secara permanen dari halaman Pengaturan."
+  },
+  "invite": {
+    "metaTitle": "Undangan",
+    "invitedTo": "Anda diundang bergabung ke",
+    "role": {
+      "owner": "pemilik",
+      "editor": "editor",
+      "viewer": "pembaca"
+    },
+    "asEditor": "sebagai <strong>{role}</strong>. Anda bisa menambah dan mengubah data keluarga.",
+    "asViewer": "sebagai <strong>{role}</strong>. Anda bisa melihat pohon keluarga dan profil.",
+    "signedInAs": "Masuk sebagai {email}",
+    "problem": {
+      "invalid": {
+        "title": "Link undangan tidak dikenal",
+        "body": "Periksa kembali link yang Anda terima; mungkin terpotong saat disalin."
+      },
+      "expired": {
+        "title": "Link undangan kedaluwarsa",
+        "body": "Minta link baru kepada pemilik pohon “{name}”."
+      },
+      "revoked": {
+        "title": "Link undangan sudah dicabut",
+        "body": "Minta link baru kepada pemilik pohon “{name}”."
+      }
+    },
+    "toMyTrees": "Ke pohon saya",
+    "join": "Gabung ke pohon",
+    "joining": "Bergabung…"
+  },
+  "login": {
+    "title": "Masuk",
+    "titleInvite": "Masuk untuk bergabung",
+    "body": "Silsilah keluarga bersifat privat. Masuk untuk membuat atau membuka pohon keluarga Anda.",
+    "bodyInvite": "Anda diundang ke sebuah pohon keluarga. Masuk dulu agar data keluarga tetap terlindungi.",
+    "googleUnavailable": "Login Google belum tersedia di sini.",
+    "consent": "Dengan masuk, Anda menyetujui bahwa data keluarga yang Anda isi hanya terlihat oleh anggota pohon.",
+    "privacyPolicy": "Kebijakan privasi",
+    "connecting": "Menghubungkan…",
+    "continueWithGoogle": "Lanjutkan dengan Google",
+    "googleFailed": "Login Google gagal atau dibatalkan. Silakan coba lagi."
+  },
+  "welcome": {
+    "joined": "Selamat bergabung!",
+    "linkedHint": "Ketuk siapa pun di pohon untuk melihat hubungannya dengan Anda.",
+    "unlinkedHint": "Tandai diri Anda di pohon untuk melihat hubungan dengan setiap kerabat.",
+    "findMe": "Cari saya",
+    "close": "Tutup"
+  }
+}

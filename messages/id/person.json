@@ -1,0 +1,214 @@
+{
+  "meta": {
+    "person": "Orang",
+    "edit": "Ubah data",
+    "add": "Tambah orang"
+  },
+  "actions": {
+    "cancel": "Batal",
+    "save": "Simpan",
+    "delete": "Hapus",
+    "overwrite": "Timpa",
+    "link": "Hubungkan",
+    "reload": "Muat ulang",
+    "edit": "Ubah"
+  },
+  "common": {
+    "unknown": "Tidak diketahui",
+    "loading": "Memuat data…"
+  },
+  "labels": {
+    "gender": {
+      "male": "Laki-laki",
+      "female": "Perempuan",
+      "unknown": "Tidak diketahui"
+    },
+    "unionStatus": {
+      "married": "Menikah",
+      "divorced": "Bercerai",
+      "widowed": "Salah satu wafat",
+      "unknown": "Tidak diketahui"
+    },
+    "unionStatusAdd": {
+      "married": "Menikah",
+      "divorced": "Bercerai (mantan)",
+      "widowed": "Salah satu wafat",
+      "unknown": "Tidak diketahui"
+    },
+    "childRelation": {
+      "biological": "Kandung",
+      "adopted": "Angkat",
+      "step": "Tiri"
+    },
+    "childOf": {
+      "biological": "Anak kandung",
+      "adopted": "Anak angkat",
+      "step": "Anak tiri"
+    },
+    "role": {
+      "owner": "Pemilik",
+      "editor": "Editor",
+      "viewer": "Pembaca"
+    },
+    "childNumber": "Anak ke-",
+    "birthOrder": "Anak ke-{n}"
+  },
+  "relation": {
+    "addTitle": {
+      "parent": "Tambah orang tua {name}",
+      "partner": "Tambah pasangan {name}",
+      "child": "Tambah anak {name}",
+      "sibling": "Tambah saudara {name}"
+    },
+    "draftName": {
+      "parent": "Orang tua {name}",
+      "partner": "Pasangan {name}",
+      "child": "Anak {name}",
+      "sibling": "Saudara {name}"
+    }
+  },
+  "profile": {
+    "backToList": "Daftar",
+    "viewInTree": "Lihat di pohon",
+    "edit": "Ubah",
+    "thisIsYou": "Ini Anda",
+    "yourAccount": "Akun Anda",
+    "linkedFooter": "Akun Anda tertaut ke orang ini, jadi hubungan dengan setiap kerabat dihitung dari sini.",
+    "relationshipToYou": "Hubungan dengan Anda",
+    "you": "Anda",
+    "noRelationship": "Belum ditemukan hubungan dengan Anda di pohon ini.",
+    "markYourself": "Tandai diri Anda agar hubungan dengan setiap kerabat terlihat.",
+    "gender": "Jenis kelamin",
+    "birthDate": "Tanggal lahir",
+    "birthPlace": "Tempat lahir",
+    "status": "Status",
+    "living": "Masih hidup",
+    "diedOn": "Wafat {date}",
+    "deceased": "Sudah wafat",
+    "notes": "Catatan",
+    "parents": "Orang tua",
+    "noParents": "Orang tua belum dicatat.",
+    "addParent": "Tambah orang tua",
+    "addOtherParent": "Tambah orang tua lain",
+    "otherParentUnknown": "Orang tua lain tidak diketahui",
+    "parentsOf": {
+      "biological": "Orang tua kandung",
+      "adopted": "Orang tua angkat",
+      "step": "Orang tua tiri"
+    },
+    "siblings": "Saudara",
+    "siblingsCount": "Saudara ({count})",
+    "addSibling": "Tambah saudara",
+    "marriageNo": "Pernikahan ke-{n}",
+    "partnerUnknown": "Pasangan tidak diketahui",
+    "childrenCount": "Anak ({count})",
+    "noChildren": "Belum ada anak dicatat.",
+    "addChild": "Tambah anak",
+    "partnerAndChildren": "Pasangan & anak",
+    "noPartnerOrChildren": "Belum ada pasangan atau anak yang dicatat.",
+    "addPartner": "Tambah pasangan",
+    "addChildUnknownPartner": "Tambah anak (pasangan tidak diketahui)"
+  },
+  "warnings": {
+    "diedBeforeBorn": "Tanggal wafat lebih awal dari tanggal lahir.",
+    "livingTooOld": "Tercatat masih hidup, tetapi lahir lebih dari 120 tahun lalu.",
+    "bornBeforeParent": "Lahir sebelum orang tuanya ({name}) lahir.",
+    "parentAgeGap": "Selisih usia dengan {name} kurang dari 12 tahun.",
+    "bornAfterParentDied": "Lahir setelah {name} wafat.",
+    "childOlder": "Anaknya ({name}) lahir lebih dulu."
+  },
+  "new": {
+    "relationship": "Hubungan",
+    "otherParent": "Orang tua lain",
+    "status": "Status",
+    "asParent": "Sebagai orang tua",
+    "childRelationship": "Hubungan anak",
+    "parentRelationshipHint": "Hubungan {name} dengan orang tua ini",
+    "whoIsAdded": "Siapa yang ditambahkan",
+    "newPerson": "Orang baru",
+    "existingPerson": "Sudah ada di pohon",
+    "unconnectedNote": "Orang ini belum terhubung dengan siapa pun. Sebaiknya tambahkan dari profil kerabatnya agar langsung tersambung di pohon."
+  },
+  "fields": {
+    "fullName": "Nama lengkap",
+    "required": "Wajib diisi",
+    "nickname": "Nama panggilan",
+    "nicknamePlaceholder": "mis. Aki Dullah",
+    "gender": "Jenis kelamin",
+    "dateFooter": "Tanggal boleh hanya tahun, atau dikosongkan.",
+    "birthDate": "Tanggal lahir",
+    "birthPlace": "Tempat lahir",
+    "birthPlacePlaceholder": "mis. Tasikmalaya",
+    "deceased": "Sudah wafat",
+    "deathDate": "Tanggal wafat",
+    "notes": "Catatan",
+    "notesPlaceholder": "Pekerjaan, kisah singkat, tempat dimakamkan…",
+    "notSet": "Belum diisi",
+    "day": "Tanggal",
+    "dayPlaceholder": "1–31",
+    "month": "Bulan",
+    "year": "Tahun",
+    "yearPlaceholder": "mis. 1950"
+  },
+  "edit": {
+    "title": "Ubah data",
+    "conflictFooter": "Lihat dulu perubahan anggota lain sebelum menimpanya.",
+    "dialogTitle": "Ubah {name}"
+  },
+  "union": {
+    "editTitle": "Ubah pernikahan",
+    "withPartner": "Pernikahan dengan {name}.",
+    "partnerUnknown": "Pasangannya tidak diketahui.",
+    "status": "Status",
+    "startDate": "Tanggal menikah",
+    "marriageNumber": "Pernikahan ke-",
+    "deleteFooter": "Anak-anaknya tetap ada di pohon, tetapi tidak lagi tercatat sebagai anak pasangan ini.",
+    "delete": "Hapus pernikahan",
+    "deleteTitle": "Hapus pernikahan ini?",
+    "deleteConfirm": "Hapus",
+    "updated": "Pernikahan diperbarui.",
+    "deleted": "Pernikahan dihapus.",
+    "childLinkTitle": "Hubungan anak",
+    "childLinkDescription": "{name} sebagai anak pasangan ini.",
+    "childLinkMenu": "Atur hubungan {name}",
+    "childOrderFooter": "“Anak ke-” dipakai untuk urutan kakak/adik bila tanggal lahir tidak diketahui.",
+    "relation": "Hubungan",
+    "childOrderPlaceholder": "Tidak diketahui",
+    "unlinkFooter": "Orangnya tetap ada di pohon, hanya tidak lagi tercatat sebagai anak pasangan ini.",
+    "unlink": "Lepas sebagai anak pasangan ini",
+    "unlinkTitle": "Lepas {name} dari pasangan ini?",
+    "unlinkDescription": "Orangnya tetap ada di pohon.",
+    "unlinkConfirm": "Lepas",
+    "unlinked": "Tautan dilepas. Orangnya tetap ada di pohon.",
+    "saved": "Tersimpan."
+  },
+  "dialog": {
+    "deleteTitle": "Hapus {name}?",
+    "noParents": "Orang tua {name} belum tercatat. Tambahkan orang tuanya dulu, lalu saudaranya bisa dihubungkan.",
+    "relationship": "Hubungan",
+    "twoBioParents": "{name} sudah punya dua orang tua kandung, jadi orang tua ini dicatat sebagai orang tua kedua (angkat atau tiri).",
+    "orderedFooter": "Kosongkan “Anak ke-” bila ia paling bungsu. Saudara sesudahnya ikut bergeser.",
+    "youngest": "Paling bungsu",
+    "birthOrder": "Urutan lahir",
+    "childNumberOf": "Anak ke- ({union})",
+    "added": "{name} ditambahkan.",
+    "saved": "{name} disimpan.",
+    "deleted": "{name} dihapus.",
+    "linked": "{name} dihubungkan dengan {other}."
+  },
+  "link": {
+    "me": "Ini saya",
+    "notMe": "Bukan saya",
+    "unlinked": "Tautan akun dilepas.",
+    "linked": "Tersimpan. Kini hubungan Anda dengan setiap kerabat terlihat."
+  },
+  "photo": {
+    "change": "Ganti foto",
+    "add": "Tambah foto",
+    "remove": "Hapus foto",
+    "removeTitle": "Hapus foto ini?",
+    "removeDescription": "Foto dihapus dari pohon dan tidak bisa dikembalikan.",
+    "saved": "Foto tersimpan.",
+    "failed": "Foto gagal diunggah. Coba gambar lain."
+  }
+}

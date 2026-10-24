@@ -1,10 +1,14 @@
 "use client";
 
 import { MoonIcon, SunIcon } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
-export function ThemeToggle({ label, className }: { label: string; className?: string }) {
+/** `label` defaults to the translated "switch light/dark theme". */
+export function ThemeToggle({ label, className }: { label?: string; className?: string }) {
+  const t = useTranslations("common.theme");
+  label ??= t("toggle");
   function toggle() {
     const dark = !document.documentElement.classList.contains("dark");
     // Ease the light/dark switch with a short cross-fade instead of a sudden jump in brightness

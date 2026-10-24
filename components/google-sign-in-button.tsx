@@ -1,10 +1,13 @@
 "use client";
 
+import { useLocale, useTranslations } from "next-intl";
 import { useState } from "react";
 import { authClient } from "@/lib/auth/client";
 
-/** Google sign-in through Neon Auth; returns to `next` on success and to /masuk?error=google on failure. */
+/** Google sign-in through Neon Auth; returns to `next` on success and to /login?error=google on failure. */
 export function GoogleSignInButton({ next, failed: failedBefore = false }: { next: string; failed?: boolean }) {
+  const t = useTranslations("public.login");
+  const locale = useLocale();
   const [pending, setPending] = useState(false);
   const [failed, setFailed] = useState(false);
 
@@ -14,8 +17,8 @@ export function GoogleSignInButton({ next, failed: failedBefore = false }: { nex
     try {
       const { error } = await authClient.signIn.social({
         provider: "google",
-        callbackURL: new URL(next, window.location.origin).toString(),
-        errorCallbackURL: new URL(`/masuk?error=google&next=${encodeURIComponent(next)}`, window.location.origin).toString(),
+        callbackURL: new URL(`/${locale}${next}`, window.location.origin).toString(),
+        errorCallbackURL: new URL(`/${locale}/login?error=google&next=${encodeURIComponent(next)}`, window.location.origin).toString(),
       });
       if (error) throw error;
     } catch {
@@ -32,10 +35,10 @@ export function GoogleSignInButton({ next, failed: failedBefore = false }: { nex
         disabled={pending}
         className="mt-6 flex h-11 w-full items-center justify-center gap-3 rounded-xl border border-input bg-card text-[0.9375rem] font-medium transition-[background-color,scale] duration-200 ease-out outline-none hover:bg-muted focus-visible:ring-3 focus-visible:ring-ring/45 active:scale-[0.98] active:bg-muted active:duration-0 disabled:opacity-60"
       >
-        <GoogleIcon /> {pending ? "Menghubungkan…" : "Lanjutkan dengan Google"}
+        <GoogleIcon /> {pending ? t("connecting") : t("continueWithGoogle")}
       </button>
       {/* Errors sit under the button they belong to, as a red footnote, not a box above it. */}
-      {failed || failedBefore ? <p className="mt-2 px-4 text-[13px] text-destructive">Login Google gagal atau dibatalkan. Silakan coba lagi.</p> : null}
+      {failed || failedBefore ? <p className="mt-2 text-[13px] text-destructive">{t("googleFailed")}</p> : null}
     </>
   );
 }

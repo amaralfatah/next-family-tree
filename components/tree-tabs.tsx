@@ -1,30 +1,34 @@
 "use client";
 
 import { HistoryIcon, ListIcon, NetworkIcon, SettingsIcon, UsersIcon } from "lucide-react";
-import Link from "next/link";
-import { usePathname, useSearchParams } from "next/navigation";
+import { useTranslations } from "next-intl";
+import { Link } from "@/i18n/navigation";
+import { useSearchParams } from "next/navigation";
+import { usePathname } from "@/i18n/navigation";
 import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
 function useTabs(treeId: string) {
+  const t = useTranslations("common.treeTabs");
   const pathname = usePathname();
-  const base = `/pohon/${treeId}`;
-  // Adding a relative from the chart stays under Pohon, and the tab leads back to the same view.
-  const back = useSearchParams().get("kembali");
-  const fromChart = pathname === `${base}/orang/baru` && back !== null && (back === base || back.startsWith(`${base}?`));
+  const base = `/trees/${treeId}`;
+  // Adding a relative from the chart stays under the Tree tab, and the tab leads back to the same view.
+  const back = useSearchParams().get("back");
+  const fromChart = pathname === `${base}/people/new` && back !== null && (back === base || back.startsWith(`${base}?`));
   return {
     tabs: [
-      { href: fromChart ? back : base, label: "Pohon", icon: NetworkIcon, active: pathname === base || fromChart },
+      { href: fromChart ? back : base, label: t("chart"), icon: NetworkIcon, active: pathname === base || fromChart },
       {
-        href: `${base}/daftar`,
-        label: "Daftar",
+        href: `${base}/list`,
+        label: t("list"),
         icon: ListIcon,
-        active: !fromChart && (pathname.startsWith(`${base}/daftar`) || pathname.startsWith(`${base}/orang`)),
+        active: !fromChart && (pathname.startsWith(`${base}/list`) || pathname.startsWith(`${base}/people`)),
       },
-      { href: `${base}/anggota`, label: "Anggota", icon: UsersIcon, active: pathname.startsWith(`${base}/anggota`) },
-      { href: `${base}/riwayat`, label: "Riwayat", icon: HistoryIcon, active: pathname.startsWith(`${base}/riwayat`) },
+      { href: `${base}/members`, label: t("members"), icon: UsersIcon, active: pathname.startsWith(`${base}/members`) },
+      { href: `${base}/history`, label: t("history"), icon: HistoryIcon, active: pathname.startsWith(`${base}/history`) },
     ],
-    settings: { href: `${base}/pengaturan`, active: pathname.startsWith(`${base}/pengaturan`) },
+    settings: { href: `${base}/settings`, active: pathname.startsWith(`${base}/settings`), label: t("settings") },
+    navAria: t("navAria"),
   };
 }
 
@@ -36,10 +40,10 @@ const focusRing = "outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
  * settings still up here.
  */
 export function TreeTabs({ treeId }: { treeId: string }) {
-  const { tabs, settings } = useTabs(treeId);
+  const { tabs, settings, navAria } = useTabs(treeId);
   return (
     <>
-      <nav aria-label="Navigasi pohon" className="hidden shrink-0 items-center gap-0.5 sm:flex">
+      <nav aria-label={navAria} className="hidden shrink-0 items-center gap-0.5 sm:flex">
         {tabs.map((t) => (
           <Link
             key={t.label}
@@ -57,8 +61,8 @@ export function TreeTabs({ treeId }: { treeId: string }) {
       </nav>
       <Link
         href={settings.href}
-        aria-label="Pengaturan pohon"
-        title="Pengaturan pohon"
+        aria-label={settings.label}
+        title={settings.label}
         aria-current={settings.active ? "page" : undefined}
         className={cn(buttonVariants({ variant: "ghost", size: "icon" }), "hit", settings.active && "bg-muted text-foreground")}
       >
@@ -70,10 +74,10 @@ export function TreeTabs({ treeId }: { treeId: string }) {
 
 /** Thumb-reachable tab bar for phones, padded clear of the home indicator. */
 export function TreeBottomBar({ treeId }: { treeId: string }) {
-  const { tabs } = useTabs(treeId);
+  const { tabs, navAria } = useTabs(treeId);
   return (
     <nav
-      aria-label="Navigasi pohon"
+      aria-label={navAria}
       className="no-print fixed inset-x-0 bottom-0 z-40 border-t bg-background pb-[env(safe-area-inset-bottom)] sm:hidden"
     >
       <div className="grid grid-cols-4">

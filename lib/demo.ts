@@ -1,5 +1,6 @@
 import type { DB } from "@/lib/db";
 import { changeLog, persons, treeMembers, trees, unionChildren, unions } from "@/lib/db/schema";
+import { encodeSummary } from "@/lib/log-summary";
 import type { Gender, TreeData } from "@/lib/types";
 import type { PersonInput } from "@/lib/tree/service";
 
@@ -98,14 +99,14 @@ export async function createDemoTree(db: DB, userId: string): Promise<string> {
 
   // Same history as adding everyone by hand: the tree, then one entry per person after the first.
   const logs: (typeof changeLog.$inferInsert)[] = [
-    { treeId, userId, entity: "tree", entityId: treeId, action: "create", summary: `Membuat pohon "${treeName}"`, createdAt: at(0) },
+    { treeId, userId, entity: "tree", entityId: treeId, action: "create", summary: encodeSummary("treeCreated", { name: treeName }), createdAt: at(0) },
     ...added.slice(1).map(({ id, input }, i) => ({
       treeId,
       userId,
       entity: "person",
       entityId: id,
       action: "create",
-      summary: `Menambahkan ${input.fullName}`,
+      summary: encodeSummary("personAdded", { name: input.fullName }),
       diff: { after: input },
       createdAt: at(i + 1),
     })),

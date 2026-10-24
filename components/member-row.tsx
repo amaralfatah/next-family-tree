@@ -1,6 +1,7 @@
 "use client";
 
 import { CheckIcon, ChevronRightIcon } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { useState, useTransition } from "react";
 import { toast } from "sonner";
 import { ConfirmButton } from "@/components/confirm-button";
@@ -10,7 +11,6 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { Spinner } from "@/components/ui/spinner";
 import { initials } from "@/components/user-menu";
 import { changeRoleAction, removeMemberAction, transferOwnershipAction } from "@/lib/actions";
-import { ROLE_LABEL } from "@/lib/person";
 import type { Role } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
@@ -23,13 +23,12 @@ interface Member {
   personName: string | null;
 }
 
-const ROLE_HINT = { editor: "Menambah dan mengubah orang serta hubungan keluarga", viewer: "Hanya melihat" } as const;
-
 /**
  * One member as a list row: who they are, their role as the value on the right. For the owner the row
  * opens the member's settings (role as a checklist, hand over ownership, remove), like a contact's detail.
  */
 export function MemberRow({ treeId, member, isSelf, canManage }: { treeId: string; member: Member; isSelf: boolean; canManage: boolean }) {
+  const t = useTranslations("trees");
   const manageable = canManage && !isSelf && member.role !== "owner";
   const body = (
     <>
@@ -39,14 +38,14 @@ export function MemberRow({ treeId, member, isSelf, canManage }: { treeId: strin
       </Avatar>
       <span className="min-w-0 flex-1 text-left">
         <span className="block truncate text-[15px] font-medium">
-          {member.name} {isSelf ? <span className="font-normal text-muted-foreground">(Anda)</span> : null}
+          {member.name} {isSelf ? <span className="font-normal text-muted-foreground">{t("members.you")}</span> : null}
         </span>
         <span className="block truncate text-[13px] text-muted-foreground">
           {member.email}
-          {member.personName ? ` · tercatat sebagai ${member.personName}` : ""}
+          {member.personName ? t("members.recordedAs", { name: member.personName }) : ""}
         </span>
       </span>
-      <span className="shrink-0 text-[15px] text-muted-foreground">{ROLE_LABEL[member.role]}</span>
+      <span className="shrink-0 text-[15px] text-muted-foreground">{t(`roles.${member.role}`)}</span>
     </>
   );
   const row = "flex min-h-14 w-full items-center gap-3 px-4 py-2";
@@ -64,6 +63,7 @@ export function MemberRow({ treeId, member, isSelf, canManage }: { treeId: strin
 }
 
 function MemberSettings({ treeId, member, children }: { treeId: string; member: Member; children: React.ReactNode }) {
+  const t = useTranslations("trees");
   const [open, setOpen] = useState(false);
   const [role, setRole] = useState(member.role);
   const [pending, start] = useTransition();
@@ -76,7 +76,7 @@ function MemberSettings({ treeId, member, children }: { treeId: string; member: 
     start(async () => {
       const r = await changeRoleAction(treeId, member.userId, next);
       if (r.ok) {
-        toast.success("Peran diperbarui.");
+        toast.success(t("members.roleUpdated"));
         return;
       }
       setRole(before);
@@ -86,13 +86,13 @@ function MemberSettings({ treeId, member, children }: { treeId: string; member: 
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger render={<button type="button" className="block w-full text-left outline-none focus-visible:bg-accent/40" aria-label={`Atur ${member.name}`} />}>{children}</DialogTrigger>
+      <DialogTrigger render={<button type="button" className="block w-full text-left outline-none focus-visible:bg-accent/40" aria-label={t("members.manageAria", { name: member.name })} />}>{children}</DialogTrigger>
       <DialogContent className="gap-6 bg-grouped">
         <DialogHeader>
           <DialogTitle>{member.name}</DialogTitle>
           <DialogDescription>{member.email}</DialogDescription>
         </DialogHeader>
-        <FormGroup title="Peran">
+        <FormGroup title={t("members.roleTitle")}>
           {(["editor", "viewer"] as const).map((r) => (
             <button
               key={r}
@@ -104,21 +104,21 @@ function MemberSettings({ treeId, member, children }: { treeId: string; member: 
               className="flex min-h-11 w-full items-center gap-3 px-4 py-2 text-left outline-none transition-colors duration-150 hover:bg-muted/50 focus-visible:bg-accent/40 active:bg-muted active:duration-0"
             >
               <span className="min-w-0 flex-1">
-                <span className="block text-[15px]">{ROLE_LABEL[r]}</span>
-                <span className="block text-[13px] text-muted-foreground">{ROLE_HINT[r]}</span>
+                <span className="block text-[15px]">{t(`roles.${r}`)}</span>
+                <span className="block text-[13px] text-muted-foreground">{t(`roleHint.${r}`)}</span>
               </span>
               {pending && role === r ? <Spinner className="size-4" /> : <CheckIcon className={cn("size-[18px] text-soga-ink", role === r ? "visible" : "invisible")} aria-hidden />}
             </button>
           ))}
         </FormGroup>
-        <FormGroup footer="Anda akan menjadi editor. Pemilik baru bisa mengelola anggota dan menghapus pohon.">
+        <FormGroup footer={t("members.transferFooter")}>
           <ConfirmButton
             row="action"
-            label="Jadikan pemilik"
-            title={`Serahkan kepemilikan ke ${member.name}?`}
-            description="Anda akan menjadi editor. Pemilik baru bisa mengelola anggota dan menghapus pohon."
-            confirmLabel="Serahkan"
-            successMessage="Kepemilikan diserahkan."
+            label={t("members.transferLabel")}
+            title={t("members.transferTitle", { name: member.name })}
+            description={t("members.transferDesc")}
+            confirmLabel={t("members.transferConfirm")}
+            successMessage={t("members.transferSuccess")}
             onConfirm={async () => {
               const r = await transferOwnershipAction(treeId, member.userId);
               if (r.ok) setOpen(false);
@@ -126,14 +126,14 @@ function MemberSettings({ treeId, member, children }: { treeId: string; member: 
             }}
           />
         </FormGroup>
-        <FormGroup footer="Ia tidak bisa lagi membuka pohon ini. Data yang sudah ia isi tetap ada.">
+        <FormGroup footer={t("members.removeFooter")}>
           <ConfirmButton
             row
-            label="Keluarkan dari pohon"
-            title={`Keluarkan ${member.name}?`}
-            description="Ia tidak bisa lagi membuka pohon ini. Data yang sudah ia isi tetap ada."
-            confirmLabel="Keluarkan"
-            successMessage="Anggota dikeluarkan."
+            label={t("members.removeLabel")}
+            title={t("members.removeTitle", { name: member.name })}
+            description={t("members.removeDesc")}
+            confirmLabel={t("members.removeConfirm")}
+            successMessage={t("members.removeSuccess")}
             onConfirm={async () => {
               const r = await removeMemberAction(treeId, member.userId);
               if (r.ok) setOpen(false);

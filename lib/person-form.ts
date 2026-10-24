@@ -1,19 +1,21 @@
 import { z } from "zod";
 import { composeDate } from "@/lib/dates";
+import { UserError } from "@/lib/errors";
 import type { PersonInput, RelationSpec } from "@/lib/tree/service";
 import type { ChildRelation } from "@/lib/types";
 
 // Shared by the server actions and the in-browser /demo sandbox, so both validate a person the same way.
+// Issue messages are keys in the `errors` namespace (see lib/error-message.ts); `maxChars<N>` exists for 60, 120 and 4000.
 
 const text = (max: number) =>
   z
     .string()
     .trim()
-    .max(max, `Maksimal ${max} karakter.`)
+    .max(max, `person.maxChars${max}`)
     .transform((v) => (v === "" ? null : v));
 
 const personSchema = z.object({
-  fullName: z.string().trim().min(1, "Nama lengkap wajib diisi.").max(160, "Nama terlalu panjang."),
+  fullName: z.string().trim().min(1, "person.fullNameRequired").max(160, "person.fullNameTooLong"),
   nickname: text(60),
   gender: z.enum(["male", "female", "unknown"]),
   birthPlace: text(120),
@@ -30,9 +32,9 @@ export function parsePerson(fd: FormData): PersonInput {
     birthPlace: get(fd, "birthPlace"),
     notes: get(fd, "notes"),
   });
-  const birth = composeDate(get(fd, "birthYear"), get(fd, "birthMonth"), get(fd, "birthDay"));
+  const birth = checkedDate(get(fd, "birthYear"), get(fd, "birthMonth"), get(fd, "birthDay"), "birth");
   const isLiving = get(fd, "deceased") !== "on";
-  const death = isLiving ? { date: null, precision: "unknown" as const } : composeDate(get(fd, "deathYear"), get(fd, "deathMonth"), get(fd, "deathDay"));
+  const death = isLiving ? { date: null, precision: "unknown" as const } : checkedDate(get(fd, "deathYear"), get(fd, "deathMonth"), get(fd, "deathDay"), "death");
   return {
     ...base,
     birthDate: birth.date,
@@ -43,13 +45,27 @@ export function parsePerson(fd: FormData): PersonInput {
   };
 }
 
+/**
+ * A date row's day, month and year. composeDate keeps only what it can place (a day needs a month, a month a
+ * year), so anything typed that it would drop is refused here instead of vanishing on save.
+ */
+export function checkedDate(rawYear: string, rawMonth: string, rawDay: string, field: "birth" | "death" | "start") {
+  const [year, month, day] = [rawYear.trim(), rawMonth.trim(), rawDay.trim()];
+  if (day && !month) throw new UserError("person.dateNeedsMonth", { field });
+  if ((day || month) && !year) throw new UserError("person.dateNeedsYear", { field });
+  const date = composeDate(year, month, day);
+  const wanted = day ? "day" : month ? "month" : year ? "year" : "unknown";
+  if (date.precision !== wanted) throw new UserError("person.dateInvalid", { field });
+  return date;
+}
+
 const relationSchema = z.object({
   kind: z.enum(["parent", "partner", "child", "sibling"]),
   ofId: z.uuid(),
   unionId: z.uuid().nullable(),
   childRelation: z.enum(["biological", "adopted", "step"]),
   unionStatus: z.enum(["married", "divorced", "widowed", "unknown"]),
-  birthOrder: z.coerce.number().int("Urutan lahir harus bilangan bulat.").min(1, "Urutan lahir mulai dari 1.").max(99, "Urutan lahir terlalu besar.").nullable(),
+  birthOrder: z.coerce.number().int("person.birthOrderInteger").min(1, "person.birthOrderMin").max(99, "person.birthOrderMax").nullable(),
 });
 
 /** The `relKind`/`relOf` fields of an "add relative" form; undefined when the form adds no relation. */
@@ -68,7 +84,7 @@ export function parseRelation(fd: FormData): RelationSpec | undefined {
 const ORDER = "order:";
 
 /**
- * The "Anak ke-" fields of an edit form, one per parent union (`order:<unionId>`), with the link's
+ * The "Child number" (anak ke-) fields of an edit form, one per parent union (`order:<unionId>`), with the link's
  * relation and old value beside them. Only the ones that changed come back.
  */
 export function parseBirthOrders(fd: FormData): { unionId: string; relation: ChildRelation; birthOrder: number | null }[] {

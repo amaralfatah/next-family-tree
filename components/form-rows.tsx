@@ -1,9 +1,10 @@
 "use client";
 
 import { CheckIcon, ChevronsUpDownIcon, SearchIcon } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { useId, useState } from "react";
 import { cn } from "@/lib/utils";
-import Link from "next/link";
+import { Link } from "@/i18n/navigation";
 import { barCancel, barConfirm, barTitle, rowBase, rowInput, sheetBar } from "@/components/form-row-classes";
 import { Spinner } from "@/components/ui/spinner";
 
@@ -125,13 +126,14 @@ export interface PickItem {
 
 /** A searchable list with a checkmark on the chosen row; the search is its first row. */
 export function PersonPicker({ items, query, onQuery, picked, onPick }: { items: PickItem[]; query: string; onQuery: (q: string) => void; picked: string; onPick: (id: string) => void }) {
+  const t = useTranslations("common.picker");
   return (
     <FormGroup>
       <label className={rowBase}>
         <SearchIcon className="size-4 shrink-0 text-muted-foreground" aria-hidden />
-        <input aria-label="Cari orang di pohon" autoComplete="off" value={query} onChange={(e) => onQuery(e.target.value)} placeholder="Cari nama…" className={cn(rowInput, "text-left")} />
+        <input aria-label={t("searchAria")} autoComplete="off" value={query} onChange={(e) => onQuery(e.target.value)} placeholder={t("searchPlaceholder")} className={cn(rowInput, "text-left")} />
       </label>
-      <ul className="max-h-80 divide-y divide-border/70 overflow-y-auto" role="listbox" aria-label="Orang di pohon">
+      <ul className="max-h-80 divide-y divide-border/70 overflow-y-auto" role="listbox" aria-label={t("listAria")}>
         {items.map((c) => (
           <li key={c.id}>
             <button
@@ -145,12 +147,12 @@ export function PersonPicker({ items, query, onQuery, picked, onPick }: { items:
                 {c.name}
                 {c.nickname ? <span className="text-muted-foreground"> “{c.nickname}”</span> : null}
               </span>
-              {c.birthYear ? <span className="shrink-0 text-[13px] text-muted-foreground tabular-nums">l. {c.birthYear}</span> : null}
+              {c.birthYear ? <span className="shrink-0 text-[13px] text-muted-foreground tabular-nums">{t("born", { year: c.birthYear })}</span> : null}
               <CheckIcon className={cn("size-[18px] shrink-0 text-soga-ink", picked === c.id ? "visible" : "invisible")} aria-hidden />
             </button>
           </li>
         ))}
-        {items.length === 0 ? <li className="px-4 py-3 text-[15px] text-muted-foreground">Tidak ditemukan.</li> : null}
+        {items.length === 0 ? <li className="px-4 py-3 text-[15px] text-muted-foreground">{t("empty")}</li> : null}
       </ul>
     </FormGroup>
   );
@@ -177,18 +179,19 @@ export function DisclosureRow({ label, value, placeholder, defaultOpen = false, 
 }
 
 /**
- * The top bar of a full-page form (Ubah data, Tambah orang, Pohon baru): the same Batal / title / Simpan bar
+ * The top bar of a full-page form (edit a person, add a person, new tree): the same Cancel / title / Save bar
  * as the chart's form panel, stuck under the app's navigation bar while the form scrolls.
  */
-export function FormBar({ title, cancelHref, submitLabel = "Simpan", pending, disabled }: { title: string; cancelHref: string; submitLabel?: string; pending?: boolean; disabled?: boolean }) {
+export function FormBar({ title, cancelHref, submitLabel, pending, disabled }: { title: string; cancelHref: string; submitLabel?: string; pending?: boolean; disabled?: boolean }) {
+  const t = useTranslations("common.actions");
   return (
     <div className={cn("panel-bar material sticky top-[calc(3.5rem+1px+env(safe-area-inset-top))] z-20 -mx-4 sm:mx-0 sm:rounded-xl", sheetBar)}>
       <Link href={cancelHref} className={cn(barCancel, "inline-flex items-center rounded-md outline-none hover:opacity-80 focus-visible:ring-3 focus-visible:ring-ring/50")}>
-        Batal
+        {t("cancel")}
       </Link>
       <h1 className={barTitle}>{title}</h1>
       <button type="submit" disabled={pending || disabled} className={cn(barConfirm, "inline-flex items-center rounded-md outline-none hover:opacity-80 focus-visible:ring-3 focus-visible:ring-ring/50 disabled:opacity-40")}>
-        {pending ? <Spinner /> : submitLabel}
+        {pending ? <Spinner /> : (submitLabel ?? t("save"))}
       </button>
     </div>
   );

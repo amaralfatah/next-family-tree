@@ -8,7 +8,7 @@ import { getTree, loadTreeDataWith } from "./service";
 
 /** The user, their membership and the tree row: enough for the layout and pages that don't draw the tree. */
 export const loadTreeMeta = cache(async (treeId: string) => {
-  const user = await requireUser(`/pohon/${treeId}`);
+  const user = await requireUser(`/trees/${treeId}`);
   const db = await getDb();
   try {
     const { tree, access, role, personId } = await getTree(db, user.id, treeId);

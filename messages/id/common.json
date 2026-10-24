@@ -1,0 +1,72 @@
+{
+  "meta": {
+    "title": "Sararia Family Tree · Silsilah keluarga",
+    "titleTemplate": "%s · Sararia Family Tree",
+    "description": "Catat silsilah keluarga bersama-sama, lihat pohon bani, dan temukan hubungan Anda dengan kerabat.",
+    "applicationName": "Sararia Family Tree"
+  },
+  "skipToContent": "Langsung ke konten",
+  "actions": {
+    "cancel": "Batal",
+    "save": "Simpan",
+    "close": "Tutup",
+    "loading": "Memuat",
+    "failed": "Gagal."
+  },
+  "language": {
+    "label": "Bahasa"
+  },
+  "theme": {
+    "toggle": "Ganti tema terang/gelap"
+  },
+  "header": {
+    "homeAria": "Sararia Family Tree, ke pohon saya"
+  },
+  "userMenu": {
+    "menuAria": "Menu akun",
+    "myTrees": "Pohon saya",
+    "signOut": "Keluar",
+    "signingOut": "Keluar…"
+  },
+  "treeTabs": {
+    "navAria": "Navigasi pohon",
+    "chart": "Pohon",
+    "list": "Daftar",
+    "members": "Anggota",
+    "history": "Riwayat",
+    "settings": "Pengaturan pohon"
+  },
+  "picker": {
+    "searchAria": "Cari orang di pohon",
+    "searchPlaceholder": "Cari nama…",
+    "listAria": "Orang di pohon",
+    "empty": "Tidak ditemukan.",
+    "born": "l. {year}"
+  },
+  "deletePerson": {
+    "footer": "Anak-anaknya tetap ada dan tetap terhubung dengan orang tua lainnya. Penghapusan tercatat di riwayat.",
+    "delete": "Hapus",
+    "title": "Hapus {name}?",
+    "description": "Data dan fotonya dihapus. Anak-anaknya tetap ada dan tetap terhubung dengan orang tua lainnya. Penghapusan tercatat di riwayat."
+  },
+  "treeInfo": {
+    "saved": "Info pohon disimpan.",
+    "title": "Info pohon",
+    "name": "Nama pohon",
+    "required": "Wajib diisi",
+    "description": "Deskripsi",
+    "descriptionPlaceholder": "Asal daerah, catatan untuk anggota keluarga…",
+    "saving": "Menyimpan…",
+    "save": "Simpan"
+  },
+  "error": {
+    "title": "Halaman gagal dimuat",
+    "message": "Koneksi sedang bermasalah. Data Anda aman, silakan coba lagi.",
+    "retry": "Coba lagi"
+  },
+  "notFound": {
+    "title": "Halaman tidak ditemukan",
+    "message": "Halaman ini tidak ada, atau Anda bukan anggota pohon keluarga tersebut.",
+    "action": "Ke pohon saya"
+  }
+}

@@ -40,25 +40,29 @@ export function wouldCreateCycle(data: TreeData, parentIds: string[], childId: s
 }
 
 /** Two people can't be partners if one descends from the other (or they are the same). */
+/** A key in the `errors` namespace, ready for `new UserError(key)`; null when the pair is fine. */
 export function invalidPartners(data: TreeData, a: string, b: string): string | null {
-  if (a === b) return "Seseorang tidak bisa menjadi pasangan dirinya sendiri.";
+  if (a === b) return "person.partnerSelf";
   if (descendantsOf(data, a).has(b) || descendantsOf(data, b).has(a)) {
-    return "Pasangan tidak boleh keturunan langsung dari pasangannya.";
+    return "person.partnerDescendant";
   }
   return null;
 }
 
+/** A warning as a key in the `person.warnings` messages plus its ICU values. */
+export type DateWarning = { key: "diedBeforeBorn" | "livingTooOld" | "bornBeforeParent" | "parentAgeGap" | "bornAfterParentDied" | "childOlder"; values?: { name: string } };
+
 /** Non-blocking warnings shown on a profile when dates don't add up. */
-export function dateWarnings(data: TreeData, personId: string): string[] {
+export function dateWarnings(data: TreeData, personId: string): DateWarning[] {
   const byId = new Map(data.persons.map((p) => [p.id, p]));
   const person = byId.get(personId);
   if (!person) return [];
-  const warnings: string[] = [];
+  const warnings: DateWarning[] = [];
   const born = yearOf(person.birthDate, person.birthPrecision);
   const died = yearOf(person.deathDate, person.deathPrecision);
-  if (born && died && died < born) warnings.push("Tanggal wafat lebih awal dari tanggal lahir.");
+  if (born && died && died < born) warnings.push({ key: "diedBeforeBorn" });
   if (person.isLiving && born && new Date().getFullYear() - born > 120) {
-    warnings.push("Tercatat masih hidup, tetapi lahir lebih dari 120 tahun lalu.");
+    warnings.push({ key: "livingTooOld" });
   }
 
   const unionById = new Map(data.unions.map((u) => [u.id, u]));
@@ -76,10 +80,10 @@ export function dateWarnings(data: TreeData, personId: string): string[] {
     const pb = yearOf(parent.birthDate, parent.birthPrecision);
     const pd = yearOf(parent.deathDate, parent.deathPrecision);
     const name = parent.nickname || parent.fullName;
-    if (born && pb && born <= pb) warnings.push(`Lahir sebelum orang tuanya (${name}) lahir.`);
-    else if (born && pb && born - pb < 12) warnings.push(`Selisih usia dengan ${name} kurang dari 12 tahun.`);
+    if (born && pb && born <= pb) warnings.push({ key: "bornBeforeParent", values: { name } });
+    else if (born && pb && born - pb < 12) warnings.push({ key: "parentAgeGap", values: { name } });
     // A father may die before the child is born, so allow one year of slack.
-    if (born && pd && born > pd + 1) warnings.push(`Lahir setelah ${name} wafat.`);
+    if (born && pd && born > pd + 1) warnings.push({ key: "bornAfterParentDied", values: { name } });
   }
 
   for (const c of data.children) {
@@ -87,7 +91,7 @@ export function dateWarnings(data: TreeData, personId: string): string[] {
     if (!u || c.relation !== "biological" || (u.partnerAId !== personId && u.partnerBId !== personId)) continue;
     const child = byId.get(c.childId);
     const cb = child ? yearOf(child.birthDate, child.birthPrecision) : null;
-    if (child && born && cb && cb <= born) warnings.push(`Anaknya (${child.nickname || child.fullName}) lahir lebih dulu.`);
+    if (child && born && cb && cb <= born) warnings.push({ key: "childOlder", values: { name: child.nickname || child.fullName } });
   }
-  return [...new Set(warnings)];
+  return warnings.filter((w, i) => warnings.findIndex((x) => x.key === w.key && x.values?.name === w.values?.name) === i);
 }

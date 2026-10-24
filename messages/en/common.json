@@ -1,0 +1,72 @@
+{
+  "meta": {
+    "title": "Sararia Family Tree · Family history",
+    "titleTemplate": "%s · Sararia Family Tree",
+    "description": "Build your family tree together, explore the whole clan, and see how you are related to each relative.",
+    "applicationName": "Sararia Family Tree"
+  },
+  "skipToContent": "Skip to content",
+  "actions": {
+    "cancel": "Cancel",
+    "save": "Save",
+    "close": "Close",
+    "loading": "Loading",
+    "failed": "Something went wrong."
+  },
+  "language": {
+    "label": "Language"
+  },
+  "theme": {
+    "toggle": "Switch light/dark theme"
+  },
+  "header": {
+    "homeAria": "Sararia Family Tree, go to my trees"
+  },
+  "userMenu": {
+    "menuAria": "Account menu",
+    "myTrees": "My trees",
+    "signOut": "Sign out",
+    "signingOut": "Signing out…"
+  },
+  "treeTabs": {
+    "navAria": "Tree navigation",
+    "chart": "Tree",
+    "list": "List",
+    "members": "Members",
+    "history": "History",
+    "settings": "Tree settings"
+  },
+  "picker": {
+    "searchAria": "Search people in the tree",
+    "searchPlaceholder": "Search by name…",
+    "listAria": "People in the tree",
+    "empty": "No results.",
+    "born": "b. {year}"
+  },
+  "deletePerson": {
+    "footer": "Their children stay and remain connected to their other parent. The deletion is recorded in the history.",
+    "delete": "Delete",
+    "title": "Delete {name}?",
+    "description": "Their details and photo are deleted. Their children stay and remain connected to their other parent. The deletion is recorded in the history."
+  },
+  "treeInfo": {
+    "saved": "Tree info saved.",
+    "title": "Tree info",
+    "name": "Tree name",
+    "required": "Required",
+    "description": "Description",
+    "descriptionPlaceholder": "Where the family is from, notes for family members…",
+    "saving": "Saving…",
+    "save": "Save"
+  },
+  "error": {
+    "title": "This page failed to load",
+    "message": "The connection is having trouble. Your data is safe, please try again.",
+    "retry": "Try again"
+  },
+  "notFound": {
+    "title": "Page not found",
+    "message": "This page doesn't exist, or you are not a member of that family tree.",
+    "action": "Go to my trees"
+  }
+}

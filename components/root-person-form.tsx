@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { useState, useTransition } from "react";
 import { toast } from "sonner";
 import { FormGroup, FormRow, RowSelect } from "@/components/form-rows";
@@ -10,12 +11,13 @@ import { setRootAction } from "@/lib/actions";
  * applies as soon as it is picked, with no Save step.
  */
 export function RootPersonForm({ treeId, rootPersonId, persons }: { treeId: string; rootPersonId: string | null; persons: { id: string; fullName: string }[] }) {
+  const t = useTranslations("trees.root");
   const [value, setValue] = useState(rootPersonId ?? persons[0]?.id ?? "");
   const [pending, start] = useTransition();
   return (
     <div>
-      <FormGroup title="Tampilan awal" footer="Biasanya leluhur tertua. Setiap anggota tetap bisa melihat dari orang lain lewat kartunya di pohon.">
-        <FormRow label="Orang di tengah" htmlFor="s-root">
+      <FormGroup title={t("title")} footer={t("footer")}>
+        <FormRow label={t("label")} htmlFor="s-root">
           <RowSelect
             id="s-root"
             value={value}
@@ -27,7 +29,7 @@ export function RootPersonForm({ treeId, rootPersonId, persons }: { treeId: stri
               start(async () => {
                 const r = await setRootAction(treeId, next);
                 if (r.ok) {
-                  toast.success("Tampilan awal pohon disimpan.");
+                  toast.success(t("saved"));
                   return;
                 }
                 setValue(before);

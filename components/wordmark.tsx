@@ -25,10 +25,9 @@ export function Mark({ className }: { className?: string }) {
 
 /**
  * Family Tree lockup (sararia-logo/FAMILY.md 3.1): the glyph, then the product name in Inter SemiBold
- * with −0.045em tracking, ink on light and white on dark. Only the glyph's trunk is soga. `full`
- * adds "Sararia" for public pages, where visitors may not know the family yet.
+ * with −0.045em tracking, ink on light and white on dark. Only the glyph's trunk is soga.
  */
-export function Wordmark({ className, full = false }: { className?: string; full?: boolean }) {
+export function Wordmark({ className }: { className?: string }) {
   return (
     <span
       className={cn(
@@ -37,7 +36,7 @@ export function Wordmark({ className, full = false }: { className?: string; full
       )}
     >
       <Mark className="size-[1.15em]" />
-      <span>{full ? "Sararia Family Tree" : "Family Tree"}</span>
+      <span>Family Tree</span>
     </span>
   );
 }

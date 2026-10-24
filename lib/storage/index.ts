@@ -6,7 +6,7 @@ import path from "node:path";
 /**
  * Photos live in Cloudflare R2 when R2_* env vars are set, otherwise on local disk under
  * .data/uploads (development). Objects are never public: they are read through
- * /api/foto, which checks tree membership first.
+ * /api/photos, which checks tree membership first.
  */
 export const MAX_PHOTO_BYTES = 1_048_576;
 

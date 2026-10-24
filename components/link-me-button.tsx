@@ -1,14 +1,16 @@
 "use client";
 
-import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
+import { useRouter } from "@/i18n/navigation";
 import { useTransition } from "react";
 import { toast } from "sonner";
 import { actionRow } from "@/components/form-rows";
 import { Button } from "@/components/ui/button";
 import { linkMeAction } from "@/lib/actions";
 
-/** "Ini saya" / "Bukan saya". With `row` it is an action row inside a form group (the profile page). */
+/** "This is me" / "Not me" (Ini saya / Bukan saya). With `row` it is an action row inside a form group (the profile page). */
 export function LinkMeButton({ treeId, personId, unlink = false, row = false }: { treeId: string; personId: string; unlink?: boolean; row?: boolean }) {
+  const t = useTranslations("person.link");
   const [pending, start] = useTransition();
   const router = useRouter();
   const onClick = () =>
@@ -18,10 +20,10 @@ export function LinkMeButton({ treeId, personId, unlink = false, row = false }: 
         toast.error(r.error);
         return;
       }
-      toast.success(unlink ? "Tautan akun dilepas." : "Tersimpan. Kini hubungan Anda dengan setiap kerabat terlihat.");
-      if (!unlink) router.push(`/pohon/${treeId}/orang/${personId}`);
+      toast.success(unlink ? t("unlinked") : t("linked"));
+      if (!unlink) router.push(`/trees/${treeId}/people/${personId}`);
     });
-  const label = unlink ? "Bukan saya" : "Ini saya";
+  const label = unlink ? t("notMe") : t("me");
   if (row) {
     return (
       <button type="button" disabled={pending} onClick={onClick} className={actionRow}>

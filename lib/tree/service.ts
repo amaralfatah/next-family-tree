@@ -3,6 +3,7 @@ import { requireRole, type TreeAccess } from "@/lib/access";
 import type { DB } from "@/lib/db";
 import { changeLog, persons, treeMembers, trees, unionChildren, unions, users } from "@/lib/db/schema";
 import { UserError } from "@/lib/errors";
+import { encodeSummary } from "@/lib/log-summary";
 import type { ChildRelation, DatePrecision, Gender, Person, Role, TreeData, Union, UnionStatus } from "@/lib/types";
 import { invalidPartners, wouldCreateCycle } from "./validate";
 
@@ -101,7 +102,7 @@ export async function createTree(
       role: "owner",
       personId: input.isMe ? person.id : null,
     });
-    await log(tx, { treeId: tree.id, userId, entity: "tree", entityId: tree.id, action: "create", summary: `Membuat pohon "${input.name}"` });
+    await log(tx, { treeId: tree.id, userId, entity: "tree", entityId: tree.id, action: "create", summary: encodeSummary("treeCreated", { name: input.name }) });
     return tree.id;
   });
 }
@@ -132,7 +133,7 @@ export async function getTree(db: DB, userId: string, treeId: string) {
 export async function updateTree(db: DB, userId: string, treeId: string, input: { name: string; description: string | null }) {
   await requireRole(db, treeId, userId, "editor");
   await db.update(trees).set(input).where(eq(trees.id, treeId));
-  await log(db, { treeId, userId, entity: "tree", entityId: treeId, action: "update", summary: `Mengubah info pohon menjadi "${input.name}"` });
+  await log(db, { treeId, userId, entity: "tree", entityId: treeId, action: "update", summary: encodeSummary("treeUpdated", { name: input.name }) });
 }
 
 export async function setRootPerson(db: DB, userId: string, treeId: string, personId: string) {
@@ -183,7 +184,7 @@ async function requirePerson(conn: Conn, treeId: string, personId: string): Prom
     .select()
     .from(persons)
     .where(and(eq(persons.id, personId), eq(persons.treeId, treeId)));
-  if (!row) throw new UserError("Orang tidak ditemukan di pohon ini.");
+  if (!row) throw new UserError("personNotFound");
   return row;
 }
 
@@ -192,7 +193,7 @@ async function requireUnion(conn: Conn, treeId: string, unionId: string): Promis
     .select()
     .from(unions)
     .where(and(eq(unions.id, unionId), eq(unions.treeId, treeId)));
-  if (!row) throw new UserError("Ikatan tidak ditemukan di pohon ini.");
+  if (!row) throw new UserError("unionNotFoundInTree");
   return row;
 }
 
@@ -226,7 +227,7 @@ export async function createPerson(
       entity: "person",
       entityId: row.id,
       action: "create",
-      summary: `Menambahkan ${input.fullName}`,
+      summary: encodeSummary("personAdded", { name: input.fullName }),
       diff: { after: input },
     });
     return row.id;
@@ -246,17 +247,10 @@ export async function linkExisting(db: DB, userId: string, treeId: string, relat
       entity: "relation",
       entityId: otherId,
       action: "link",
-      summary: `Menautkan ${other.fullName} sebagai ${KIND_LABEL[relation.kind]} ${of.fullName}`,
+      summary: encodeSummary("personLinked", { other: other.fullName, of: of.fullName, kind: relation.kind }),
     });
   });
 }
-
-const KIND_LABEL: Record<RelationKind, string> = {
-  parent: "orang tua",
-  partner: "pasangan",
-  child: "anak",
-  sibling: "saudara",
-};
 
 async function relate(tx: Tx, userId: string, treeId: string, rel: RelationSpec, otherId: string) {
   const data = await readTreeData(tx, treeId, true);
@@ -269,7 +263,7 @@ async function relate(tx: Tx, userId: string, treeId: string, rel: RelationSpec,
       (u) =>
         (u.partnerAId === rel.ofId && u.partnerBId === otherId) || (u.partnerAId === otherId && u.partnerBId === rel.ofId),
     );
-    if (exists) throw new UserError("Keduanya sudah tercatat sebagai pasangan.");
+    if (exists) throw new UserError("alreadyPartners");
     // A single-parent union of `ofId` (children with an unknown partner) gets this partner.
     const solo = data.unions.find((u) => u.partnerAId === rel.ofId && u.partnerBId === null);
     if (solo) {
@@ -291,7 +285,7 @@ async function relate(tx: Tx, userId: string, treeId: string, rel: RelationSpec,
     let unionId = rel.unionId ?? null;
     if (unionId) {
       const u = await requireUnion(tx, treeId, unionId);
-      if (u.partnerAId !== rel.ofId && u.partnerBId !== rel.ofId) throw new UserError("Ikatan tidak cocok dengan orang tua.");
+      if (u.partnerAId !== rel.ofId && u.partnerBId !== rel.ofId) throw new UserError("unionMismatch");
     } else {
       const solo = data.unions.find((u) => u.partnerAId === rel.ofId && u.partnerBId === null);
       unionId = solo?.id ?? (await insertSoloUnion(tx, treeId, rel.ofId, data));
@@ -314,7 +308,7 @@ async function relate(tx: Tx, userId: string, treeId: string, rel: RelationSpec,
       }
     }
     if (links.length > 0 && childRelation === "biological") {
-      throw new UserError("Orang ini sudah punya dua orang tua kandung. Ubah ikatan yang ada bila perlu.");
+      throw new UserError("twoBiologicalParents");
     }
     const unionId = await insertSoloUnion(tx, treeId, otherId, data);
     await addChild(tx, data, unionId, rel.ofId, childRelation);
@@ -323,11 +317,11 @@ async function relate(tx: Tx, userId: string, treeId: string, rel: RelationSpec,
 
   // sibling: share the biological parents' union of `ofId`.
   const link = data.children.find((c) => c.childId === rel.ofId && c.relation === "biological");
-  if (!link) throw new UserError("Tambahkan orang tua terlebih dahulu agar saudara bisa dihubungkan.");
+  if (!link) throw new UserError("addParentFirst");
   await addChild(tx, data, link.unionId, otherId, childRelation, rel.birthOrder);
 }
 
-const CYCLE = "Relasi ini membuat seseorang menjadi leluhur dirinya sendiri.";
+const CYCLE = "cycle";
 
 async function insertSoloUnion(tx: Tx, treeId: string, partnerId: string, data: TreeData) {
   const order = data.unions.filter((u) => u.partnerAId === partnerId || u.partnerBId === partnerId).length;
@@ -341,11 +335,11 @@ async function insertSoloUnion(tx: Tx, treeId: string, partnerId: string, data: 
 
 async function addChild(tx: Tx, data: TreeData, unionId: string, childId: string, relation: ChildRelation, birthOrder?: number | null) {
   const u = data.unions.find((x) => x.id === unionId);
-  if (!u) throw new UserError("Ikatan tidak ditemukan.");
+  if (!u) throw new UserError("unionNotFound");
   const parents = [u.partnerAId, u.partnerBId].filter(Boolean) as string[];
   if (wouldCreateCycle(data, parents, childId)) throw new UserError(CYCLE);
   if (data.children.some((c) => c.unionId === unionId && c.childId === childId)) {
-    throw new UserError("Anak ini sudah tercatat di ikatan tersebut.");
+    throw new UserError("childAlreadyInUnion");
   }
   const order = birthOrder ?? data.children.filter((c) => c.unionId === unionId).length + 1;
   // A chosen place moves the siblings from there on one down, as inserting into a list would.
@@ -393,7 +387,7 @@ export async function updatePerson(
         entity: "person",
         entityId: personId,
         action: "update",
-        summary: `Mengubah data ${input.fullName}`,
+        summary: encodeSummary("personUpdated", { name: input.fullName }),
         diff: changed,
       });
     }
@@ -411,7 +405,7 @@ export async function setPhoto(db: DB, userId: string, treeId: string, personId:
     entity: "person",
     entityId: personId,
     action: "update",
-    summary: photoKey ? `Mengganti foto ${before.fullName}` : `Menghapus foto ${before.fullName}`,
+    summary: encodeSummary(photoKey ? "photoReplaced" : "photoRemoved", { name: before.fullName }),
   });
   return before.photoKey;
 }
@@ -445,7 +439,7 @@ export async function deletePerson(db: DB, userId: string, treeId: string, perso
       entity: "person",
       entityId: personId,
       action: "delete",
-      summary: `Menghapus ${person.fullName}`,
+      summary: encodeSummary("personDeleted", { name: person.fullName }),
       diff: { before: toPerson(person) },
     });
     return person.photoKey;
@@ -464,14 +458,14 @@ export async function updateUnion(
   await requireRole(db, treeId, userId, "editor");
   await requireUnion(db, treeId, unionId);
   await db.update(unions).set(input).where(eq(unions.id, unionId));
-  await log(db, { treeId, userId, entity: "union", entityId: unionId, action: "update", summary: "Mengubah data ikatan", diff: input });
+  await log(db, { treeId, userId, entity: "union", entityId: unionId, action: "update", summary: encodeSummary("unionUpdated"), diff: input });
 }
 
 export async function deleteUnion(db: DB, userId: string, treeId: string, unionId: string) {
   await requireRole(db, treeId, userId, "editor");
   await requireUnion(db, treeId, unionId);
   await db.delete(unions).where(eq(unions.id, unionId));
-  await log(db, { treeId, userId, entity: "union", entityId: unionId, action: "delete", summary: "Menghapus ikatan" });
+  await log(db, { treeId, userId, entity: "union", entityId: unionId, action: "delete", summary: encodeSummary("unionDeleted") });
 }
 
 export async function updateChildLink(
@@ -488,7 +482,7 @@ export async function updateChildLink(
     .update(unionChildren)
     .set(input)
     .where(and(eq(unionChildren.unionId, unionId), eq(unionChildren.childId, childId)));
-  await log(db, { treeId, userId, entity: "relation", entityId: childId, action: "update", summary: "Mengubah hubungan anak", diff: input });
+  await log(db, { treeId, userId, entity: "relation", entityId: childId, action: "update", summary: encodeSummary("childRelationUpdated"), diff: input });
 }
 
 export async function removeChildLink(db: DB, userId: string, treeId: string, unionId: string, childId: string) {
@@ -496,7 +490,7 @@ export async function removeChildLink(db: DB, userId: string, treeId: string, un
   await requireUnion(db, treeId, unionId);
   const child = await requirePerson(db, treeId, childId);
   await db.delete(unionChildren).where(and(eq(unionChildren.unionId, unionId), eq(unionChildren.childId, childId)));
-  await log(db, { treeId, userId, entity: "relation", entityId: childId, action: "unlink", summary: `Melepas tautan orang tua ${child.fullName}` });
+  await log(db, { treeId, userId, entity: "relation", entityId: childId, action: "unlink", summary: encodeSummary("parentUnlinked", { name: child.fullName }) });
 }
 
 // ---------------------------------------------------------------- history & export

@@ -26,8 +26,8 @@ npm run dev
 Open http://localhost:3000. With no configuration:
 
 - **Database**: embedded PGlite in `.data/pglite`, migrated automatically. Set `DATABASE_URL` to use Postgres instead (a local server is migrated on first request; Neon is migrated with `npm run db:migrate`).
-- **Sign-in**: a development-only "Masuk tanpa Google" form appears on `/masuk`. Google sign-in needs Neon Auth: `neon deploy` writes `NEON_AUTH_BASE_URL`; add `NEON_AUTH_COOKIE_SECRET` (`openssl rand -base64 32`).
-- **Demo**: `/contoh` is a read-only sample family; `/demo` lets visitors edit one in an in-browser PGlite database, so nothing reaches the server.
+- **Sign-in**: Google sign-in needs Neon Auth: `neon deploy` writes `NEON_AUTH_BASE_URL`; add `NEON_AUTH_COOKIE_SECRET` (`openssl rand -base64 32`).
+- **Demo**: `/example` is a read-only sample family; `/demo` lets visitors edit one in an in-browser PGlite database, so nothing reaches the server.
 - **Photos**: stored in `.data/uploads`. Configure `R2_*` for Cloudflare R2.
 - **Demo data**: on an empty "Pohon saya" page (development only), "Buat pohon contoh" creates a fictional four-generation family of about 100 people.
 

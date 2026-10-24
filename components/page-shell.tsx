@@ -1,5 +1,5 @@
 import { ChevronLeftIcon } from "lucide-react";
-import Link from "next/link";
+import { Link } from "@/i18n/navigation";
 import { cn } from "@/lib/utils";
 
 /*
@@ -9,7 +9,7 @@ import { cn } from "@/lib/utils";
  */
 
 export function Page({ wide = false, className, children }: { wide?: boolean; className?: string; children: React.ReactNode }) {
-  return <main id="konten" className={cn("mx-auto w-full px-4 py-8", wide ? "max-w-3xl" : "max-w-2xl", className)}>{children}</main>;
+  return <main id="content" className={cn("mx-auto w-full px-4 py-8", wide ? "max-w-3xl" : "max-w-2xl", className)}>{children}</main>;
 }
 
 export function PageTitle({ title, subtitle, action, eyebrow }: { title: React.ReactNode; subtitle?: React.ReactNode; action?: React.ReactNode; eyebrow?: React.ReactNode }) {

@@ -1,0 +1,214 @@
+{
+  "meta": {
+    "person": "Person",
+    "edit": "Edit details",
+    "add": "Add person"
+  },
+  "actions": {
+    "cancel": "Cancel",
+    "save": "Save",
+    "delete": "Delete",
+    "overwrite": "Overwrite",
+    "link": "Link",
+    "reload": "Reload",
+    "edit": "Edit"
+  },
+  "common": {
+    "unknown": "Unknown",
+    "loading": "Loading…"
+  },
+  "labels": {
+    "gender": {
+      "male": "Male",
+      "female": "Female",
+      "unknown": "Unknown"
+    },
+    "unionStatus": {
+      "married": "Married",
+      "divorced": "Divorced",
+      "widowed": "Widowed",
+      "unknown": "Unknown"
+    },
+    "unionStatusAdd": {
+      "married": "Married",
+      "divorced": "Divorced (former partner)",
+      "widowed": "Widowed",
+      "unknown": "Unknown"
+    },
+    "childRelation": {
+      "biological": "Biological",
+      "adopted": "Adopted",
+      "step": "Step"
+    },
+    "childOf": {
+      "biological": "Biological child",
+      "adopted": "Adopted child",
+      "step": "Stepchild"
+    },
+    "role": {
+      "owner": "Owner",
+      "editor": "Editor",
+      "viewer": "Viewer"
+    },
+    "childNumber": "Child number",
+    "birthOrder": "{n, selectordinal, one {#st child} two {#nd child} few {#rd child} other {#th child}}"
+  },
+  "relation": {
+    "addTitle": {
+      "parent": "Add a parent for {name}",
+      "partner": "Add a partner for {name}",
+      "child": "Add a child for {name}",
+      "sibling": "Add a sibling for {name}"
+    },
+    "draftName": {
+      "parent": "Parent of {name}",
+      "partner": "Partner of {name}",
+      "child": "Child of {name}",
+      "sibling": "Sibling of {name}"
+    }
+  },
+  "profile": {
+    "backToList": "List",
+    "viewInTree": "View in tree",
+    "edit": "Edit",
+    "thisIsYou": "This is you",
+    "yourAccount": "Your account",
+    "linkedFooter": "Your account is linked to this person, so your relationship to every relative is worked out from here.",
+    "relationshipToYou": "Relationship to you",
+    "you": "You",
+    "noRelationship": "No relationship to you found in this tree yet.",
+    "markYourself": "Mark yourself so your relationship to each relative shows.",
+    "gender": "Gender",
+    "birthDate": "Date of birth",
+    "birthPlace": "Place of birth",
+    "status": "Status",
+    "living": "Living",
+    "diedOn": "Died {date}",
+    "deceased": "Deceased",
+    "notes": "Notes",
+    "parents": "Parents",
+    "noParents": "No parents recorded.",
+    "addParent": "Add parent",
+    "addOtherParent": "Add the other parent",
+    "otherParentUnknown": "Other parent unknown",
+    "parentsOf": {
+      "biological": "Biological parents",
+      "adopted": "Adoptive parents",
+      "step": "Stepparents"
+    },
+    "siblings": "Siblings",
+    "siblingsCount": "Siblings ({count})",
+    "addSibling": "Add sibling",
+    "marriageNo": "Marriage no. {n}",
+    "partnerUnknown": "Partner unknown",
+    "childrenCount": "Children ({count})",
+    "noChildren": "No children recorded.",
+    "addChild": "Add child",
+    "partnerAndChildren": "Partner & children",
+    "noPartnerOrChildren": "No partner or children recorded.",
+    "addPartner": "Add partner",
+    "addChildUnknownPartner": "Add child (partner unknown)"
+  },
+  "warnings": {
+    "diedBeforeBorn": "The date of death is earlier than the date of birth.",
+    "livingTooOld": "Recorded as living, but born more than 120 years ago.",
+    "bornBeforeParent": "Born before their parent ({name}) was born.",
+    "parentAgeGap": "The age gap with {name} is less than 12 years.",
+    "bornAfterParentDied": "Born after {name} died.",
+    "childOlder": "Their child ({name}) was born earlier."
+  },
+  "new": {
+    "relationship": "Relationship",
+    "otherParent": "Other parent",
+    "status": "Status",
+    "asParent": "Kind of parent",
+    "childRelationship": "Kind of child",
+    "parentRelationshipHint": "{name}'s relationship to this parent",
+    "whoIsAdded": "Who is being added",
+    "newPerson": "New person",
+    "existingPerson": "Already in the tree",
+    "unconnectedNote": "This person isn't connected to anyone yet. It's best to add them from a relative's profile so they connect to the tree right away."
+  },
+  "fields": {
+    "fullName": "Full name",
+    "required": "Required",
+    "nickname": "Nickname",
+    "nicknamePlaceholder": "e.g. Grandpa Dullah",
+    "gender": "Gender",
+    "dateFooter": "A date can be just a year, or left empty.",
+    "birthDate": "Date of birth",
+    "birthPlace": "Place of birth",
+    "birthPlacePlaceholder": "e.g. Tasikmalaya",
+    "deceased": "Deceased",
+    "deathDate": "Date of death",
+    "notes": "Notes",
+    "notesPlaceholder": "Occupation, a short story, burial place…",
+    "notSet": "Not set",
+    "day": "Day",
+    "dayPlaceholder": "1–31",
+    "month": "Month",
+    "year": "Year",
+    "yearPlaceholder": "e.g. 1950"
+  },
+  "edit": {
+    "title": "Edit details",
+    "conflictFooter": "Review the other member's changes before overwriting them.",
+    "dialogTitle": "Edit {name}"
+  },
+  "union": {
+    "editTitle": "Edit marriage",
+    "withPartner": "Marriage to {name}.",
+    "partnerUnknown": "The partner is unknown.",
+    "status": "Status",
+    "startDate": "Wedding date",
+    "marriageNumber": "Marriage number",
+    "deleteFooter": "The children stay in the tree, but are no longer recorded as children of this couple.",
+    "delete": "Delete marriage",
+    "deleteTitle": "Delete this marriage?",
+    "deleteConfirm": "Delete",
+    "updated": "Marriage updated.",
+    "deleted": "Marriage deleted.",
+    "childLinkTitle": "Child relationship",
+    "childLinkDescription": "{name} as a child of this couple.",
+    "childLinkMenu": "Manage {name}'s relationship",
+    "childOrderFooter": "“Child number” orders siblings when birth dates are unknown.",
+    "relation": "Relationship",
+    "childOrderPlaceholder": "Unknown",
+    "unlinkFooter": "The person stays in the tree, just no longer recorded as a child of this couple.",
+    "unlink": "Unlink as a child of this couple",
+    "unlinkTitle": "Unlink {name} from this couple?",
+    "unlinkDescription": "The person stays in the tree.",
+    "unlinkConfirm": "Unlink",
+    "unlinked": "Unlinked. The person stays in the tree.",
+    "saved": "Saved."
+  },
+  "dialog": {
+    "deleteTitle": "Delete {name}?",
+    "noParents": "{name}'s parents aren't recorded yet. Add the parents first, then siblings can be linked.",
+    "relationship": "Relationship",
+    "twoBioParents": "{name} already has two biological parents, so this parent is recorded as a second parent (adoptive or step).",
+    "orderedFooter": "Leave “Child number” empty if they are the youngest. Siblings after them shift along.",
+    "youngest": "Youngest",
+    "birthOrder": "Birth order",
+    "childNumberOf": "Child number ({union})",
+    "added": "{name} added.",
+    "saved": "{name} saved.",
+    "deleted": "{name} deleted.",
+    "linked": "{name} linked to {other}."
+  },
+  "link": {
+    "me": "This is me",
+    "notMe": "Not me",
+    "unlinked": "Account link removed.",
+    "linked": "Saved. Your relationship to every relative now shows."
+  },
+  "photo": {
+    "change": "Change photo",
+    "add": "Add photo",
+    "remove": "Remove photo",
+    "removeTitle": "Remove this photo?",
+    "removeDescription": "The photo is removed from the tree and can't be restored.",
+    "saved": "Photo saved.",
+    "failed": "The photo couldn't be uploaded. Try another image."
+  }
+}

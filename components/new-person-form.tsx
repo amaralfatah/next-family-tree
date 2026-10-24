@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { useMemo, useState } from "react";
 import { FormBar, FormGroup, FormRow, PersonPicker, RowSelect, SegmentedControl, type PickItem } from "@/components/form-rows";
 import { PersonFields } from "@/components/person-fields";
@@ -27,7 +28,8 @@ export function NewPersonForm({
   relation: RelationKind | null;
   ofId: string | null;
   ofName: string | null;
-  unions: { id: string; label: string }[];
+  /** `label` is the partner's name, or null when the other parent is unknown. */
+  unions: { id: string; label: string | null }[];
   defaultUnionId: string;
   defaultChildRelation: ChildRelation;
   candidates: PickItem[];
@@ -38,6 +40,7 @@ export function NewPersonForm({
   /** A line under the bar, when the page needs one. */
   note?: string;
 }) {
+  const t = useTranslations("person");
   const [state, onSubmit, pending] = useFormAction(createPersonAction.bind(null, treeId));
   const [mode, setMode] = useState<"new" | "existing">("new");
   const [q, setQ] = useState("");
@@ -49,52 +52,52 @@ export function NewPersonForm({
 
   return (
     <form onSubmit={onSubmit} className="grid gap-6">
-      <FormBar title={title} cancelHref={cancelHref} submitLabel={mode === "existing" ? "Hubungkan" : "Simpan"} pending={pending} disabled={mode === "existing" && !picked} />
+      <FormBar title={title} cancelHref={cancelHref} submitLabel={mode === "existing" ? t("actions.link") : t("actions.save")} pending={pending} disabled={mode === "existing" && !picked} />
       {note ? <p className="-mt-2 px-4 text-[13px] text-muted-foreground">{note}</p> : null}
-      {returnTo ? <input type="hidden" name="kembali" value={returnTo} /> : null}
+      {returnTo ? <input type="hidden" name="back" value={returnTo} /> : null}
       {relation && ofId ? (
         <>
           <input type="hidden" name="relKind" value={relation} />
           <input type="hidden" name="relOf" value={ofId} />
-          <FormGroup title="Hubungan">
+          <FormGroup title={t("new.relationship")}>
             {relation === "child" ? (
-              <FormRow label="Orang tua lain" htmlFor="relUnion">
+              <FormRow label={t("new.otherParent")} htmlFor="relUnion">
                 <RowSelect id="relUnion" name="relUnion" defaultValue={defaultUnionId}>
                   {unions.map((u) => (
                     <option key={u.id} value={u.id}>
-                      {u.label}
+                      {u.label ?? t("common.unknown")}
                     </option>
                   ))}
-                  {!unions.some((u) => u.label === "Tidak diketahui") ? <option value="">Tidak diketahui</option> : null}
+                  {!unions.some((u) => u.label === null) ? <option value="">{t("common.unknown")}</option> : null}
                 </RowSelect>
               </FormRow>
             ) : null}
             {relation === "partner" ? (
-              <FormRow label="Status" htmlFor="unionStatus">
+              <FormRow label={t("new.status")} htmlFor="unionStatus">
                 <RowSelect id="unionStatus" name="unionStatus" defaultValue="married">
-                  <option value="married">Menikah</option>
-                  <option value="divorced">Bercerai (mantan)</option>
-                  <option value="widowed">Salah satu wafat</option>
-                  <option value="unknown">Tidak diketahui</option>
+                  <option value="married">{t("labels.unionStatusAdd.married")}</option>
+                  <option value="divorced">{t("labels.unionStatusAdd.divorced")}</option>
+                  <option value="widowed">{t("labels.unionStatusAdd.widowed")}</option>
+                  <option value="unknown">{t("labels.unionStatusAdd.unknown")}</option>
                 </RowSelect>
               </FormRow>
             ) : (
-              <FormRow label={relation === "parent" ? "Sebagai orang tua" : "Hubungan anak"} htmlFor="childRelation">
-                <RowSelect id="childRelation" name="childRelation" defaultValue={defaultChildRelation} aria-description={relation === "parent" ? `Hubungan ${ofName} dengan orang tua ini` : undefined}>
-                  <option value="biological">Kandung</option>
-                  <option value="adopted">Angkat</option>
-                  <option value="step">Tiri</option>
+              <FormRow label={relation === "parent" ? t("new.asParent") : t("new.childRelationship")} htmlFor="childRelation">
+                <RowSelect id="childRelation" name="childRelation" defaultValue={defaultChildRelation} aria-description={relation === "parent" ? t("new.parentRelationshipHint", { name: ofName ?? "" }) : undefined}>
+                  <option value="biological">{t("labels.childRelation.biological")}</option>
+                  <option value="adopted">{t("labels.childRelation.adopted")}</option>
+                  <option value="step">{t("labels.childRelation.step")}</option>
                 </RowSelect>
               </FormRow>
             )}
           </FormGroup>
           <SegmentedControl
-            label="Siapa yang ditambahkan"
+            label={t("new.whoIsAdded")}
             value={mode}
             onChange={setMode}
             options={[
-              ["new", "Orang baru"],
-              ["existing", "Sudah ada di pohon"],
+              ["new", t("new.newPerson")],
+              ["existing", t("new.existingPerson")],
             ]}
           />
         </>

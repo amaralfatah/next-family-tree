@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 import {
   AlertDialog,
@@ -54,6 +55,7 @@ export function ConfirmButton({
   confirmDisabled?: boolean;
   children?: React.ReactNode;
 }) {
+  const t = useTranslations("common");
   const [open, setOpen] = useState(false);
   const [pending, start] = useTransition();
   return (
@@ -68,7 +70,7 @@ export function ConfirmButton({
         </AlertDialogHeader>
         {children}
         <AlertDialogFooter>
-          <AlertDialogCancel>Batal</AlertDialogCancel>
+          <AlertDialogCancel>{t("actions.cancel")}</AlertDialogCancel>
           <AlertDialogAction
             variant="destructive"
             disabled={pending || confirmDisabled}
@@ -76,7 +78,7 @@ export function ConfirmButton({
               start(async () => {
                 const r = await onConfirm();
                 if (r && !r.ok) {
-                  toast.error(r.error ?? "Gagal.");
+                  toast.error(r.error ?? t("actions.failed"));
                   return;
                 }
                 if (successMessage) toast.success(successMessage);

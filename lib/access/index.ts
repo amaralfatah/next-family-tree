@@ -11,7 +11,7 @@ export function hasRole(actual: Role, required: Role): boolean {
 
 /**
  * Thrown when a user may not touch a tree. Non-members get the same "not found"
- * message as a missing tree so tree ids can't be probed.
+ * error as a missing tree so tree ids can't be probed. `message` is a key in the `errors` namespace.
  */
 export class AccessError extends Error {
   constructor(
@@ -45,7 +45,7 @@ export function assertRole(access: TreeAccess, role: Role) {
 
 function forbidden(role: Role) {
   return new AccessError(
-    role === "owner" ? "Hanya pemilik pohon yang bisa melakukan ini." : "Anda hanya punya akses membaca di pohon ini.",
+    role === "owner" ? "ownerOnly" : "readOnly",
     "forbidden",
   );
 }
@@ -60,9 +60,9 @@ export async function getMembership(db: DB, treeId: string, userId: string): Pro
 }
 
 export async function requireRole(db: DB, treeId: string, userId: string, role: Role): Promise<TreeAccess> {
-  if (!isUuid(treeId)) throw new AccessError("Pohon tidak ditemukan.", "not_found");
+  if (!isUuid(treeId)) throw new AccessError("treeNotFound", "not_found");
   const membership = await getMembership(db, treeId, userId);
-  if (!membership) throw new AccessError("Pohon tidak ditemukan.", "not_found");
+  if (!membership) throw new AccessError("treeNotFound", "not_found");
   if (!hasRole(membership.role, role)) throw forbidden(role);
   return { ...membership, treeId } as TreeAccess;
 }

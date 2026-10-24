@@ -1,7 +1,8 @@
 "use client";
 
 import { CameraIcon } from "lucide-react";
-import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
+import { useRouter } from "@/i18n/navigation";
 import { useRef, useState } from "react";
 import { toast } from "sonner";
 import { ConfirmButton } from "@/components/confirm-button";
@@ -31,10 +32,11 @@ async function compress(file: File): Promise<Blob> {
 }
 
 export function PhotoUploader({ treeId, personId, hasPhoto }: { treeId: string; personId: string; hasPhoto: boolean }) {
+  const t = useTranslations("person.photo");
   const input = useRef<HTMLInputElement>(null);
   const [busy, setBusy] = useState(false);
   const router = useRouter();
-  const url = `/api/foto/${treeId}/${personId}`;
+  const url = `/api/photos/${treeId}/${personId}`;
 
   async function upload(file: File) {
     setBusy(true);
@@ -44,10 +46,10 @@ export function PhotoUploader({ treeId, personId, hasPhoto }: { treeId: string; 
       fd.set("photo", new File([blob], "foto", { type: blob.type }));
       const res = await fetch(url, { method: "POST", body: fd });
       if (!res.ok) throw new Error(await res.text());
-      toast.success("Foto tersimpan.");
+      toast.success(t("saved"));
       router.refresh();
     } catch (e) {
-      toast.error(e instanceof Error && e.message !== "too-big" && e.message ? e.message : "Foto gagal diunggah. Coba gambar lain.");
+      toast.error(e instanceof Error && e.message !== "too-big" && e.message ? e.message : t("failed"));
     } finally {
       setBusy(false);
       if (input.current) input.current.value = "";
@@ -66,16 +68,16 @@ export function PhotoUploader({ treeId, personId, hasPhoto }: { treeId: string; 
     <div className="flex items-center gap-1">
       <input ref={input} type="file" accept="image/*" className="sr-only" tabIndex={-1} onChange={(e) => e.target.files?.[0] && upload(e.target.files[0])} />
       <button type="button" disabled={busy} onClick={() => input.current?.click()} className={cn(toolbarAction, "text-[15px] disabled:opacity-50")}>
-        {busy ? <Spinner /> : <CameraIcon className="size-4" />} {hasPhoto ? "Ganti foto" : "Tambah foto"}
+        {busy ? <Spinner /> : <CameraIcon className="size-4" />} {hasPhoto ? t("change") : t("add")}
       </button>
       {hasPhoto ? (
         <ConfirmButton
-          label="Hapus foto"
+          label={t("remove")}
           variant="ghost"
           triggerClassName="h-11 px-2 text-[15px] font-normal text-destructive hover:bg-transparent hover:text-destructive hover:opacity-80"
-          title="Hapus foto ini?"
-          description="Foto dihapus dari pohon dan tidak bisa dikembalikan."
-          confirmLabel="Hapus foto"
+          title={t("removeTitle")}
+          description={t("removeDescription")}
+          confirmLabel={t("remove")}
           onConfirm={remove}
         />
       ) : null}

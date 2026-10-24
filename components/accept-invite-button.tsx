@@ -1,11 +1,13 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { useTransition } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { acceptInviteAction } from "@/lib/actions";
 
 export function AcceptInviteButton({ token }: { token: string }) {
+  const t = useTranslations("public.invite");
   const [pending, start] = useTransition();
   return (
     <Button
@@ -19,7 +21,7 @@ export function AcceptInviteButton({ token }: { token: string }) {
         })
       }
     >
-      {pending ? "Bergabung…" : "Gabung ke pohon"}
+      {pending ? t("joining") : t("join")}
     </Button>
   );
 }

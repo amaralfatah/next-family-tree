@@ -21,7 +21,7 @@ export interface PublicDemo {
 let cached: Promise<PublicDemo> | undefined;
 
 /**
- * The fictional demo family for the public /contoh page, built in an in-memory database from the same
+ * The fictional demo family for the public /example page, built in an in-memory database from the same
  * generator as the in-app demo. The page is static, so this runs once at build time; no real data is read.
  * Cached per process because ids are random: every render must see the same family.
  */

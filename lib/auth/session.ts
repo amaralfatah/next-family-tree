@@ -2,7 +2,7 @@ import "server-only";
 import { createHash, randomBytes } from "node:crypto";
 import { eq } from "drizzle-orm";
 import { cookies } from "next/headers";
-import { redirect } from "next/navigation";
+import { redirectTo } from "@/i18n/server";
 import { cache } from "react";
 import { getDb } from "@/lib/db";
 import { sessions, users } from "@/lib/db/schema";
@@ -50,7 +50,7 @@ async function neonAuthUser(): Promise<CurrentUser | null> {
   if (!(await cookies()).has(NEON_AUTH_SESSION_COOKIE)) return null;
   // Once the 5-minute session cache lapses, getSession() asks Neon Auth over the network. A network or
   // server failure (the SDK reports transport errors as 502) is not a signed-out user: retry once, then
-  // throw so the error page offers a retry instead of /masuk. A 4xx is Neon Auth's answer that the cookie's
+  // throw so the error page offers a retry instead of /login. A 4xx is Neon Auth's answer that the cookie's
   // session is gone (expired, revoked, signed out elsewhere): that user is signed out, and throwing would
   // lock them out on every page until they cleared their cookies.
   let { data, error } = await auth.getSession();
@@ -94,7 +94,7 @@ async function testLoginUser(): Promise<CurrentUser | null> {
 
 export async function requireUser(next?: string): Promise<CurrentUser> {
   const user = await getCurrentUser();
-  if (!user) redirect(next ? `/masuk?next=${encodeURIComponent(next)}` : "/masuk");
+  if (!user) return redirectTo(next ? `/login?next=${encodeURIComponent(next)}` : "/login");
   return user;
 }
 
@@ -137,8 +137,9 @@ export async function findOrCreateUser(input: { email: string; name: string; ima
 }
 
 export function safeNext(next: string | null | undefined): string {
-  if (!next || !next.startsWith("/") || next.startsWith("//") || next.startsWith("/\\")) return "/pohon";
-  return next;
+  if (!next || !next.startsWith("/") || next.startsWith("//") || next.startsWith("/\\")) return "/trees";
+  // Callers hand over unprefixed paths, but tolerate a locale prefix: the locale-aware redirect adds it back.
+  return next.replace(/^\/(?:id|en)(?=[/?#]|$)/, "") || "/trees";
 }
 
 export const devLoginEnabled = () => process.env.NODE_ENV !== "production" || process.env.ALLOW_DEV_LOGIN === "1";

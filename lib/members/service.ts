@@ -4,13 +4,12 @@ import { getMembership, requireRole, assertRole, type TreeAccess } from "@/lib/a
 import type { DB } from "@/lib/db";
 import { changeLog, invites, persons, treeMembers, trees, users } from "@/lib/db/schema";
 import { UserError } from "@/lib/errors";
+import { encodeSummary } from "@/lib/log-summary";
 import type { Role } from "@/lib/types";
 
 export function hashToken(token: string): string {
   return createHash("sha256").update(token).digest("hex");
 }
-
-const ROLE_NAME: Record<Role, string> = { owner: "pemilik", editor: "editor", viewer: "pembaca" };
 
 async function log(db: DB, treeId: string, userId: string, action: string, summary: string) {
   await db.insert(changeLog).values({ treeId, userId, entity: "member", action, summary });
@@ -42,14 +41,14 @@ export async function listMembersWith(db: DB, { treeId }: TreeAccess) {
 /** Returns the raw token once; only its hash is stored. */
 export async function createInvite(db: DB, userId: string, treeId: string, role: Exclude<Role, "owner">, days: number) {
   await requireRole(db, treeId, userId, "owner");
-  if (!["editor", "viewer"].includes(role)) throw new UserError("Peran undangan tidak valid.");
+  if (!["editor", "viewer"].includes(role)) throw new UserError("inviteRoleInvalid");
   const token = randomBytes(24).toString("base64url");
   const expiresAt = new Date(Date.now() + Math.min(Math.max(days, 1), 90) * 86_400_000);
   const [row] = await db
     .insert(invites)
     .values({ treeId, tokenHash: hashToken(token), role, expiresAt, createdBy: userId })
     .returning({ id: invites.id });
-  await log(db, treeId, userId, "invite", `Membuat link undangan sebagai ${ROLE_NAME[role]}`);
+  await log(db, treeId, userId, "invite", encodeSummary("inviteCreated", { role }));
   return { id: row.id, token, expiresAt };
 }
 
@@ -78,7 +77,7 @@ export async function revokeInvite(db: DB, userId: string, treeId: string, invit
     .update(invites)
     .set({ revokedAt: new Date() })
     .where(and(eq(invites.id, inviteId), eq(invites.treeId, treeId)));
-  await log(db, treeId, userId, "revoke", "Mencabut link undangan");
+  await log(db, treeId, userId, "revoke", encodeSummary("inviteRevoked"));
 }
 
 export type InviteState =
@@ -102,12 +101,12 @@ export async function inspectInvite(db: DB, token: string, userId: string | null
 /** Joins the tree. An existing member keeps the higher of their current role and the invite's. */
 export async function acceptInvite(db: DB, userId: string, token: string): Promise<string> {
   const state = await inspectInvite(db, token, userId);
-  if (state.status === "invalid") throw new UserError("Link undangan tidak dikenal.");
-  if (state.status !== "valid") throw new UserError("Link undangan sudah tidak berlaku. Minta link baru ke pemilik pohon.");
+  if (state.status === "invalid") throw new UserError("inviteUnknown");
+  if (state.status !== "valid") throw new UserError("inviteExpired");
   const current = await getMembership(db, state.treeId, userId);
   if (!current) {
     await db.insert(treeMembers).values({ treeId: state.treeId, userId, role: state.role });
-    await log(db, state.treeId, userId, "join", `Bergabung sebagai ${ROLE_NAME[state.role]}`);
+    await log(db, state.treeId, userId, "join", encodeSummary("memberJoined", { role: state.role }));
   } else if (current.role === "viewer" && state.role === "editor") {
     await db
       .update(treeMembers)
@@ -119,37 +118,37 @@ export async function acceptInvite(db: DB, userId: string, token: string): Promi
 
 export async function changeRole(db: DB, userId: string, treeId: string, memberId: string, role: Exclude<Role, "owner">) {
   await requireRole(db, treeId, userId, "owner");
-  if (memberId === userId) throw new UserError("Gunakan serah terima kepemilikan untuk mengubah peran Anda sendiri.");
+  if (memberId === userId) throw new UserError("useTransferForSelf");
   const target = await getMembership(db, treeId, memberId);
-  if (!target) throw new UserError("Anggota tidak ditemukan.");
+  if (!target) throw new UserError("memberNotFound");
   await db
     .update(treeMembers)
     .set({ role })
     .where(and(eq(treeMembers.treeId, treeId), eq(treeMembers.userId, memberId)));
-  await log(db, treeId, userId, "role", `Mengubah peran anggota menjadi ${ROLE_NAME[role]}`);
+  await log(db, treeId, userId, "role", encodeSummary("memberRoleChanged", { role }));
 }
 
 export async function removeMember(db: DB, userId: string, treeId: string, memberId: string) {
   await requireRole(db, treeId, userId, "owner");
-  if (memberId === userId) throw new UserError("Pemilik tidak bisa mengeluarkan dirinya sendiri.");
+  if (memberId === userId) throw new UserError("ownerCannotRemoveSelf");
   await db.delete(treeMembers).where(and(eq(treeMembers.treeId, treeId), eq(treeMembers.userId, memberId)));
-  await log(db, treeId, userId, "remove", "Mengeluarkan anggota");
+  await log(db, treeId, userId, "remove", encodeSummary("memberRemoved"));
 }
 
 export async function leaveTree(db: DB, userId: string, treeId: string) {
   const m = await requireRole(db, treeId, userId, "viewer");
   if (m.role === "owner") {
-    throw new UserError("Pemilik harus menyerahkan kepemilikan ke anggota lain atau menghapus pohon sebelum keluar.");
+    throw new UserError("ownerMustTransfer");
   }
   await db.delete(treeMembers).where(and(eq(treeMembers.treeId, treeId), eq(treeMembers.userId, userId)));
-  await log(db, treeId, userId, "leave", "Keluar dari pohon");
+  await log(db, treeId, userId, "leave", encodeSummary("memberLeft"));
 }
 
 export async function transferOwnership(db: DB, userId: string, treeId: string, newOwnerId: string) {
   await requireRole(db, treeId, userId, "owner");
-  if (newOwnerId === userId) throw new UserError("Pilih anggota lain.");
+  if (newOwnerId === userId) throw new UserError("pickOtherMember");
   const target = await getMembership(db, treeId, newOwnerId);
-  if (!target) throw new UserError("Anggota tidak ditemukan.");
+  if (!target) throw new UserError("memberNotFound");
   await db.transaction(async (tx) => {
     await tx
       .update(treeMembers)
@@ -161,7 +160,7 @@ export async function transferOwnership(db: DB, userId: string, treeId: string, 
       .where(and(eq(treeMembers.treeId, treeId), eq(treeMembers.userId, userId)));
     await tx.update(trees).set({ ownerId: newOwnerId }).where(eq(trees.id, treeId));
   });
-  await log(db, treeId, userId, "transfer", "Menyerahkan kepemilikan pohon");
+  await log(db, treeId, userId, "transfer", encodeSummary("ownershipTransferred"));
 }
 
 /** Links (or unlinks, with null) the current user's account to a person in the tree. */
@@ -172,12 +171,12 @@ export async function linkMe(db: DB, userId: string, treeId: string, personId: s
       .select({ id: persons.id })
       .from(persons)
       .where(and(eq(persons.id, personId), eq(persons.treeId, treeId)));
-    if (!p) throw new UserError("Orang tidak ditemukan di pohon ini.");
+    if (!p) throw new UserError("personNotFound");
     const [taken] = await db
       .select({ userId: treeMembers.userId })
       .from(treeMembers)
       .where(and(eq(treeMembers.treeId, treeId), eq(treeMembers.personId, personId), ne(treeMembers.userId, userId)));
-    if (taken) throw new UserError("Orang ini sudah ditautkan ke akun anggota lain.");
+    if (taken) throw new UserError("personAlreadyLinked");
   }
   await db
     .update(treeMembers)
