@@ -47,3 +47,5 @@ next-env.d.ts
 # copied from node_modules/elkjs on install
 /public/elk-worker.min.js
 .neon
+
+certificates

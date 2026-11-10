@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { hasLocale, NextIntlClientProvider } from "next-intl";
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import { notFound } from "next/navigation";
+import { SwRegister } from "@/components/sw-register";
 import { ThemeScript } from "@/components/theme-script";
 import { ThemeSync } from "@/components/theme-sync";
 import { Toaster } from "@/components/toaster";
@@ -21,6 +22,20 @@ export async function generateMetadata({ params }: LayoutProps<"/[locale]">): Pr
     title: { default: t("title"), template: t("titleTemplate") },
     description: t("description"),
     applicationName: t("applicationName"),
+    manifest: "/manifest.webmanifest",
+    appleWebApp: {
+      capable: true,
+      statusBarStyle: "default",
+      title: t("applicationName"),
+    },
+    icons: {
+      icon: [
+        { url: "/icon.svg", type: "image/svg+xml" },
+        { url: "/icon-192.png", sizes: "192x192", type: "image/png" },
+        { url: "/icon-512.png", sizes: "512x512", type: "image/png" },
+      ],
+      apple: [{ url: "/apple-touch-icon.png", sizes: "180x180", type: "image/png" }],
+    },
     robots: { index: false, follow: false },
     alternates: { languages: Object.fromEntries(routing.locales.map((l) => [l, `/${l}`])) },
   };
@@ -58,6 +73,7 @@ export default async function RootLayout({ children, params }: LayoutProps<"/[lo
         </a>
         <NextIntlClientProvider>
           <ThemeSync />
+          <SwRegister />
           <TooltipProvider>{children}</TooltipProvider>
           <Toaster />
         </NextIntlClientProvider>
