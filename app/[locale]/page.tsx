@@ -1,4 +1,4 @@
-import { HistoryIcon, LockIcon, Trash2Icon } from "lucide-react";
+import { ArrowRightIcon, HistoryIcon, LockIcon, Trash2Icon } from "lucide-react";
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import type { Metadata } from "next";
 import Image, { type StaticImageData } from "next/image";
@@ -19,7 +19,8 @@ import sheetDark from "@/public/landing/sheet-dark.png";
 import sheetLight from "@/public/landing/sheet-light.png";
 
 // A real piece of the app lifted onto the tile: hairline and soft shadow so white UI reads on a white tile.
-const shotFrame = "rounded-2xl shadow-[0_1px_2px_rgb(0_0_0/0.06),0_12px_32px_-12px_rgb(0_0_0/0.2)] ring-1 ring-black/8 dark:ring-white/10";
+const shotFrame =
+  "rounded-xl sm:rounded-2xl shadow-[0_1px_2px_rgb(0_0_0/0.06),0_12px_32px_-12px_rgb(0_0_0/0.24)] ring-1 ring-black/8 dark:ring-white/10";
 
 const PROMISES = [
   { icon: LockIcon, key: "invitedOnly" },
@@ -42,7 +43,11 @@ export default async function Home({ params }: PageProps<"/[locale]">) {
     <div className="flex min-h-dvh flex-col">
       <header className={navBar}>
         <div className="mx-auto flex h-12 max-w-5xl items-center gap-1 px-4 sm:px-6">
-          <Link href="/" aria-label={t("homeLabel")} className="mr-auto flex items-center rounded-md outline-none focus-visible:ring-3 focus-visible:ring-ring/40">
+          <Link
+            href="/"
+            aria-label={t("homeLabel")}
+            className="mr-auto flex items-center rounded-md outline-none focus-visible:ring-3 focus-visible:ring-ring/40"
+          >
             <Wordmark />
           </Link>
           <Link href="/login" className={buttonVariants({ variant: "ghost", className: "hit" })}>
@@ -52,97 +57,120 @@ export default async function Home({ params }: PageProps<"/[locale]">) {
       </header>
 
       <main id="content" className="flex-1">
-        <section className="px-4 pt-16 text-center sm:px-6 md:pt-24">
-          <h1 className="mx-auto max-w-3xl font-display text-[2.75rem] leading-[1.05] tracking-[-0.025em] text-balance sm:text-6xl md:text-7xl">
+        <section className="px-4 pt-10 pb-12 text-center sm:px-6 sm:pt-16 sm:pb-16 md:pt-22 md:pb-20">
+          <h1 className="mx-auto max-w-3xl font-display text-[2.125rem] leading-[1.08] tracking-[-0.025em] text-balance sm:text-5xl md:text-6xl lg:text-[4rem]">
             {t("heroTitle")}
           </h1>
-          <p className="mx-auto mt-5 max-w-xl text-xl leading-snug text-pretty text-muted-foreground md:text-2xl">
+          <p className="mx-auto mt-4 max-w-xl text-[1.0625rem] leading-relaxed text-pretty text-muted-foreground sm:mt-5 sm:text-xl">
             {t("heroBody")}
           </p>
-          {/* Phones: one full-width action with the secondary link under it; wider screens: side by side. */}
-          <div className="mx-auto mt-8 flex max-w-xs flex-col items-stretch gap-1 sm:max-w-none sm:flex-row sm:items-center sm:justify-center sm:gap-6">
+          <div className="mx-auto mt-7 flex max-w-xs flex-col items-stretch gap-2.5 sm:mt-8 sm:max-w-none sm:flex-row sm:items-center sm:justify-center sm:gap-3.5">
             <Link href="/login" className={buttonVariants({ size: "lg" })}>
               {t("createTree")}
             </Link>
-            <Link href="/example" className="inline-flex h-11 items-center justify-center rounded-sm text-[1.0625rem] text-primary outline-none hover:opacity-80 active:opacity-60 focus-visible:ring-3 focus-visible:ring-ring/40">
-              {t("seeExample")}
+            <Link href="/example" className={buttonVariants({ variant: "outline", size: "lg", className: "gap-1.5" })}>
+              <span>{t("seeExample")}</span>
+              <ArrowRightIcon className="size-4 opacity-70" aria-hidden />
             </Link>
           </div>
-          {/* On phones the desktop window is too small to read; the tiles below carry the product instead. */}
-          <div className="mx-auto mt-14 hidden max-w-5xl sm:block md:mt-20">
+          <div className="mx-auto mt-10 max-w-5xl sm:mt-14 md:mt-16">
             <Shot
               light={chartLight}
               dark={chartDark}
               alt={t("chartAlt")}
               priority
               sizes="(min-width: 1024px) 1024px, 100vw"
-              className="rounded-xl shadow-[0_2px_6px_rgb(0_0_0/0.06),0_30px_60px_-20px_rgb(0_0_0/0.25)] ring-1 ring-black/10 dark:ring-white/10"
+              className="aspect-[16/10] rounded-xl object-cover object-left-top shadow-[0_2px_6px_rgb(0_0_0/0.06),0_24px_48px_-16px_rgb(0_0_0/0.28)] ring-1 ring-black/10 sm:aspect-auto dark:ring-white/10"
             />
           </div>
         </section>
 
-        <section className="mt-16 bg-grouped px-4 py-16 sm:px-6 md:mt-24 md:py-24">
-          <div className="mx-auto grid max-w-5xl gap-5 md:grid-cols-2">
+        <section className="border-y border-border/60 bg-grouped px-4 py-12 sm:px-6 sm:py-16 md:py-24">
+          <div className="mx-auto grid max-w-5xl gap-5 md:grid-cols-2 md:gap-6">
             <Tile title={t("tileTermsTitle")} body={t("tileTermsBody")}>
-              <div className="flex h-full items-center px-7 pb-8 md:px-9">
-                <Shot light={sheetLight} dark={sheetDark} alt={t("sheetAlt")} sizes="(min-width: 768px) 400px, 90vw" className={shotFrame} />
-              </div>
+              <Shot
+                light={sheetLight}
+                dark={sheetDark}
+                alt={t("sheetAlt")}
+                sizes="(min-width: 768px) 440px, 92vw"
+                className={shotFrame}
+              />
             </Tile>
             <Tile title={t("tileTogetherTitle")} body={t("tileTogetherBody")}>
-              <div className="h-52 overflow-hidden px-7 sm:h-full md:px-9">
-                <Shot light={addLight} dark={addDark} alt={t("addAlt")} sizes="(min-width: 768px) 400px, 90vw" className={cn(shotFrame, "rounded-b-none")} />
-              </div>
+              <Shot
+                light={addLight}
+                dark={addDark}
+                alt={t("addAlt")}
+                sizes="(min-width: 768px) 440px, 92vw"
+                className={shotFrame}
+              />
             </Tile>
           </div>
         </section>
 
-        <section className="px-4 py-20 sm:px-6 md:py-24">
+        <section className="px-4 py-14 sm:px-6 sm:py-20 md:py-24">
           <div className="mx-auto max-w-2xl">
-            <h2 className="text-center font-display text-4xl leading-tight tracking-[-0.02em] text-balance md:text-5xl">{t("promisesTitle")}</h2>
-            {/* An inset grouped list, as in iOS Settings. */}
-            <ul className="mt-12 divide-y divide-border/70 overflow-hidden rounded-xl bg-paper-2">
+            <h2 className="text-center font-display text-[1.875rem] leading-tight tracking-[-0.02em] text-balance sm:text-4xl md:text-5xl">
+              {t("promisesTitle")}
+            </h2>
+            <ul className="mt-8 divide-y divide-border/70 overflow-hidden rounded-2xl bg-paper-2 ring-1 ring-border/70 sm:mt-10 dark:ring-white/8">
               {PROMISES.map(({ icon: Icon, key }) => (
-                <li key={key} className="flex gap-4 px-5 py-4">
-                  <span className="mt-0.5 grid size-8 shrink-0 place-items-center rounded-lg bg-background text-foreground">
+                <li key={key} className="flex gap-3.5 px-4 py-4 sm:gap-4 sm:px-6 sm:py-5">
+                  <span className="mt-0.5 grid size-9 shrink-0 place-items-center rounded-xl bg-primary/12 text-primary ring-1 ring-primary/20">
                     <Icon className="size-[18px]" aria-hidden />
                   </span>
                   <div className="min-w-0">
-                    <p className="text-[1.0625rem] font-semibold">{t(`promises.${key}.title`)}</p>
-                    <p className="mt-0.5 text-[0.9375rem] leading-snug text-pretty text-muted-foreground">{t(`promises.${key}.body`)}</p>
+                    <p className="text-[1rem] font-semibold sm:text-[1.0625rem]">{t(`promises.${key}.title`)}</p>
+                    <p className="mt-1 text-[0.9375rem] leading-relaxed text-pretty text-muted-foreground">
+                      {t(`promises.${key}.body`)}
+                    </p>
                   </div>
                 </li>
               ))}
             </ul>
-            <p className="mt-4 text-center text-sm">
-              <Link href="/privacy" className="inline-flex min-h-11 items-center text-[15px] text-primary hover:opacity-80 active:opacity-60">
-                {t("readPrivacy")}
+            <p className="mt-5 text-center text-sm">
+              <Link
+                href="/privacy"
+                className="inline-flex min-h-10 items-center gap-1.5 text-[15px] font-medium text-primary hover:opacity-80 active:opacity-60"
+              >
+                <span>{t("readPrivacy")}</span>
+                <ArrowRightIcon className="size-3.5" aria-hidden />
               </Link>
             </p>
           </div>
         </section>
 
-        <section className="border-t px-4 py-20 text-center sm:px-6 md:py-24">
-          <h2 className="mx-auto max-w-2xl font-display text-4xl leading-tight tracking-[-0.02em] text-balance md:text-5xl">{t("closingTitle")}</h2>
-          <Link href="/login" className={buttonVariants({ size: "lg", className: "mt-8" })}>
-            {t("createTree")}
-          </Link>
+        <section className="px-4 pb-14 sm:px-6 sm:pb-20 md:pb-24">
+          <div className="mx-auto max-w-5xl rounded-2xl bg-paper-2 px-6 py-12 text-center ring-1 ring-border/70 sm:rounded-3xl sm:px-12 sm:py-16 dark:ring-white/8">
+            <h2 className="mx-auto max-w-xl font-display text-[1.875rem] leading-tight tracking-[-0.02em] text-balance sm:text-4xl md:text-5xl">
+              {t("closingTitle")}
+            </h2>
+            <div className="mt-6 flex flex-col items-stretch justify-center gap-2.5 sm:mt-8 sm:flex-row sm:items-center sm:gap-3.5">
+              <Link href="/login" className={buttonVariants({ size: "lg" })}>
+                {t("createTree")}
+              </Link>
+              <Link href="/example" className={buttonVariants({ variant: "outline", size: "lg" })}>
+                {t("seeExample")}
+              </Link>
+            </div>
+          </div>
         </section>
       </main>
 
-      <footer className="bg-paper-2 pb-[env(safe-area-inset-bottom)]">
+      <footer className="border-t border-border/60 bg-paper-2 pb-[env(safe-area-inset-bottom)]">
         <div className="mx-auto max-w-5xl px-4 py-6 text-[13px] text-muted-foreground sm:px-6">
-          <div className="flex flex-wrap items-center justify-between gap-x-5">
+          <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between sm:gap-x-5">
             <span>{t("footerNote")}</span>
             <nav className="flex items-center gap-5">
-              <Link href="/privacy" className="inline-flex min-h-11 items-center hover:text-foreground">
+              <Link href="/privacy" className="inline-flex min-h-9 items-center hover:text-foreground">
                 {t("privacy")}
               </Link>
-              <Link href="/login" className="inline-flex min-h-11 items-center hover:text-foreground">
+              <Link href="/login" className="inline-flex min-h-9 items-center hover:text-foreground">
                 {t("signIn")}
               </Link>
             </nav>
           </div>
-          <PreferencesInline className="mt-2 border-t border-border/70 pt-3.5 pb-1.5" />
+          <PreferencesInline className="mt-3 border-t border-border/70 pt-3.5 pb-1" />
         </div>
       </footer>
     </div>
@@ -152,13 +180,14 @@ export default async function Home({ params }: PageProps<"/[locale]">) {
 /** A feature tile on the grouped background: the claim on top, the product underneath. */
 function Tile({ title, body, children }: { title: string; body: string; children: React.ReactNode }) {
   return (
-    <article className="flex flex-col overflow-hidden rounded-3xl bg-card">
-      <div className="px-7 pt-8 md:px-9 md:pt-10">
-        <h2 className="font-display text-2xl leading-tight text-balance md:text-[1.75rem]">{title}</h2>
-        <p className="mt-3 text-[1.0625rem] leading-snug text-pretty text-muted-foreground">{body}</p>
+    <article className="flex flex-col justify-between overflow-hidden rounded-2xl bg-card p-5 ring-1 ring-border/70 sm:rounded-3xl sm:p-7 md:p-9 dark:ring-white/8">
+      <div>
+        <h2 className="font-display text-[1.5rem] leading-tight text-balance sm:text-2xl md:text-[1.75rem]">{title}</h2>
+        <p className="mt-2.5 text-[0.9375rem] leading-relaxed text-pretty text-muted-foreground sm:mt-3 sm:text-[1.0625rem]">
+          {body}
+        </p>
       </div>
-      {/* The same height in both tiles, so their bottoms line up; a tall shot is cut by the tile's edge. */}
-      <div className="mt-8 max-h-64 sm:h-72 sm:max-h-none">{children}</div>
+      <div className="mt-6 sm:mt-8">{children}</div>
     </article>
   );
 }
@@ -181,8 +210,21 @@ function Shot({
 }) {
   return (
     <>
-      <Image src={light} alt={alt} sizes={sizes} priority={priority} placeholder="blur" className={cn("w-full dark:hidden", className)} />
-      <Image src={dark} alt={alt} sizes={sizes} placeholder="blur" className={cn("hidden w-full dark:block", className)} />
+      <Image
+        src={light}
+        alt={alt}
+        sizes={sizes}
+        priority={priority}
+        placeholder="blur"
+        className={cn("w-full dark:hidden", className)}
+      />
+      <Image
+        src={dark}
+        alt={alt}
+        sizes={sizes}
+        placeholder="blur"
+        className={cn("hidden w-full dark:block", className)}
+      />
     </>
   );
 }
